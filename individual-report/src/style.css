@@ -1,0 +1,240 @@
+/* VESPA Report V2 - Global Styles */
+
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  background: #f5f5f5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+h2 {
+  font-size: 28px;
+}
+
+h3 {
+  font-size: 22px;
+}
+
+h4 {
+  font-size: 18px;
+}
+
+p {
+  margin-bottom: 12px;
+}
+
+/* Utilities */
+.text-center {
+  text-align: center;
+}
+
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container {
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    background: white;
+    color: black;
+  }
+
+  /* Force colors to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive elements */
+  button,
+  .help-button,
+  .save-button,
+  .retry-button,
+  .action-bar,
+  .error-message,
+  .success-message {
+    display: none !important;
+  }
+
+  /* Optimize layout for print */
+  #vespa-report-app {
+    max-width: none;
+    padding: 0;
+  }
+
+  .report-container {
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .report-main {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure components don't break across pages */
+  .score-box,
+  .category-section,
+  .student-response,
+  .student-goals {
+    page-break-inside: avoid;
+  }
+
+  /* Hide staff-only content */
+  .staff-coaching-record {
+    display: none !important;
+  }
+
+  /* Adjust font sizes for print */
+  body {
+    font-size: 11pt;
+  }
+
+  h1 {
+    font-size: 24pt;
+  }
+
+  h2 {
+    font-size: 20pt;
+  }
+
+  h3 {
+    font-size: 16pt;
+  }
+
+  /* Remove box shadows and borders for cleaner print */
+  .report-header,
+  .score-box,
+  .category-section,
+  .student-response,
+  .student-goals {
+    box-shadow: none !important;
+    border: 1px solid #ddd;
+  }
+
+  /* Adjust radar chart for print */
+  .radar-chart-container {
+    max-width: 300px;
+    break-inside: avoid;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  body {
+    font-size: 15px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  h3 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 18px;
+  }
+}
+
+/* Accessibility */
+button:focus,
+input:focus,
+textarea:focus {
+  outline: 2px solid #079baa;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+button,
+.cycle-button {
+  transition: all 0.3s ease;
+}
+
+/* Scrollbar styling (webkit browsers) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
