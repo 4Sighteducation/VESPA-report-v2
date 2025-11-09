@@ -44,11 +44,11 @@ const chartData = computed(() => {
   const labels = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
   const datasets = []
 
-  // Cycle colors - distinct and contrasting
+  // Cycle colors - bright and distinct
   const cycleConfigs = [
-    { cycle: 1, color: 'rgba(7, 155, 170, 1)', fillColor: 'rgba(7, 155, 170, 0.2)', borderDash: [] },      // Turquoise
-    { cycle: 2, color: 'rgba(255, 143, 0, 1)', fillColor: 'rgba(255, 143, 0, 0.15)', borderDash: [] },     // Orange
-    { cycle: 3, color: 'rgba(127, 49, 164, 1)', fillColor: 'rgba(127, 49, 164, 0.15)', borderDash: [] }    // Purple
+    { cycle: 1, color: 'rgba(255, 215, 0, 1)', fillColor: 'rgba(255, 215, 0, 0.2)', borderDash: [] },      // Bright Yellow
+    { cycle: 2, color: 'rgba(0, 123, 255, 1)', fillColor: 'rgba(0, 123, 255, 0.2)', borderDash: [] },      // Bright Blue
+    { cycle: 3, color: 'rgba(255, 0, 0, 1)', fillColor: 'rgba(255, 0, 0, 0.2)', borderDash: [] }           // Bright Red
   ]
 
   // Progressive display: Show only up to selected cycle
@@ -78,14 +78,14 @@ const chartData = computed(() => {
       borderColor: config.color,
       borderWidth: isSelected ? 4 : 3,
       borderDash: config.borderDash,
-      pointBackgroundColor: config.color,
+      pointBackgroundColor: pointColors, // Use theme colors for dots
       pointBorderColor: '#fff',
       pointBorderWidth: 2,
-      pointHoverBackgroundColor: '#fff',
-      pointHoverBorderColor: config.color,
+      pointHoverBackgroundColor: pointColors,
+      pointHoverBorderColor: '#fff',
       pointHoverBorderWidth: 3,
-      pointRadius: isSelected ? 6 : 5,
-      pointHoverRadius: 9,
+      pointRadius: isSelected ? 7 : 6,
+      pointHoverRadius: 10,
       fill: true
     })
   })
@@ -97,14 +97,23 @@ const chartData = computed(() => {
 })
 
 const chartOptions = computed(() => {
-  // Theme colors for point labels
+  // Theme colors for category labels AND dots
   const labelColors = {
-    'Vision': '#ff8f00',
-    'Effort': '#86b4f0', 
-    'Systems': '#72cb44',
-    'Practice': '#7f31a4',
-    'Attitude': '#f032e6'
+    'Vision': '#ff8f00',     // Orange
+    'Effort': '#86b4f0',     // Blue
+    'Systems': '#72cb44',    // Green
+    'Practice': '#7f31a4',   // Purple
+    'Attitude': '#f032e6'    // Pink
   }
+  
+  // Point colors for each category (using theme colors)
+  const pointColors = [
+    labelColors['Vision'],
+    labelColors['Effort'],
+    labelColors['Systems'],
+    labelColors['Practice'],
+    labelColors['Attitude']
+  ]
 
   const baseOptions = {
     responsive: true,
