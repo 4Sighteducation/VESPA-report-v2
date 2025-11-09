@@ -16,7 +16,15 @@
         :selectedCycle="selectedCycle"
         :allScores="reportData.scores"
         @cycle-changed="handleCycleChange"
-      />
+      >
+        <template #radar-chart>
+          <RadarChart
+            :allScores="reportData.scores"
+            :selectedCycle="selectedCycle"
+            :compact="true"
+          />
+        </template>
+      </ReportHeader>
       
       <!-- Main report content - 5 stacked rows -->
       <CoachingContent
@@ -54,6 +62,7 @@ import { ref, computed, onMounted } from 'vue'
 import LoadingState from './components/LoadingState.vue'
 import ErrorState from './components/ErrorState.vue'
 import ReportHeader from './components/ReportHeader.vue'
+import RadarChart from './components/RadarChart.vue'
 import CoachingContent from './components/CoachingContent.vue'
 import StudentResponse from './components/StudentResponse.vue'
 import StudentGoals from './components/StudentGoals.vue'

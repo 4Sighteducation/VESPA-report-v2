@@ -20,14 +20,9 @@
         </div>
       </div>
 
-      <!-- Center: Radar Chart -->
+      <!-- Center: Radar Chart Slot -->
       <div class="header-center">
-        <RadarChart 
-          v-if="allScores && allScores.length > 0"
-          :allScores="allScores" 
-          :selectedCycle="selectedCycle"
-          :compact="true"
-        />
+        <slot name="radar-chart"></slot>
       </div>
 
       <!-- Right: Cycle Selector -->
@@ -49,7 +44,6 @@
 
 <script setup>
 import { defineProps, defineEmits } from 'vue'
-import RadarChart from './RadarChart.vue'
 
 const props = defineProps({
   student: {
