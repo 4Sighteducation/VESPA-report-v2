@@ -16,6 +16,7 @@
         :selectedCycle="selectedCycle"
         :allScores="reportData.scores"
         @cycle-changed="handleCycleChange"
+        @view-answers="showViewAnswersModal = true"
       >
         <template #radar-chart>
           <RadarChart
@@ -25,6 +26,15 @@
           />
         </template>
       </ReportHeader>
+      
+      <!-- View Answers Modal -->
+      <ViewAnswersModal
+        :isOpen="showViewAnswersModal"
+        :cycle="selectedCycle"
+        :responses="questionResponses"
+        @close="showViewAnswersModal = false"
+        @cycle-changed="handleCycleChange"
+      />
       
       <!-- Main report content - 5 stacked rows -->
       <CoachingContent
@@ -67,6 +77,7 @@ import CoachingContent from './components/CoachingContent.vue'
 import StudentResponse from './components/StudentResponse.vue'
 import StudentGoals from './components/StudentGoals.vue'
 import StaffCoachingRecord from './components/StaffCoachingRecord.vue'
+import ViewAnswersModal from './components/ViewAnswersModal.vue'
 import { reportAPI } from './services/api.js'
 import { knackAuth } from './services/knackAuth.js'
 
@@ -76,6 +87,8 @@ const selectedCycle = ref(1)
 const loading = ref(true)
 const error = ref(null)
 const user = ref(null)
+const showViewAnswersModal = ref(false)
+const questionResponses = ref({})
 
 // Computed properties
 const isStaff = computed(() => {
@@ -160,6 +173,11 @@ const loadReportData = async () => {
     }
     
     reportData.value = data
+    
+    // Extract question responses for View Answers modal
+    if (data.responses) {
+      questionResponses.value = data.responses
+    }
     
     // Set selected cycle to most recent completed cycle
     if (data.scores && data.scores.length > 0) {
@@ -305,106 +323,222 @@ onMounted(() => {
 }
 
 @media print {
+  /* ULTRA-COMPACT PRINT STYLES - FIT ON 1-2 PAGES */
+  
+  * {
+    box-sizing: border-box;
+  }
+  
   #vespa-report-app {
     max-width: none;
-    padding: 0;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   .report-container {
     border-radius: 0;
     background: white;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
-  /* Print optimization for A4 */
+  /* Minimal page margins */
   @page {
-    size: A4;
-    margin: 15mm;
+    size: A4 portrait;
+    margin: 10mm 8mm;
   }
   
-  /* Hide interactive elements */
-  button:not(.cycle-button),
+  /* Hide ALL interactive elements */
+  button,
   .help-button,
   .expand-button,
   .save-button,
   .print-button,
   .action-bar,
+  .action-buttons,
   .error-message,
   .success-message,
-  .last-saved {
+  .last-saved,
+  .cycle-selector,
+  .textarea-wrapper button,
+  .date-fields {
     display: none !important;
   }
   
-  /* Make textareas look like static text */
-  textarea {
-    border: 1px solid #ddd;
-    padding: 8px;
+  /* ULTRA-COMPACT HEADER */
+  .report-header {
+    padding: 6px 8px !important;
     min-height: auto !important;
-    resize: none;
-    background: white;
-    font-size: 11pt;
-    line-height: 1.4;
+    page-break-after: avoid;
   }
   
-  /* Optimize text sizes for print */
-  body {
-    font-size: 11pt;
-    line-height: 1.4;
+  .header-top {
+    gap: 8px !important;
+    grid-template-columns: auto 1fr auto !important;
   }
   
-  h1 {
-    font-size: 18pt;
+  .school-logo {
+    height: 30px !important;
+    max-height: 30px !important;
   }
   
-  h2 {
-    font-size: 16pt;
+  .student-info h1 {
+    font-size: 14pt !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
   }
   
-  h3 {
-    font-size: 14pt;
+  .student-details {
+    font-size: 8pt !important;
+    margin-top: 2px !important;
   }
   
-  h4 {
-    font-size: 12pt;
+  /* VERY COMPACT RADAR CHART */
+  .header-center {
+    max-height: 120px !important;
+    max-width: 120px !important;
   }
   
-  /* Ensure content fits on page */
-  .category-row {
-    page-break-inside: avoid;
-    margin-bottom: 15px;
+  .header-center canvas {
+    max-height: 120px !important;
+    max-width: 120px !important;
   }
   
-  /* Compact spacing */
+  /* ULTRA-COMPACT CATEGORY ROWS */
   .coaching-content {
-    padding: 10px;
-    gap: 15px;
+    padding: 4px !important;
+    gap: 4px !important;
+  }
+  
+  .category-row {
+    margin-bottom: 4px !important;
+    padding: 0 !important;
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 0.5px solid #ccc !important;
+  }
+  
+  .category-header {
+    padding: 4px 8px !important;
+  }
+  
+  .category-header h3 {
+    font-size: 10pt !important;
+    margin: 0 !important;
+    letter-spacing: 0 !important;
   }
   
   .row-content {
-    padding: 10px;
-    gap: 10px;
+    padding: 6px !important;
+    gap: 6px !important;
+    grid-template-columns: 60px 1fr !important;
   }
   
+  .score-card {
+    padding: 8px 6px !important;
+    min-height: auto !important;
+  }
+  
+  .score-number {
+    font-size: 24pt !important;
+  }
+  
+  .score-label {
+    font-size: 7pt !important;
+  }
+  
+  /* Hide staff content in print to save space */
+  .staff-content {
+    display: none !important;
+  }
+  
+  .student-content {
+    font-size: 8pt !important;
+    line-height: 1.3 !important;
+  }
+  
+  .statement p {
+    margin: 0 !important;
+    font-size: 8pt !important;
+  }
+  
+  .questions h4 {
+    font-size: 8pt !important;
+    margin: 4px 0 2px 0 !important;
+  }
+  
+  .questions ul {
+    margin: 0 !important;
+    padding-left: 12px !important;
+  }
+  
+  .questions li {
+    font-size: 7pt !important;
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* ULTRA-COMPACT TEXT SECTIONS */
   .student-response,
   .student-goals {
-    margin-bottom: 15px;
-    padding: 10px;
+    margin-bottom: 6px !important;
+    padding: 6px !important;
+    page-break-inside: avoid;
   }
   
-  /* Hide staff coaching notes in print */
+  .section-header h3 {
+    font-size: 10pt !important;
+    margin: 0 0 4px 0 !important;
+  }
+  
+  textarea {
+    border: 0.5px solid #ccc !important;
+    padding: 4px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+    overflow: hidden !important;
+  }
+  
+  /* Hide staff coaching completely */
   .staff-coaching-record {
-    display: none;
+    display: none !important;
   }
   
-  /* Make sure links are visible in print */
-  .activity-button {
-    border: 1px solid #ccc;
-    padding: 4px 8px;
-    font-size: 9pt;
+  /* Global font optimizations */
+  body {
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
   }
   
-  /* Compact radar chart */
-  .header-center {
-    max-height: 200px;
+  h1 {
+    font-size: 14pt !important;
+  }
+  
+  h2 {
+    font-size: 12pt !important;
+  }
+  
+  h3 {
+    font-size: 10pt !important;
+  }
+  
+  h4 {
+    font-size: 9pt !important;
+  }
+  
+  /* Prevent page breaks in bad places */
+  .report-header,
+  .category-row,
+  .student-response,
+  .student-goals {
+    page-break-inside: avoid;
+  }
+  
+  /* Force content to fit */
+  * {
+    max-width: 100% !important;
   }
 }
 </style>
