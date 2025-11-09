@@ -44,11 +44,11 @@ const chartData = computed(() => {
   const labels = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
   const datasets = []
 
-  // Cycle colors with more distinction and shading
+  // Cycle colors - distinct and contrasting
   const cycleConfigs = [
-    { cycle: 1, color: 'rgba(7, 155, 170, 1)', fillColor: 'rgba(7, 155, 170, 0.25)', borderDash: [] },
-    { cycle: 2, color: 'rgba(123, 216, 208, 1)', fillColor: 'rgba(123, 216, 208, 0.25)', borderDash: [] },
-    { cycle: 3, color: 'rgba(98, 209, 210, 1)', fillColor: 'rgba(98, 209, 210, 0.25)', borderDash: [] }
+    { cycle: 1, color: 'rgba(7, 155, 170, 1)', fillColor: 'rgba(7, 155, 170, 0.2)', borderDash: [] },      // Turquoise
+    { cycle: 2, color: 'rgba(255, 143, 0, 1)', fillColor: 'rgba(255, 143, 0, 0.15)', borderDash: [] },     // Orange
+    { cycle: 3, color: 'rgba(127, 49, 164, 1)', fillColor: 'rgba(127, 49, 164, 0.15)', borderDash: [] }    // Purple
   ]
 
   // Progressive display: Show only up to selected cycle
