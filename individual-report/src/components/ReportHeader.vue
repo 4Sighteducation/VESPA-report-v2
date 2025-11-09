@@ -68,6 +68,15 @@ const emit = defineEmits(['cycle-changed'])
 
 const getLogoUrl = (url) => {
   if (!url) return ''
+  
+  // Handle non-string values (objects, arrays, etc.)
+  if (typeof url !== 'string') {
+    console.warn('[Report Header] Logo URL is not a string:', url)
+    // If it's an object with a url property, use that
+    if (typeof url === 'object' && url.url) return url.url
+    return ''
+  }
+  
   // If it's already a full URL, return it
   if (url.startsWith('http')) return url
   // If it's a Knack asset, construct proper URL
