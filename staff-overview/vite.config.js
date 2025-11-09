@@ -10,13 +10,13 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/main.js'),
       name: 'VESPAStaffOverviewV2',
       formats: ['iife'],
-      fileName: () => 'staff-overview1a.js'
+      fileName: () => 'staff-overview1b.js'
     },
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.css')) {
-            return 'staff-overview1a.css'
+            return 'staff-overview1b.css'
           }
           return '[name]-[hash][extname]'
         }
