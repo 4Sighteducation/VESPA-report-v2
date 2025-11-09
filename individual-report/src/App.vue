@@ -17,23 +17,11 @@
         @cycle-changed="handleCycleChange"
       />
       
-      <!-- Main report content -->
-      <div class="report-main">
-        <!-- Left column: VESPA scores -->
-        <ScoreColumn :scores="currentCycleScores" />
-        
-        <!-- Center: Radar chart -->
-        <RadarChart
-          :allScores="reportData.scores"
-          :selectedCycle="selectedCycle"
-        />
-        
-        <!-- Right column: Coaching content -->
-        <CoachingContent
-          :scores="currentCycleScores"
-          :content="currentCoachingContent"
-        />
-      </div>
+      <!-- Main report content - 5 stacked rows -->
+      <CoachingContent
+        :scores="currentCycleScores"
+        :content="currentCoachingContent"
+      />
       
       <!-- Student reflection section -->
       <StudentResponse
@@ -65,8 +53,6 @@ import { ref, computed, onMounted } from 'vue'
 import LoadingState from './components/LoadingState.vue'
 import ErrorState from './components/ErrorState.vue'
 import ReportHeader from './components/ReportHeader.vue'
-import ScoreColumn from './components/ScoreColumn.vue'
-import RadarChart from './components/RadarChart.vue'
 import CoachingContent from './components/CoachingContent.vue'
 import StudentResponse from './components/StudentResponse.vue'
 import StudentGoals from './components/StudentGoals.vue'
@@ -265,40 +251,14 @@ onMounted(() => {
 }
 
 .report-container {
-  background: white;
+  background: #f5f5f5;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-}
-
-.report-main {
-  display: grid;
-  grid-template-columns: 200px 1fr 1fr;
-  gap: 30px;
-  padding: 30px;
-}
-
-@media (max-width: 1200px) {
-  .report-main {
-    grid-template-columns: 180px 1fr;
-    gap: 20px;
-  }
-}
-
-@media (max-width: 1024px) {
-  .report-main {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
 }
 
 @media (max-width: 768px) {
   #vespa-report-app {
     padding: 10px;
-  }
-  
-  .report-main {
-    padding: 20px;
   }
 }
 
@@ -309,13 +269,7 @@ onMounted(() => {
   }
   
   .report-container {
-    box-shadow: none;
     border-radius: 0;
-  }
-  
-  .report-main {
-    grid-template-columns: 180px 1fr 1fr;
-    page-break-inside: avoid;
   }
 }
 </style>

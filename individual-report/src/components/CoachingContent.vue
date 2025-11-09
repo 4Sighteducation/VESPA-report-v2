@@ -1,35 +1,81 @@
 <template>
   <div class="coaching-content">
-    <div v-for="(category, index) in categories" :key="category" class="category-section">
-      <h3 :style="{ color: getCategoryColor(category) }">
-        {{ category }}
-      </h3>
-      
-      <div v-if="content[category]" class="content-block">
-        <!-- Statement Text -->
-        <div v-if="content[category].statement_text" class="statement">
-          <p>{{ content[category].statement_text }}</p>
-        </div>
-
-        <!-- Questions -->
-        <div v-if="content[category].questions && content[category].questions.length > 0" class="questions">
-          <h4>Reflection Questions:</h4>
-          <ul>
-            <li v-for="(question, qIndex) in content[category].questions" :key="qIndex">
-              {{ question }}
-            </li>
-          </ul>
-        </div>
-
-        <!-- Suggested Tools/Activities -->
-        <div v-if="content[category].suggested_tools" class="tools">
-          <h4>Suggested Activities:</h4>
-          <p>{{ content[category].suggested_tools }}</p>
-        </div>
+    <!-- 5 Stacked Rows - One per VESPA category -->
+    <div 
+      v-for="category in categories" 
+      :key="category.name" 
+      class="category-row"
+      :style="{ borderLeftColor: category.color }"
+    >
+      <!-- Category Header -->
+      <div class="category-header" :style="{ background: category.color }">
+        <h3>{{ category.name }}</h3>
       </div>
-      
-      <div v-else class="no-content">
-        <p>Complete the questionnaire to see personalized coaching content.</p>
+
+      <div class="row-content">
+        <!-- Column 1: Large Score Card -->
+        <div class="score-card" :style="{ background: category.color }">
+          <div class="score-number">
+            {{ scores[category.key] !== null && scores[category.key] !== undefined ? scores[category.key] : '-' }}
+          </div>
+          <div class="score-label">out of 10</div>
+        </div>
+
+        <!-- Column 2: Student Content (Statement + Questions) -->
+        <div class="student-content">
+          <div v-if="content[category.name]">
+            <!-- Statement Text -->
+            <div v-if="content[category.name].statement_text" class="statement">
+              <p v-html="content[category.name].statement_text"></p>
+            </div>
+
+            <!-- Reflection Questions -->
+            <div v-if="getQuestions(content[category.name]).length > 0" class="questions">
+              <h4>Reflection Questions:</h4>
+              <ul>
+                <li v-for="(question, qIndex) in getQuestions(content[category.name])" :key="qIndex">
+                  {{ question }}
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div v-else class="no-content">
+            <p>Complete the questionnaire to see personalized content.</p>
+          </div>
+        </div>
+
+        <!-- Column 3: Staff Content (Coaching Comments + Activities) -->
+        <div class="staff-content">
+          <div v-if="content[category.name]">
+            <!-- Coaching Comments -->
+            <div v-if="getCoachingComments(content[category.name]).length > 0" class="coaching-comments">
+              <h4>Coaching Points:</h4>
+              <ul>
+                <li v-for="(comment, cIndex) in getCoachingComments(content[category.name])" :key="cIndex">
+                  {{ comment }}
+                </li>
+              </ul>
+            </div>
+
+            <!-- Suggested Activities -->
+            <div v-if="content[category.name].suggested_tools" class="activities">
+              <h4>Suggested Activities:</h4>
+              <p class="activities-text">{{ content[category.name].suggested_tools }}</p>
+              <div class="activity-buttons">
+                <a 
+                  v-for="(activity, aIndex) in parseActivities(content[category.name].suggested_tools)" 
+                  :key="aIndex"
+                  :href="`https://vespaacademy.knack.com/vespa-academy#my-vespa-activities?activity=5fcd49ed0e734a001db4166f&action=start`"
+                  target="_blank"
+                  class="activity-button"
+                  :style="{ borderColor: category.color, color: category.color }"
+                >
+                  📚 {{ activity }}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -37,7 +83,7 @@
 
 <script setup>
 import { defineProps } from 'vue'
-import { getCategoryColor } from '../data/vespaColors.js'
+import { vespaColors } from '../data/vespaColors.js'
 
 const props = defineProps({
   scores: {
@@ -50,34 +96,123 @@ const props = defineProps({
   }
 })
 
-const categories = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
+const categories = [
+  { name: 'Vision', key: 'vision', color: vespaColors.vision },
+  { name: 'Effort', key: 'effort', color: vespaColors.effort },
+  { name: 'Systems', key: 'systems', color: vespaColors.systems },
+  { name: 'Practice', key: 'practice', color: vespaColors.practice },
+  { name: 'Attitude', key: 'attitude', color: vespaColors.attitude }
+]
+
+// Parse questions array - handle both array and string
+const getQuestions = (categoryContent) => {
+  if (!categoryContent || !categoryContent.questions) return []
+  
+  // If it's already an array, return it
+  if (Array.isArray(categoryContent.questions)) {
+    return categoryContent.questions.filter(q => q && q.trim())
+  }
+  
+  // If it's a string, split by common delimiters
+  const questionsStr = categoryContent.questions
+  return questionsStr.split(/[?]\s*/).filter(q => q && q.trim()).map(q => q.trim() + '?')
+}
+
+// Parse coaching comments - handle both array and string with <br /> tags
+const getCoachingComments = (categoryContent) => {
+  if (!categoryContent || !categoryContent.coaching_comments) return []
+  
+  // If it's already an array, return it
+  if (Array.isArray(categoryContent.coaching_comments)) {
+    return categoryContent.coaching_comments.filter(c => c && c.trim())
+  }
+  
+  // If it's a string with <br /> tags, split by them
+  const commentsStr = categoryContent.coaching_comments
+  return commentsStr
+    .split(/<br\s*\/?>/i)
+    .map(c => c.replace(/^\d+\.\s*/, '').trim()) // Remove leading numbers like "1."
+    .filter(c => c)
+}
+
+// Parse activities from suggested_tools string
+const parseActivities = (toolsStr) => {
+  if (!toolsStr) return []
+  
+  // Split by comma or <br /> tags
+  return toolsStr
+    .split(/,|<br\s*\/?>/i)
+    .map(a => a.trim())
+    .filter(a => a)
+}
 </script>
 
 <style scoped>
 .coaching-content {
-  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 30px;
-  background: #f9f9f9;
-  border-radius: 12px;
+  gap: 20px;
+  padding: 30px;
+  background: #f5f5f5;
 }
 
-.category-section {
+.category-row {
   background: white;
-  padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border-left: 6px solid;
 }
 
-.category-section h3 {
-  margin: 0 0 16px 0;
-  font-size: 22px;
+.category-header {
+  padding: 16px 24px;
+  color: white;
+}
+
+.category-header h3 {
+  margin: 0;
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
-.content-block {
+.row-content {
+  display: grid;
+  grid-template-columns: 150px 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+/* Column 1: Large Score Card */
+.score-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  border-radius: 12px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-height: 150px;
+}
+
+.score-number {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.score-label {
+  font-size: 14px;
+  margin-top: 8px;
+  opacity: 0.9;
+  font-weight: 600;
+}
+
+/* Column 2: Student Content */
+.student-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -85,21 +220,19 @@ const categories = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
 
 .statement p {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.7;
   color: #333;
 }
 
-.questions,
-.tools {
+.questions {
   margin-top: 12px;
 }
 
-.questions h4,
-.tools h4 {
-  margin: 0 0 8px 0;
+.questions h4 {
+  margin: 0 0 10px 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   color: #555;
 }
 
@@ -110,16 +243,83 @@ const categories = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
 
 .questions li {
   margin-bottom: 8px;
-  line-height: 1.5;
-  color: #666;
-}
-
-.tools p {
-  margin: 0;
-  font-size: 15px;
   line-height: 1.6;
   color: #666;
+  font-size: 14px;
+}
+
+/* Column 3: Staff Content */
+.staff-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 3px solid #ff9800;
+}
+
+.coaching-comments h4 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff9800;
+}
+
+.coaching-comments ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.coaching-comments li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  color: #555;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.activities {
+  margin-top: 12px;
+}
+
+.activities h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #555;
+}
+
+.activities-text {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #666;
   font-style: italic;
+}
+
+.activity-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.activity-button {
+  display: inline-block;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.activity-button:hover {
+  background: currentColor;
+  color: white !important;
+  transform: translateX(4px);
 }
 
 .no-content {
@@ -127,33 +327,60 @@ const categories = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
   text-align: center;
   color: #999;
   font-style: italic;
+  grid-column: 1 / -1;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .row-content {
+    grid-template-columns: 120px 1fr;
+    gap: 16px;
+  }
+  
+  .staff-content {
+    grid-column: 1 / -1;
+    margin-top: 12px;
+  }
 }
 
 @media (max-width: 768px) {
   .coaching-content {
     padding: 15px;
-    gap: 20px;
   }
   
-  .category-section {
-    padding: 16px;
+  .row-content {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
   
-  .category-section h3 {
-    font-size: 20px;
+  .score-card {
+    padding: 20px;
+    min-height: auto;
+  }
+  
+  .score-number {
+    font-size: 48px;
+  }
+  
+  .staff-content {
+    margin-top: 0;
   }
 }
 
 @media print {
   .coaching-content {
-    break-inside: avoid;
     background: white;
   }
   
-  .category-section {
+  .category-row {
     break-inside: avoid;
     box-shadow: none;
     border: 1px solid #ddd;
+    margin-bottom: 20px;
+  }
+  
+  .activity-button {
+    display: none; /* Hide interactive buttons in print */
   }
 }
 </style>
