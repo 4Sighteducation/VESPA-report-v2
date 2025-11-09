@@ -44,6 +44,15 @@ const chartData = computed(() => {
   const labels = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
   const datasets = []
 
+  // Theme colors for category dots
+  const pointColors = [
+    '#ff8f00',  // Vision - Orange
+    '#86b4f0',  // Effort - Blue
+    '#72cb44',  // Systems - Green
+    '#7f31a4',  // Practice - Purple
+    '#f032e6'   // Attitude - Pink
+  ]
+
   // Cycle colors - bright and distinct
   const cycleConfigs = [
     { cycle: 1, color: 'rgba(255, 215, 0, 1)', fillColor: 'rgba(255, 215, 0, 0.2)', borderDash: [] },      // Bright Yellow
@@ -97,7 +106,7 @@ const chartData = computed(() => {
 })
 
 const chartOptions = computed(() => {
-  // Theme colors for category labels AND dots
+  // Theme colors for category labels
   const labelColors = {
     'Vision': '#ff8f00',     // Orange
     'Effort': '#86b4f0',     // Blue
@@ -105,15 +114,6 @@ const chartOptions = computed(() => {
     'Practice': '#7f31a4',   // Purple
     'Attitude': '#f032e6'    // Pink
   }
-  
-  // Point colors for each category (using theme colors)
-  const pointColors = [
-    labelColors['Vision'],
-    labelColors['Effort'],
-    labelColors['Systems'],
-    labelColors['Practice'],
-    labelColors['Attitude']
-  ]
 
   const baseOptions = {
     responsive: true,

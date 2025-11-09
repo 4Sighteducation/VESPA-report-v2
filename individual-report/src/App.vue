@@ -327,10 +327,10 @@ onMounted(() => {
    Goal: Fit entire report on 1-2 A4 pages MAX
    ============================================ */
 @media print {
-  /* Page setup */
+  /* Page setup - minimal margins */
   @page {
     size: A4 portrait;
-    margin: 8mm 6mm !important;
+    margin: 5mm !important;
   }
   
   /* Global resets */
@@ -389,8 +389,7 @@ onMounted(() => {
   }
   
   .header-top {
-    display: grid !important;
-    grid-template-columns: auto 1fr 30mm !important;
+    display: flex !important;
     gap: 3mm !important;
     align-items: center !important;
   }
@@ -429,23 +428,13 @@ onMounted(() => {
     font-size: 7pt !important;
   }
   
-  /* Radar chart - keep visible but compact */
+  /* HIDE radar chart in print */
   .header-center {
-    display: block !important;
-    max-height: 28mm !important;
-    max-width: 28mm !important;
-  }
-  
-  .header-center canvas {
-    display: block !important;
-    max-height: 28mm !important;
-    max-width: 28mm !important;
+    display: none !important;
   }
   
   .radar-chart-container {
-    display: flex !important;
-    padding: 1mm !important;
-    background: transparent !important;
+    display: none !important;
   }
   
   /* ========== CATEGORY ROWS - EXTREME COMPRESSION ========== */
@@ -474,11 +463,12 @@ onMounted(() => {
     font-weight: 700 !important;
   }
   
+  /* Keep 3-column structure: score | statement | coaching */
   .row-content {
     display: grid !important;
-    grid-template-columns: 15mm 1fr 1fr !important;
+    grid-template-columns: 18mm 1fr 1fr !important;
     padding: 2mm !important;
-    gap: 2mm !important;
+    gap: 3mm !important;
   }
   
   /* Score card - minimal */
@@ -584,9 +574,15 @@ onMounted(() => {
     border-width: 0.3pt !important;
   }
   
-  /* HIDE student response/goals textareas and staff coaching record */
+  /* SHOW student response/goals textareas, HIDE staff coaching record */
   .student-response,
-  .student-goals,
+  .student-goals {
+    display: block !important;
+    margin-bottom: 2mm !important;
+    padding: 2mm !important;
+    page-break-inside: avoid !important;
+  }
+  
   .staff-coaching-record {
     display: none !important;
   }
