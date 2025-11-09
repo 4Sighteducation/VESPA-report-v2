@@ -322,223 +322,308 @@ onMounted(() => {
   }
 }
 
+/* ============================================
+   PRINT STYLES - ULTRA AGGRESSIVE
+   Goal: Fit entire report on 1-2 A4 pages MAX
+   ============================================ */
 @media print {
-  /* ULTRA-COMPACT PRINT STYLES - FIT ON 1-2 PAGES */
-  
-  * {
-    box-sizing: border-box;
-  }
-  
-  #vespa-report-app {
-    max-width: none;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  .report-container {
-    border-radius: 0;
-    background: white;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  /* Minimal page margins */
+  /* Page setup */
   @page {
     size: A4 portrait;
-    margin: 10mm 8mm;
+    margin: 8mm 6mm !important;
   }
   
-  /* Hide ALL interactive elements */
+  /* Global resets */
+  * {
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+  }
+  
+  body,
+  html {
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Container resets */
+  #vespa-report-app,
+  .report-container {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    background: white !important;
+  }
+  
+  /* ========== HIDE ALL INTERACTIVE ELEMENTS ========== */
   button,
   .help-button,
   .expand-button,
   .save-button,
   .print-button,
-  .action-bar,
+  .view-answers-button,
+  .action-button,
   .action-buttons,
+  .action-bar,
+  .cycle-selector,
+  .cycle-button,
   .error-message,
   .success-message,
   .last-saved,
-  .cycle-selector,
-  .textarea-wrapper button,
-  .date-fields {
+  .date-fields,
+  .textarea-wrapper .expand-button,
+  input[type="date"] {
     display: none !important;
+    visibility: hidden !important;
   }
   
-  /* ULTRA-COMPACT HEADER */
+  /* ========== HEADER - ULTRA COMPACT ========== */
   .report-header {
-    padding: 6px 8px !important;
+    padding: 3mm 4mm !important;
     min-height: auto !important;
-    page-break-after: avoid;
+    max-height: 35mm !important;
+    page-break-after: avoid !important;
+    background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%) !important;
   }
   
   .header-top {
-    gap: 8px !important;
-    grid-template-columns: auto 1fr auto !important;
+    display: grid !important;
+    grid-template-columns: auto 1fr 100px !important;
+    gap: 4mm !important;
+    align-items: center !important;
+  }
+  
+  .header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 3mm !important;
   }
   
   .school-logo {
-    height: 30px !important;
-    max-height: 30px !important;
+    height: 20mm !important;
+    max-height: 20mm !important;
+    width: auto !important;
+  }
+  
+  .student-info {
+    gap: 1mm !important;
   }
   
   .student-info h1 {
-    font-size: 14pt !important;
+    font-size: 12pt !important;
     margin: 0 !important;
-    line-height: 1.2 !important;
+    line-height: 1.1 !important;
+    font-weight: 700 !important;
   }
   
   .student-details {
-    font-size: 8pt !important;
-    margin-top: 2px !important;
+    font-size: 7pt !important;
+    margin-top: 1mm !important;
+    gap: 2mm !important;
   }
   
-  /* VERY COMPACT RADAR CHART */
-  .header-center {
-    max-height: 120px !important;
-    max-width: 120px !important;
-  }
-  
-  .header-center canvas {
-    max-height: 120px !important;
-    max-width: 120px !important;
-  }
-  
-  /* ULTRA-COMPACT CATEGORY ROWS */
-  .coaching-content {
-    padding: 4px !important;
-    gap: 4px !important;
-  }
-  
-  .category-row {
-    margin-bottom: 4px !important;
-    padding: 0 !important;
-    page-break-inside: avoid;
-    box-shadow: none !important;
-    border: 0.5px solid #ccc !important;
-  }
-  
-  .category-header {
-    padding: 4px 8px !important;
-  }
-  
-  .category-header h3 {
-    font-size: 10pt !important;
-    margin: 0 !important;
-    letter-spacing: 0 !important;
-  }
-  
-  .row-content {
-    padding: 6px !important;
-    gap: 6px !important;
-    grid-template-columns: 60px 1fr !important;
-  }
-  
-  .score-card {
-    padding: 8px 6px !important;
-    min-height: auto !important;
-  }
-  
-  .score-number {
-    font-size: 24pt !important;
-  }
-  
-  .score-label {
+  .student-details span {
+    padding: 1mm 2mm !important;
     font-size: 7pt !important;
   }
   
-  /* Hide staff content in print to save space */
-  .staff-content {
-    display: none !important;
+  /* Radar chart - very compact */
+  .header-center {
+    max-height: 25mm !important;
+    max-width: 25mm !important;
   }
   
+  .header-center canvas {
+    max-height: 25mm !important;
+    max-width: 25mm !important;
+  }
+  
+  /* ========== CATEGORY ROWS - EXTREME COMPRESSION ========== */
+  .coaching-content {
+    padding: 1mm !important;
+    gap: 1mm !important;
+  }
+  
+  .category-row {
+    margin-bottom: 1mm !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 0.3pt solid #999 !important;
+    border-left-width: 2pt !important;
+  }
+  
+  .category-header {
+    padding: 1mm 2mm !important;
+  }
+  
+  .category-header h3 {
+    font-size: 9pt !important;
+    margin: 0 !important;
+    letter-spacing: 0 !important;
+    font-weight: 700 !important;
+  }
+  
+  .row-content {
+    display: grid !important;
+    grid-template-columns: 15mm 1fr !important;
+    padding: 2mm !important;
+    gap: 2mm !important;
+  }
+  
+  /* Score card - minimal */
+  .score-card {
+    padding: 2mm 1mm !important;
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .score-number {
+    font-size: 18pt !important;
+    line-height: 1 !important;
+    font-weight: 900 !important;
+  }
+  
+  .score-label {
+    font-size: 6pt !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Student content - very compact */
   .student-content {
-    font-size: 8pt !important;
-    line-height: 1.3 !important;
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
   }
   
   .statement p {
-    margin: 0 !important;
-    font-size: 8pt !important;
+    margin: 0 0 1mm 0 !important;
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+  
+  .questions {
+    margin-top: 1mm !important;
   }
   
   .questions h4 {
-    font-size: 8pt !important;
-    margin: 4px 0 2px 0 !important;
+    font-size: 7pt !important;
+    margin: 0 0 0.5mm 0 !important;
+    font-weight: 700 !important;
   }
   
   .questions ul {
     margin: 0 !important;
-    padding-left: 12px !important;
+    padding-left: 3mm !important;
   }
   
   .questions li {
-    font-size: 7pt !important;
-    margin-bottom: 2px !important;
-    line-height: 1.2 !important;
+    font-size: 6pt !important;
+    margin-bottom: 0.5mm !important;
+    line-height: 1.1 !important;
   }
   
-  /* ULTRA-COMPACT TEXT SECTIONS */
+  /* HIDE staff content completely */
+  .staff-content,
+  .activities,
+  .coaching-comments,
+  .activity-buttons,
+  .activity-button,
+  .staff-coaching-record {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  /* ========== TEXT SECTIONS - MINIMAL ========== */
   .student-response,
   .student-goals {
-    margin-bottom: 6px !important;
-    padding: 6px !important;
-    page-break-inside: avoid;
+    margin-bottom: 2mm !important;
+    padding: 2mm !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+  
+  .section-header {
+    margin-bottom: 1mm !important;
   }
   
   .section-header h3 {
-    font-size: 10pt !important;
-    margin: 0 0 4px 0 !important;
+    font-size: 9pt !important;
+    margin: 0 !important;
+    font-weight: 700 !important;
   }
   
+  /* Textareas as static text */
+  .response-textarea,
+  .goal-textarea,
   textarea {
-    border: 0.5px solid #ccc !important;
-    padding: 4px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
-    font-size: 7pt !important;
-    line-height: 1.2 !important;
+    border: 0.3pt solid #ccc !important;
+    padding: 1mm !important;
+    min-height: 8mm !important;
+    max-height: 12mm !important;
+    height: auto !important;
+    font-size: 6pt !important;
+    line-height: 1.1 !important;
     overflow: hidden !important;
+    resize: none !important;
+    background: white !important;
   }
   
-  /* Hide staff coaching completely */
-  .staff-coaching-record {
-    display: none !important;
+  .textarea-wrapper {
+    position: static !important;
   }
   
-  /* Global font optimizations */
-  body {
-    font-size: 8pt !important;
-    line-height: 1.2 !important;
-  }
-  
+  /* ========== TYPOGRAPHY ========== */
   h1 {
-    font-size: 14pt !important;
+    font-size: 12pt !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
   }
   
   h2 {
-    font-size: 12pt !important;
+    font-size: 10pt !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
   }
   
   h3 {
-    font-size: 10pt !important;
+    font-size: 9pt !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
   }
   
   h4 {
-    font-size: 9pt !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    margin: 0 !important;
   }
   
-  /* Prevent page breaks in bad places */
+  p,
+  li,
+  span {
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* ========== PREVENT PAGE BREAKS ========== */
   .report-header,
   .category-row,
   .student-response,
   .student-goals {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   
-  /* Force content to fit */
-  * {
-    max-width: 100% !important;
+  /* ========== FORCE MINIMAL SPACING ========== */
+  div,
+  section,
+  article {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 }
 </style>

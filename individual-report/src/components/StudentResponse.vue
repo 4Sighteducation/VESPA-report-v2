@@ -517,15 +517,40 @@ const saveResponse = async () => {
 }
 
 @media print {
+  .student-response {
+    padding: 2mm !important;
+    margin-bottom: 2mm !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .section-header h3 {
+    font-size: 9pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
   .help-button,
+  .action-button,
   .action-bar,
   .error-message,
-  .success-message {
-    display: none;
+  .success-message,
+  .expand-button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  .textarea-wrapper {
+    position: static !important;
   }
   
   .response-textarea {
-    border: 1px solid #ddd;
+    border: 0.3pt solid #ccc !important;
+    padding: 1mm !important;
+    min-height: 8mm !important;
+    max-height: 12mm !important;
+    font-size: 6pt !important;
+    line-height: 1.1 !important;
+    overflow: hidden !important;
   }
 }
 </style>

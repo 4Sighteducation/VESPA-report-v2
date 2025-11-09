@@ -365,18 +365,81 @@ const parseActivities = (toolsStr) => {
 
 @media print {
   .coaching-content {
-    background: white;
+    background: white !important;
+    padding: 1mm !important;
+    gap: 1mm !important;
   }
   
   .category-row {
-    break-inside: avoid;
-    box-shadow: none;
-    border: 1px solid #ddd;
-    margin-bottom: 20px;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    box-shadow: none !important;
+    border: 0.3pt solid #999 !important;
+    margin-bottom: 1mm !important;
+    padding: 0 !important;
   }
   
+  .category-header {
+    padding: 1mm 2mm !important;
+  }
+  
+  .category-header h3 {
+    font-size: 9pt !important;
+    margin: 0 !important;
+  }
+  
+  .row-content {
+    display: grid !important;
+    grid-template-columns: 15mm 1fr !important;
+    padding: 2mm !important;
+    gap: 2mm !important;
+  }
+  
+  .score-card {
+    padding: 2mm 1mm !important;
+    min-height: auto !important;
+  }
+  
+  .score-number {
+    font-size: 18pt !important;
+  }
+  
+  .score-label {
+    font-size: 6pt !important;
+  }
+  
+  .student-content {
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+  
+  .statement p {
+    font-size: 7pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .questions h4 {
+    font-size: 7pt !important;
+    margin: 0 0 0.5mm 0 !important;
+  }
+  
+  .questions ul {
+    padding-left: 3mm !important;
+    margin: 0 !important;
+  }
+  
+  .questions li {
+    font-size: 6pt !important;
+    margin-bottom: 0.5mm !important;
+    line-height: 1.1 !important;
+  }
+  
+  .staff-content,
+  .activities,
+  .coaching-comments,
   .activity-button {
-    display: none; /* Hide interactive buttons in print */
+    display: none !important;
+    visibility: hidden !important;
   }
 }
 </style>

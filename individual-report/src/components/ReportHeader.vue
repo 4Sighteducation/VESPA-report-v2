@@ -1,7 +1,7 @@
 <template>
   <div class="report-header">
     <div class="header-top">
-      <!-- Left: Logo + Student Info -->
+      <!-- Left: Logo + Student Info + Action Buttons -->
       <div class="header-left">
         <img 
           v-if="student.logoUrl" 
@@ -17,6 +17,26 @@
             <span v-if="student.group">{{ student.group }}</span>
             <span v-if="student.establishment">{{ student.establishment }}</span>
           </div>
+          <!-- Action buttons below student name -->
+          <div class="action-buttons">
+            <button @click="$emit('view-answers')" class="action-button view-answers-button" title="View Questionnaire Responses">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              View Answers
+            </button>
+            <button @click="handlePrint" class="action-button print-button" title="Print Report">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <rect x="6" y="14" width="12" height="8"></rect>
+              </svg>
+              Print
+            </button>
+          </div>
         </div>
       </div>
 
@@ -25,7 +45,7 @@
         <slot name="radar-chart"></slot>
       </div>
 
-      <!-- Right: Cycle Selector + Action Buttons -->
+      <!-- Right: Cycle Selector Only -->
       <div class="header-right">
         <div class="cycle-selector">
           <button
@@ -35,26 +55,6 @@
             :class="['cycle-button', { active: cycleNum === selectedCycle }]"
           >
             {{ cycleNum }}
-          </button>
-        </div>
-        <div class="action-buttons">
-          <button @click="$emit('view-answers')" class="action-button view-answers-button" title="View Questionnaire Responses">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            View Answers
-          </button>
-          <button @click="handlePrint" class="action-button print-button" title="Print Report">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 6 2 18 2 18 9"></polyline>
-              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-              <rect x="6" y="14" width="12" height="8"></rect>
-            </svg>
-            Print
           </button>
         </div>
       </div>
@@ -224,41 +224,53 @@ const handlePrint = () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: white;
-  color: #079baa;
-  border: 2px solid white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.action-button:hover {
-  background: rgba(255, 255, 255, 0.9);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.action-button svg {
-  flex-shrink: 0;
-}
-
 @media print {
+  .report-header {
+    padding: 3mm 4mm !important;
+    min-height: auto !important;
+    max-height: 35mm !important;
+  }
+  
+  .header-top {
+    display: grid !important;
+    grid-template-columns: auto 1fr 100px !important;
+    gap: 4mm !important;
+  }
+  
+  .header-left {
+    gap: 3mm !important;
+  }
+  
+  .school-logo {
+    height: 20mm !important;
+    max-height: 20mm !important;
+  }
+  
+  .student-info h1 {
+    font-size: 12pt !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+  }
+  
+  .student-details {
+    font-size: 7pt !important;
+    margin-top: 1mm !important;
+  }
+  
+  .student-details span {
+    padding: 1mm 2mm !important;
+  }
+  
+  .header-center {
+    max-height: 25mm !important;
+    max-width: 25mm !important;
+  }
+  
   .action-buttons,
-  .cycle-selector {
-    display: none;
+  .cycle-selector,
+  .cycle-button {
+    display: none !important;
+    visibility: hidden !important;
   }
 }
 

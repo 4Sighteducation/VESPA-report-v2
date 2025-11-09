@@ -583,16 +583,46 @@ const saveGoals = async () => {
 }
 
 @media print {
-  .help-button,
-  .action-bar,
-  .error-message,
-  .success-message {
-    display: none;
+  .student-goals {
+    padding: 2mm !important;
+    margin-bottom: 2mm !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
   }
   
-  .goal-textarea,
+  .section-header h3 {
+    font-size: 9pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .help-button,
+  .action-button,
+  .action-bar,
+  .error-message,
+  .success-message,
+  .expand-button,
+  .date-fields {
+    display: none !important;
+    visibility: hidden !important;
+  }
+  
+  .textarea-wrapper {
+    position: static !important;
+    margin-bottom: 0 !important;
+  }
+  
+  .goal-textarea {
+    border: 0.3pt solid #ccc !important;
+    padding: 1mm !important;
+    min-height: 8mm !important;
+    max-height: 12mm !important;
+    font-size: 6pt !important;
+    line-height: 1.1 !important;
+    overflow: hidden !important;
+  }
+  
   .date-field input[type="date"] {
-    border: 1px solid #ddd;
+    display: none !important;
   }
 }
 </style>
