@@ -11,7 +11,7 @@ function initializeStaffOverviewV2() {
     const config = window.STAFF_OVERVIEW_V2_CONFIG || {}
     
     // Find the mount element
-    const mountElement = document.querySelector(config.elementSelector || '#view_2776')
+    const mountElement = document.querySelector(config.elementSelector || '#view_3258')
     
     if (!mountElement) {
       console.error('[Staff Overview V2] Mount element not found:', config.elementSelector)
