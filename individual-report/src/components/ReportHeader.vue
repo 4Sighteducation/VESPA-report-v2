@@ -103,9 +103,10 @@ const handleLogoError = (e) => {
 
 .header-top {
   display: grid;
-  grid-template-columns: 1fr 300px 150px;
-  gap: 30px;
+  grid-template-columns: 1fr 350px 150px;
+  gap: 40px;
   align-items: center;
+  justify-items: center;
 }
 
 /* Left: Logo + Student Info */
@@ -113,6 +114,7 @@ const handleLogoError = (e) => {
   display: flex;
   gap: 20px;
   align-items: center;
+  justify-self: start;
 }
 
 .school-logo {
@@ -163,6 +165,7 @@ const handleLogoError = (e) => {
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
+  justify-self: end;
 }
 
 .cycle-selector {

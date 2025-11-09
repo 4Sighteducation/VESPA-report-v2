@@ -44,15 +44,20 @@ const chartData = computed(() => {
   const labels = ['Vision', 'Effort', 'Systems', 'Practice', 'Attitude']
   const datasets = []
 
-  // Cycle colors and styles
+  // Cycle colors with more distinction and shading
   const cycleConfigs = [
-    { cycle: 1, color: 'rgba(7, 155, 170, 0.8)', borderDash: [] },
-    { cycle: 2, color: 'rgba(123, 216, 208, 0.8)', borderDash: [5, 5] },
-    { cycle: 3, color: 'rgba(98, 209, 210, 0.8)', borderDash: [10, 5] }
+    { cycle: 1, color: 'rgba(7, 155, 170, 1)', fillColor: 'rgba(7, 155, 170, 0.25)', borderDash: [] },
+    { cycle: 2, color: 'rgba(123, 216, 208, 1)', fillColor: 'rgba(123, 216, 208, 0.25)', borderDash: [] },
+    { cycle: 3, color: 'rgba(98, 209, 210, 1)', fillColor: 'rgba(98, 209, 210, 0.25)', borderDash: [] }
   ]
 
-  // Add dataset for each completed cycle
-  props.allScores.forEach(scoreData => {
+  // Progressive display: Show only up to selected cycle
+  // Cycle 1 button → Show only C1
+  // Cycle 2 button → Show C1 + C2
+  // Cycle 3 button → Show C1 + C2 + C3
+  const cyclesToShow = props.allScores.filter(s => s.cycle <= props.selectedCycle)
+
+  cyclesToShow.forEach(scoreData => {
     const config = cycleConfigs.find(c => c.cycle === scoreData.cycle)
     if (!config) return
 
@@ -64,19 +69,24 @@ const chartData = computed(() => {
       scoreData.attitude || 0
     ]
 
+    const isSelected = scoreData.cycle === props.selectedCycle
+
     datasets.push({
       label: `Cycle ${scoreData.cycle}`,
       data: data,
-      backgroundColor: config.color.replace('0.8', '0.2'),
+      backgroundColor: config.fillColor,
       borderColor: config.color,
-      borderWidth: scoreData.cycle === props.selectedCycle ? 3 : 2,
+      borderWidth: isSelected ? 4 : 3,
       borderDash: config.borderDash,
       pointBackgroundColor: config.color,
       pointBorderColor: '#fff',
+      pointBorderWidth: 2,
       pointHoverBackgroundColor: '#fff',
       pointHoverBorderColor: config.color,
-      pointRadius: scoreData.cycle === props.selectedCycle ? 6 : 4,
-      pointHoverRadius: 8
+      pointHoverBorderWidth: 3,
+      pointRadius: isSelected ? 6 : 5,
+      pointHoverRadius: 9,
+      fill: true
     })
   })
 
@@ -87,35 +97,53 @@ const chartData = computed(() => {
 })
 
 const chartOptions = computed(() => {
+  // Theme colors for point labels
+  const labelColors = {
+    'Vision': '#ff8f00',
+    'Effort': '#86b4f0', 
+    'Systems': '#72cb44',
+    'Practice': '#7f31a4',
+    'Attitude': '#f032e6'
+  }
+
   const baseOptions = {
     responsive: true,
     maintainAspectRatio: true,
-    aspectRatio: props.compact ? 1 : 1.2,
+    aspectRatio: props.compact ? 1 : 1.1,
     scales: {
       r: {
         min: 0,
         max: 10,
+        beginAtZero: true,
         ticks: {
           stepSize: 2,
           font: {
-            size: props.compact ? 9 : 12,
-            weight: '600'
+            size: props.compact ? 9 : 14,
+            weight: '700'
           },
-          color: props.compact ? 'rgba(255, 255, 255, 0.8)' : '#666'
+          color: props.compact ? 'rgba(255, 255, 255, 0.9)' : '#555',
+          backdropColor: props.compact ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 255, 255, 0.8)',
+          showLabelBackdrop: true
         },
         pointLabels: {
           font: {
-            size: props.compact ? 11 : 14,
-            weight: '700'
+            size: props.compact ? 11 : 16,
+            weight: '800'
           },
-          color: props.compact ? 'white' : '#333'
+          color: (context) => {
+            const label = context.label
+            return props.compact ? 'white' : labelColors[label] || '#333'
+          }
         },
         grid: {
-          color: props.compact ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+          color: props.compact ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.15)',
+          lineWidth: 2
         },
         angleLines: {
-          color: props.compact ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
-        }
+          color: props.compact ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)',
+          lineWidth: 2
+        },
+        backgroundColor: props.compact ? 'rgba(255, 255, 255, 0.05)' : 'rgba(245, 245, 245, 0.5)'
       }
     },
     plugins: {
@@ -124,26 +152,39 @@ const chartOptions = computed(() => {
         position: 'bottom',
         labels: {
           font: {
-            size: 13,
-            weight: '600'
+            size: 15,
+            weight: '700'
           },
-          color: '#333',
-          padding: 15,
+          color: '#079baa',
+          padding: 20,
           usePointStyle: true,
-          pointStyle: 'circle'
+          pointStyle: 'circle',
+          boxWidth: 12,
+          boxHeight: 12
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        padding: props.compact ? 8 : 12,
+        enabled: true,
+        backgroundColor: 'rgba(7, 155, 170, 0.95)',
+        titleColor: 'white',
+        bodyColor: 'white',
+        padding: props.compact ? 10 : 16,
         titleFont: {
-          size: props.compact ? 12 : 14,
+          size: props.compact ? 13 : 16,
           weight: 'bold'
         },
         bodyFont: {
-          size: props.compact ? 11 : 13
+          size: props.compact ? 12 : 15,
+          weight: '600'
         },
+        borderColor: 'rgba(255, 255, 255, 0.3)',
+        borderWidth: 2,
+        cornerRadius: 8,
+        displayColors: true,
         callbacks: {
+          title: function(context) {
+            return context[0].label
+          },
           label: function(context) {
             return `${context.dataset.label}: ${context.parsed.r}/10`
           }
@@ -159,11 +200,15 @@ const chartOptions = computed(() => {
 <style scoped>
 .radar-chart-container {
   width: 100%;
-  max-width: v-bind('compact ? "250px" : "600px"');
-  padding: v-bind('compact ? "10px" : "20px"');
+  max-width: v-bind('compact ? "280px" : "650px"');
+  padding: v-bind('compact ? "15px" : "30px"');
   display: flex;
   justify-content: center;
   align-items: center;
+  background: v-bind('compact ? "transparent" : "white"');
+  border-radius: v-bind('compact ? "0" : "16px"');
+  box-shadow: v-bind('compact ? "none" : "0 4px 20px rgba(0, 0, 0, 0.08)"');
+  margin: v-bind('compact ? "0" : "0 auto"');
 }
 
 .no-data {
@@ -174,22 +219,23 @@ const chartOptions = computed(() => {
 
 @media (max-width: 1024px) {
   .radar-chart-container {
-    max-width: v-bind('compact ? "200px" : "500px"');
-    padding: v-bind('compact ? "5px" : "15px"');
+    max-width: v-bind('compact ? "220px" : "550px"');
+    padding: v-bind('compact ? "10px" : "25px"');
   }
 }
 
 @media (max-width: 768px) {
   .radar-chart-container {
     max-width: 100%;
-    padding: 10px;
+    padding: v-bind('compact ? "10px" : "20px"');
   }
 }
 
 @media print {
   .radar-chart-container {
-    max-width: 400px;
+    max-width: 450px;
     break-inside: avoid;
+    box-shadow: none;
   }
 }
 </style>
