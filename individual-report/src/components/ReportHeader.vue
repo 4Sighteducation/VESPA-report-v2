@@ -25,7 +25,7 @@
         <slot name="radar-chart"></slot>
       </div>
 
-      <!-- Right: Cycle Selector -->
+      <!-- Right: Cycle Selector + Print Button -->
       <div class="header-right">
         <div class="cycle-selector">
           <button
@@ -37,6 +37,14 @@
             {{ cycleNum }}
           </button>
         </div>
+        <button @click="handlePrint" class="print-button" title="Print Report">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print
+        </button>
       </div>
     </div>
   </div>
@@ -88,6 +96,10 @@ const getLogoUrl = (url) => {
 const handleLogoError = (e) => {
   console.warn('[Report Header] Logo failed to load:', props.student.logoUrl)
   e.target.style.display = 'none'
+}
+
+const handlePrint = () => {
+  window.print()
 }
 </script>
 
@@ -198,6 +210,39 @@ const handleLogoError = (e) => {
   color: #079baa;
   border-color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.print-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: white;
+  color: #079baa;
+  border: 2px solid white;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 12px;
+}
+
+.print-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.print-button svg {
+  flex-shrink: 0;
+}
+
+@media print {
+  .print-button,
+  .cycle-selector {
+    display: none;
+  }
 }
 
 @media (max-width: 768px) {

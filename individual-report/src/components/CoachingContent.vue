@@ -64,7 +64,7 @@
                 <a 
                   v-for="(activity, aIndex) in parseActivities(content[category.name].suggested_tools)" 
                   :key="aIndex"
-                  :href="`https://vespaacademy.knack.com/vespa-academy#my-vespa-activities?activity=5fcd49ed0e734a001db4166f&action=start`"
+                  :href="getActivityUrl(activity, 'start')"
                   target="_blank"
                   class="activity-button"
                   :style="{ 
@@ -87,6 +87,7 @@
 <script setup>
 import { defineProps } from 'vue'
 import { vespaColors } from '../data/vespaColors.js'
+import { getActivityUrl } from '../data/activityLinks.js'
 
 const props = defineProps({
   scores: {

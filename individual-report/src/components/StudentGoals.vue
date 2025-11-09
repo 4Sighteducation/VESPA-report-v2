@@ -59,13 +59,37 @@
       </div>
     </div>
 
-    <textarea
+    <div class="textarea-wrapper">
+      <textarea
+        v-model="goalText"
+        class="goal-textarea"
+        placeholder="Describe your study goals for this cycle..."
+        rows="6"
+        :disabled="saving"
+        @focus="showFocusModal = true"
+      ></textarea>
+      <button 
+        class="expand-button" 
+        @click="showFocusModal = true"
+        title="Expand to full screen"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+    </div>
+
+    <TextareaFocusModal
       v-model="goalText"
-      class="goal-textarea"
+      :is-open="showFocusModal"
+      title="🎯 Your Study Goals"
       placeholder="Describe your study goals for this cycle..."
-      rows="6"
-      :disabled="saving"
-    ></textarea>
+      @close="showFocusModal = false"
+      @save="handleModalSave"
+    />
 
     <div class="date-fields">
       <div class="date-field">
@@ -102,6 +126,8 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { stripHtml } from '../utils/textUtils.js'
+import TextareaFocusModal from './TextareaFocusModal.vue'
 
 const props = defineProps({
   cycle: {
@@ -116,15 +142,18 @@ const props = defineProps({
 
 const emit = defineEmits(['save'])
 
-const goalText = ref(props.existing?.goal_text || '')
+// Strip HTML from initial value
+const cleanInitialGoal = stripHtml(props.existing?.goal_text || '')
+const goalText = ref(cleanInitialGoal)
 const goalSetDate = ref(props.existing?.goal_set_date ? props.existing.goal_set_date.split('T')[0] : '')
 const goalDueDate = ref(props.existing?.goal_due_date ? props.existing.goal_due_date.split('T')[0] : '')
 
-const originalGoalText = ref(props.existing?.goal_text || '')
+const originalGoalText = ref(cleanInitialGoal)
 const originalSetDate = ref(goalSetDate.value)
 const originalDueDate = ref(goalDueDate.value)
 
 const showHelp = ref(false)
+const showFocusModal = ref(false)
 const saving = ref(false)
 const error = ref(null)
 const success = ref(false)
@@ -141,7 +170,8 @@ const hasChanges = computed(() => {
 // Watch for external updates
 watch(() => props.existing, (newVal) => {
   if (newVal) {
-    goalText.value = newVal.goal_text || ''
+    const cleanGoal = stripHtml(newVal.goal_text || '')
+    goalText.value = cleanGoal
     goalSetDate.value = newVal.goal_set_date ? newVal.goal_set_date.split('T')[0] : ''
     goalDueDate.value = newVal.goal_due_date ? newVal.goal_due_date.split('T')[0] : ''
     
@@ -150,6 +180,13 @@ watch(() => props.existing, (newVal) => {
     originalDueDate.value = goalDueDate.value
   }
 }, { deep: true })
+
+const handleModalSave = () => {
+  // Auto-save when closing the modal
+  if (hasChanges.value) {
+    saveGoals()
+  }
+}
 
 const saveGoals = async () => {
   if (!hasChanges.value) return
@@ -377,26 +414,60 @@ const saveGoals = async () => {
   color: #2e7d32;
 }
 
+.textarea-wrapper {
+  position: relative;
+  margin-bottom: 16px;
+}
+
 .goal-textarea {
   width: 100%;
   padding: 16px;
+  padding-right: 50px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
   resize: vertical;
-  transition: border-color 0.3s;
-  margin-bottom: 16px;
+  transition: all 0.3s;
+  cursor: text;
 }
 
 .goal-textarea:focus {
   outline: none;
   border-color: #079baa;
+  box-shadow: 0 0 0 3px rgba(7, 155, 170, 0.1);
 }
 
 .goal-textarea:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+.expand-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #079baa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.expand-button:hover {
+  background: #067a87;
+  transform: scale(1.1);
+}
+
+.expand-button:active {
+  transform: scale(0.95);
 }
 
 .date-fields {

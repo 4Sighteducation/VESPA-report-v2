@@ -180,18 +180,26 @@ const handleSaveResponse = async (data) => {
   try {
     console.log('[VESPA Report] Saving student response:', data)
     
-    // TODO: Implement save to Supabase + Knack
-    // For now, just update local state
-    if (reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
+    // Save to Supabase + Knack via API
+    const result = await reportAPI.saveStudentResponse(
+      user.value.email,
+      data.cycle,
+      data.responseText
+    )
+    
+    // Update local state on success
+    if (result.success && reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
       if (!reportData.value.studentProfile[data.cycle].response) {
         reportData.value.studentProfile[data.cycle].response = {}
       }
       reportData.value.studentProfile[data.cycle].response.response_text = data.responseText
-      reportData.value.studentProfile[data.cycle].response.submitted_at = new Date().toISOString()
+      reportData.value.studentProfile[data.cycle].response.submitted_at = result.submittedAt || new Date().toISOString()
     }
     
-    // In production, call API:
-    // await reportAPI.saveStudentResponse(user.value.email, data.cycle, data.responseText, recordId)
+    // Log dual-write status
+    if (!result.knackWritten) {
+      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    }
     
   } catch (err) {
     console.error('[VESPA Report] Error saving response:', err)
@@ -203,9 +211,19 @@ const handleSaveGoals = async (data) => {
   try {
     console.log('[VESPA Report] Saving student goals:', data)
     
-    // TODO: Implement save to Supabase + Knack
-    // For now, just update local state
-    if (reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
+    // Save to Supabase + Knack via API
+    const result = await reportAPI.saveStudentGoals(
+      user.value.email,
+      data.cycle,
+      {
+        goalText: data.goalText,
+        goalSetDate: data.goalSetDate,
+        goalDueDate: data.goalDueDate
+      }
+    )
+    
+    // Update local state on success
+    if (result.success && reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
       if (!reportData.value.studentProfile[data.cycle].goals) {
         reportData.value.studentProfile[data.cycle].goals = {}
       }
@@ -214,8 +232,10 @@ const handleSaveGoals = async (data) => {
       reportData.value.studentProfile[data.cycle].goals.goal_due_date = data.goalDueDate
     }
     
-    // In production, call API:
-    // await reportAPI.saveStudentGoals(user.value.email, data.cycle, data, recordId)
+    // Log dual-write status
+    if (!result.knackWritten) {
+      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    }
     
   } catch (err) {
     console.error('[VESPA Report] Error saving goals:', err)
@@ -227,9 +247,19 @@ const handleSaveCoaching = async (data) => {
   try {
     console.log('[VESPA Report] Saving staff coaching:', data)
     
-    // TODO: Implement save to Supabase + Knack
-    // For now, just update local state
-    if (reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
+    // Save to Supabase + Knack via API
+    const result = await reportAPI.saveStaffCoaching(
+      user.value.email,
+      user.value.email, // Staff email (same as logged-in user if staff)
+      data.cycle,
+      {
+        coachingText: data.coachingText,
+        coachingDate: data.coachingDate
+      }
+    )
+    
+    // Update local state on success
+    if (result.success && reportData.value.studentProfile && reportData.value.studentProfile[data.cycle]) {
       if (!reportData.value.studentProfile[data.cycle].coaching) {
         reportData.value.studentProfile[data.cycle].coaching = {}
       }
@@ -237,8 +267,10 @@ const handleSaveCoaching = async (data) => {
       reportData.value.studentProfile[data.cycle].coaching.coaching_date = data.coachingDate
     }
     
-    // In production, call API:
-    // await reportAPI.saveStaffCoaching(user.value.email, data.cycle, data, recordId)
+    // Log dual-write status
+    if (!result.knackWritten) {
+      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    }
     
   } catch (err) {
     console.error('[VESPA Report] Error saving coaching notes:', err)
@@ -280,6 +312,99 @@ onMounted(() => {
   
   .report-container {
     border-radius: 0;
+    background: white;
+  }
+  
+  /* Print optimization for A4 */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  
+  /* Hide interactive elements */
+  button:not(.cycle-button),
+  .help-button,
+  .expand-button,
+  .save-button,
+  .print-button,
+  .action-bar,
+  .error-message,
+  .success-message,
+  .last-saved {
+    display: none !important;
+  }
+  
+  /* Make textareas look like static text */
+  textarea {
+    border: 1px solid #ddd;
+    padding: 8px;
+    min-height: auto !important;
+    resize: none;
+    background: white;
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+  
+  /* Optimize text sizes for print */
+  body {
+    font-size: 11pt;
+    line-height: 1.4;
+  }
+  
+  h1 {
+    font-size: 18pt;
+  }
+  
+  h2 {
+    font-size: 16pt;
+  }
+  
+  h3 {
+    font-size: 14pt;
+  }
+  
+  h4 {
+    font-size: 12pt;
+  }
+  
+  /* Ensure content fits on page */
+  .category-row {
+    page-break-inside: avoid;
+    margin-bottom: 15px;
+  }
+  
+  /* Compact spacing */
+  .coaching-content {
+    padding: 10px;
+    gap: 15px;
+  }
+  
+  .row-content {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .student-response,
+  .student-goals {
+    margin-bottom: 15px;
+    padding: 10px;
+  }
+  
+  /* Hide staff coaching notes in print */
+  .staff-coaching-record {
+    display: none;
+  }
+  
+  /* Make sure links are visible in print */
+  .activity-button {
+    border: 1px solid #ccc;
+    padding: 4px 8px;
+    font-size: 9pt;
+  }
+  
+  /* Compact radar chart */
+  .header-center {
+    max-height: 200px;
   }
 }
 </style>

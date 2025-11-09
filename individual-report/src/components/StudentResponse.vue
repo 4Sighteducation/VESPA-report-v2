@@ -66,13 +66,37 @@
       </div>
     </div>
 
-    <textarea
+    <div class="textarea-wrapper">
+      <textarea
+        v-model="responseText"
+        class="response-textarea"
+        placeholder="Write your reflection on your VESPA scores here..."
+        rows="8"
+        :disabled="saving"
+        @focus="showFocusModal = true"
+      ></textarea>
+      <button 
+        class="expand-button" 
+        @click="showFocusModal = true"
+        title="Expand to full screen"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 3 21 3 21 9"></polyline>
+          <polyline points="9 21 3 21 3 15"></polyline>
+          <line x1="21" y1="3" x2="14" y2="10"></line>
+          <line x1="3" y1="21" x2="10" y2="14"></line>
+        </svg>
+      </button>
+    </div>
+
+    <TextareaFocusModal
       v-model="responseText"
-      class="response-textarea"
+      :is-open="showFocusModal"
+      title="💡 Your Reflection"
       placeholder="Write your reflection on your VESPA scores here..."
-      rows="8"
-      :disabled="saving"
-    ></textarea>
+      @close="showFocusModal = false"
+      @save="handleModalSave"
+    />
 
     <div class="action-bar">
       <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
@@ -88,6 +112,8 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { stripHtml } from '../utils/textUtils.js'
+import TextareaFocusModal from './TextareaFocusModal.vue'
 
 const props = defineProps({
   cycle: {
@@ -102,9 +128,12 @@ const props = defineProps({
 
 const emit = defineEmits(['save'])
 
-const responseText = ref(props.existing?.response_text || '')
-const originalText = ref(props.existing?.response_text || '')
+// Strip HTML from initial value
+const cleanInitialText = stripHtml(props.existing?.response_text || '')
+const responseText = ref(cleanInitialText)
+const originalText = ref(cleanInitialText)
 const showHelp = ref(false)
+const showFocusModal = ref(false)
 const saving = ref(false)
 const error = ref(null)
 const success = ref(false)
@@ -117,13 +146,21 @@ const hasChanges = computed(() => {
 // Watch for external updates
 watch(() => props.existing, (newVal) => {
   if (newVal?.response_text !== undefined) {
-    responseText.value = newVal.response_text
-    originalText.value = newVal.response_text
+    const cleanText = stripHtml(newVal.response_text)
+    responseText.value = cleanText
+    originalText.value = cleanText
     if (newVal.submitted_at) {
       lastSaved.value = new Date(newVal.submitted_at).toLocaleString()
     }
   }
 }, { deep: true })
+
+const handleModalSave = () => {
+  // Auto-save when closing the modal
+  if (hasChanges.value) {
+    saveResponse()
+  }
+}
 
 const saveResponse = async () => {
   if (!hasChanges.value) return
@@ -348,25 +385,59 @@ const saveResponse = async () => {
   color: #666;
 }
 
+.textarea-wrapper {
+  position: relative;
+}
+
 .response-textarea {
   width: 100%;
   padding: 16px;
+  padding-right: 50px; /* Space for expand button */
   border: 2px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
   resize: vertical;
-  transition: border-color 0.3s;
+  transition: all 0.3s;
+  cursor: text;
 }
 
 .response-textarea:focus {
   outline: none;
   border-color: #079baa;
+  box-shadow: 0 0 0 3px rgba(7, 155, 170, 0.1);
 }
 
 .response-textarea:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+.expand-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #079baa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  z-index: 10;
+}
+
+.expand-button:hover {
+  background: #067a87;
+  transform: scale(1.1);
+}
+
+.expand-button:active {
+  transform: scale(0.95);
 }
 
 .action-bar {
