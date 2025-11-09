@@ -3,7 +3,7 @@ import App from './App.vue'
 import './style.css'
 
 // Initialize function called by KnackAppLoader
-window.initializeStaffOverviewV2 = function() {
+function initializeStaffOverviewV2() {
   console.log('[Staff Overview V2] Initializing...')
   
   try {
@@ -29,10 +29,18 @@ window.initializeStaffOverviewV2 = function() {
   }
 }
 
+// Expose to window for KnackAppLoader
+if (typeof window !== 'undefined') {
+  window.initializeStaffOverviewV2 = initializeStaffOverviewV2
+}
+
 // For development/standalone mode
 if (import.meta.env.DEV) {
   console.log('[Staff Overview V2] Running in development mode')
   const app = createApp(App)
   app.mount('#app')
 }
+
+// Export for IIFE build
+export { initializeStaffOverviewV2 }
 

@@ -3,7 +3,7 @@ import App from './App.vue'
 import './style.css'
 
 // Initialize function called by KnackAppLoader
-window.initializeReportV2 = function() {
+function initializeReportV2() {
   console.log('[VESPA Report V2] Initializing...')
   
   try {
@@ -29,10 +29,18 @@ window.initializeReportV2 = function() {
   }
 }
 
+// Expose to window for KnackAppLoader
+if (typeof window !== 'undefined') {
+  window.initializeReportV2 = initializeReportV2
+}
+
 // For development/standalone mode
 if (import.meta.env.DEV) {
   console.log('[VESPA Report V2] Running in development mode')
   const app = createApp(App)
   app.mount('#app')
 }
+
+// Export for IIFE build
+export { initializeReportV2 }
 
