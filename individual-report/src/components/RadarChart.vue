@@ -242,9 +242,19 @@ const chartOptions = computed(() => {
 
 @media print {
   .radar-chart-container {
-    max-width: 450px;
-    break-inside: avoid;
-    box-shadow: none;
+    display: flex !important;
+    max-width: 28mm !important;
+    max-height: 28mm !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+    padding: 1mm !important;
+    background: transparent !important;
+  }
+  
+  canvas {
+    display: block !important;
+    max-width: 28mm !important;
+    max-height: 28mm !important;
   }
 }
 </style>

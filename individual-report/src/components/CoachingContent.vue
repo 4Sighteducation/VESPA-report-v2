@@ -390,7 +390,7 @@ const parseActivities = (toolsStr) => {
   
   .row-content {
     display: grid !important;
-    grid-template-columns: 15mm 1fr !important;
+    grid-template-columns: 15mm 1fr 1fr !important;
     padding: 2mm !important;
     gap: 2mm !important;
   }
@@ -434,12 +434,52 @@ const parseActivities = (toolsStr) => {
     line-height: 1.1 !important;
   }
   
-  .staff-content,
-  .activities,
-  .coaching-comments,
-  .activity-button {
+  /* HIDE reflection questions */
+  .questions {
     display: none !important;
-    visibility: hidden !important;
+  }
+  
+  /* SHOW staff content */
+  .staff-content {
+    display: block !important;
+    background: #f8f9fa !important;
+    padding: 2mm !important;
+    border-left: 1pt solid #ff9800 !important;
+  }
+  
+  .coaching-comments,
+  .activities {
+    display: block !important;
+  }
+  
+  .coaching-comments h4,
+  .activities h4 {
+    font-size: 7pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .coaching-comments ul,
+  .activities ul {
+    margin: 0 !important;
+    padding-left: 3mm !important;
+  }
+  
+  .coaching-comments li {
+    font-size: 6pt !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  .activity-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1mm !important;
+  }
+  
+  .activity-button {
+    display: inline-block !important;
+    padding: 0.5mm 2mm !important;
+    font-size: 6pt !important;
+    border-width: 0.3pt !important;
   }
 }
 </style>

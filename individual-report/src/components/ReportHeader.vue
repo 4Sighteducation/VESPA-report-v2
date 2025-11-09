@@ -177,6 +177,37 @@ const handlePrint = () => {
   backdrop-filter: blur(10px);
 }
 
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.action-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: white;
+  color: #079baa;
+  border: 2px solid white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.action-button:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.action-button svg {
+  flex-shrink: 0;
+}
+
 /* Center: Radar Chart */
 .header-center {
   display: flex;

@@ -390,8 +390,8 @@ onMounted(() => {
   
   .header-top {
     display: grid !important;
-    grid-template-columns: auto 1fr 100px !important;
-    gap: 4mm !important;
+    grid-template-columns: auto 1fr 30mm !important;
+    gap: 3mm !important;
     align-items: center !important;
   }
   
@@ -402,8 +402,8 @@ onMounted(() => {
   }
   
   .school-logo {
-    height: 20mm !important;
-    max-height: 20mm !important;
+    height: 15mm !important;
+    max-height: 15mm !important;
     width: auto !important;
   }
   
@@ -429,15 +429,23 @@ onMounted(() => {
     font-size: 7pt !important;
   }
   
-  /* Radar chart - very compact */
+  /* Radar chart - keep visible but compact */
   .header-center {
-    max-height: 25mm !important;
-    max-width: 25mm !important;
+    display: block !important;
+    max-height: 28mm !important;
+    max-width: 28mm !important;
   }
   
   .header-center canvas {
-    max-height: 25mm !important;
-    max-width: 25mm !important;
+    display: block !important;
+    max-height: 28mm !important;
+    max-width: 28mm !important;
+  }
+  
+  .radar-chart-container {
+    display: flex !important;
+    padding: 1mm !important;
+    background: transparent !important;
   }
   
   /* ========== CATEGORY ROWS - EXTREME COMPRESSION ========== */
@@ -468,7 +476,7 @@ onMounted(() => {
   
   .row-content {
     display: grid !important;
-    grid-template-columns: 15mm 1fr !important;
+    grid-template-columns: 15mm 1fr 1fr !important;
     padding: 2mm !important;
     gap: 2mm !important;
   }
@@ -527,24 +535,60 @@ onMounted(() => {
     line-height: 1.1 !important;
   }
   
-  /* HIDE staff content completely */
-  .staff-content,
-  .activities,
-  .coaching-comments,
-  .activity-buttons,
-  .activity-button,
-  .staff-coaching-record {
+  /* HIDE reflection questions to save space */
+  .questions {
     display: none !important;
-    visibility: hidden !important;
   }
   
-  /* ========== TEXT SECTIONS - MINIMAL ========== */
-  .student-response,
-  .student-goals {
-    margin-bottom: 2mm !important;
+  /* SHOW staff content (coaching comments and activities) */
+  .staff-content {
+    display: block !important;
+    background: #f8f9fa !important;
     padding: 2mm !important;
-    page-break-inside: avoid !important;
-    box-shadow: none !important;
+    border-left: 1pt solid #ff9800 !important;
+  }
+  
+  .coaching-comments,
+  .activities {
+    display: block !important;
+  }
+  
+  .coaching-comments h4,
+  .activities h4 {
+    font-size: 7pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .coaching-comments ul,
+  .activities ul {
+    margin: 0 !important;
+    padding-left: 3mm !important;
+  }
+  
+  .coaching-comments li {
+    font-size: 6pt !important;
+    line-height: 1.1 !important;
+    margin-bottom: 0.5mm !important;
+  }
+  
+  .activity-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1mm !important;
+  }
+  
+  .activity-button {
+    display: inline-block !important;
+    padding: 0.5mm 2mm !important;
+    font-size: 6pt !important;
+    border-width: 0.3pt !important;
+  }
+  
+  /* HIDE student response/goals textareas and staff coaching record */
+  .student-response,
+  .student-goals,
+  .staff-coaching-record {
+    display: none !important;
   }
   
   .section-header {
