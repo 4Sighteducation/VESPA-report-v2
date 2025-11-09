@@ -60,7 +60,6 @@
             <!-- Suggested Activities -->
             <div v-if="content[category.name].suggested_tools" class="activities">
               <h4>Suggested Activities:</h4>
-              <p class="activities-text">{{ content[category.name].suggested_tools }}</p>
               <div class="activity-buttons">
                 <a 
                   v-for="(activity, aIndex) in parseActivities(content[category.name].suggested_tools)" 
@@ -68,9 +67,13 @@
                   :href="`https://vespaacademy.knack.com/vespa-academy#my-vespa-activities?activity=5fcd49ed0e734a001db4166f&action=start`"
                   target="_blank"
                   class="activity-button"
-                  :style="{ borderColor: category.color, color: category.color }"
+                  :style="{ 
+                    background: category.color + '15', 
+                    borderColor: category.color, 
+                    color: category.color 
+                  }"
                 >
-                  📚 {{ activity }}
+                  {{ activity }}
                 </a>
               </div>
             </div>
@@ -284,42 +287,34 @@ const parseActivities = (toolsStr) => {
 }
 
 .activities h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   font-size: 16px;
   font-weight: 700;
   color: #555;
 }
 
-.activities-text {
-  margin: 0 0 12px 0;
-  font-size: 14px;
-  color: #666;
-  font-style: italic;
-}
-
 .activity-buttons {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .activity-button {
   display: inline-block;
-  padding: 10px 16px;
-  background: white;
-  border: 2px solid;
-  border-radius: 8px;
+  padding: 6px 14px;
+  border: 1.5px solid;
+  border-radius: 6px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  transition: all 0.3s;
-  text-align: center;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .activity-button:hover {
-  background: currentColor;
-  color: white !important;
-  transform: translateX(4px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  filter: brightness(0.95);
 }
 
 .no-content {

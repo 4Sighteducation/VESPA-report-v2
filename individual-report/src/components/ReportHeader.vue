@@ -1,24 +1,47 @@
 <template>
   <div class="report-header">
     <div class="header-top">
-      <img v-if="student.logoUrl" :src="student.logoUrl" alt="School logo" class="school-logo" />
-      <div class="student-info">
-        <h1>{{ student.name }}</h1>
-        <div class="student-details">
-          <span v-if="student.yearGroup">Year {{ student.yearGroup }}</span>
-          <span v-if="student.group">{{ student.group }}</span>
-          <span v-if="student.establishment">{{ student.establishment }}</span>
+      <!-- Left: Logo + Student Info -->
+      <div class="header-left">
+        <img 
+          v-if="student.logoUrl" 
+          :src="getLogoUrl(student.logoUrl)" 
+          alt="School logo" 
+          class="school-logo"
+          @error="handleLogoError"
+        />
+        <div class="student-info">
+          <h1>{{ student.name }}</h1>
+          <div class="student-details">
+            <span v-if="student.yearGroup">Year {{ student.yearGroup }}</span>
+            <span v-if="student.group">{{ student.group }}</span>
+            <span v-if="student.establishment">{{ student.establishment }}</span>
+          </div>
         </div>
       </div>
-      <div class="cycle-selector">
-        <button
-          v-for="cycleNum in availableCycles"
-          :key="cycleNum"
-          @click="$emit('cycle-changed', cycleNum)"
-          :class="['cycle-button', { active: cycleNum === selectedCycle }]"
-        >
-          {{ cycleNum }}
-        </button>
+
+      <!-- Center: Radar Chart -->
+      <div class="header-center">
+        <RadarChart 
+          v-if="allScores && allScores.length > 0"
+          :allScores="allScores" 
+          :selectedCycle="selectedCycle"
+          :compact="true"
+        />
+      </div>
+
+      <!-- Right: Cycle Selector -->
+      <div class="header-right">
+        <div class="cycle-selector">
+          <button
+            v-for="cycleNum in availableCycles"
+            :key="cycleNum"
+            @click="$emit('cycle-changed', cycleNum)"
+            :class="['cycle-button', { active: cycleNum === selectedCycle }]"
+          >
+            {{ cycleNum }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -26,6 +49,7 @@
 
 <script setup>
 import { defineProps, defineEmits } from 'vue'
+import RadarChart from './RadarChart.vue'
 
 const props = defineProps({
   student: {
@@ -39,10 +63,29 @@ const props = defineProps({
   selectedCycle: {
     type: Number,
     required: true
+  },
+  allScores: {
+    type: Array,
+    default: () => []
   }
 })
 
 const emit = defineEmits(['cycle-changed'])
+
+const getLogoUrl = (url) => {
+  if (!url) return ''
+  // If it's already a full URL, return it
+  if (url.startsWith('http')) return url
+  // If it's a Knack asset, construct proper URL
+  if (url.includes('knack.com')) return url
+  // Otherwise return as-is
+  return url
+}
+
+const handleLogoError = (e) => {
+  console.warn('[Report Header] Logo failed to load:', props.student.logoUrl)
+  e.target.style.display = 'none'
+}
 </script>
 
 <style scoped>
@@ -52,14 +95,21 @@ const emit = defineEmits(['cycle-changed'])
   color: white;
   border-radius: 12px 12px 0 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 280px;
 }
 
 .header-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 300px 150px;
   gap: 30px;
-  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Left: Logo + Student Info */
+.header-left {
+  display: flex;
+  gap: 20px;
+  align-items: center;
 }
 
 .school-logo {
@@ -69,24 +119,25 @@ const emit = defineEmits(['cycle-changed'])
   background: white;
   padding: 10px;
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .student-info {
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
 }
 
 .student-info h1 {
   margin: 0 0 8px 0;
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 700;
 }
 
 .student-details {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
-  font-size: 16px;
+  font-size: 14px;
   opacity: 0.95;
 }
 
@@ -95,6 +146,20 @@ const emit = defineEmits(['cycle-changed'])
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   backdrop-filter: blur(10px);
+}
+
+/* Center: Radar Chart */
+.header-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Right: Cycle Selector */
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
 }
 
 .cycle-selector {

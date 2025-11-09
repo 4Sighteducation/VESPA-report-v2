@@ -7,14 +7,63 @@
       </button>
     </div>
 
-    <div v-if="showHelp" class="help-text">
-      <p>Think about your VESPA scores and consider:</p>
-      <ul>
-        <li>What surprised you about your results?</li>
-        <li>Which areas are you most proud of?</li>
-        <li>What challenges are you facing in your studies?</li>
-        <li>How do these results reflect your current situation?</li>
-      </ul>
+    <!-- Enhanced Help Modal -->
+    <div v-if="showHelp" class="help-modal-overlay" @click="showHelp = false">
+      <div class="help-modal-content" @click.stop>
+        <div class="help-modal-header">
+          <h2>Writing Your VESPA Response</h2>
+          <button class="help-modal-close" @click="showHelp = false">&times;</button>
+        </div>
+        <div class="help-modal-body">
+          <div class="guide-intro">
+            <p>Your response helps your tutor/mentor understand your unique situation and provide personalized support. Be honest and specific - there are no wrong answers!</p>
+          </div>
+          
+          <h3>📊 Reflecting on Your VESPA Scores</h3>
+          <div class="guide-section">
+            <p>Consider how accurately the report reflects your current study habits:</p>
+            <ul>
+              <li><strong>Do the scores feel right?</strong> Which ones resonate most with your experience?</li>
+              <li><strong>Any surprises?</strong> Were any scores higher or lower than expected?</li>
+              <li><strong>Your strengths:</strong> What's your highest score telling you?</li>
+              <li><strong>Growth areas:</strong> What might your lowest score suggest?</li>
+            </ul>
+            
+            <div class="sentence-starters">
+              <h4>Try starting with:</h4>
+              <p class="starter">"Looking at my scores, I was surprised to see..."</p>
+              <p class="starter">"My [highest/lowest] score in [area] makes sense because..."</p>
+              <p class="starter">"I think the report is [very/somewhat/not very] accurate because..."</p>
+            </div>
+          </div>
+          
+          <h3>📚 Your Current Study Experience</h3>
+          <div class="guide-section">
+            <p>Help your tutor/mentor understand what studying is really like for you right now:</p>
+            <ul>
+              <li><strong>Daily reality:</strong> What does a typical study session look like?</li>
+              <li><strong>Challenges:</strong> What's been particularly difficult lately?</li>
+              <li><strong>Successes:</strong> What study strategies are working well?</li>
+            </ul>
+            
+            <div class="sentence-starters">
+              <h4>Express yourself with:</h4>
+              <p class="starter">"Right now, I'm finding it hard to..."</p>
+              <p class="starter">"My biggest challenge with studying is..."</p>
+              <p class="starter">"Something that's been working well for me is..."</p>
+            </div>
+          </div>
+          
+          <div class="guide-tips">
+            <h4>💡 Tips for a Great Response</h4>
+            <ul>
+              <li><strong>Be specific:</strong> Instead of "I procrastinate," try "I often leave essays until 2 days before they're due"</li>
+              <li><strong>Include context:</strong> Mention relevant factors (work commitments, health, family responsibilities)</li>
+              <li><strong>Be honest:</strong> Your tutor/mentor is here to help, not judge</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
 
     <textarea
@@ -140,27 +189,162 @@ const saveResponse = async () => {
   background: #e0e0e0;
 }
 
-.help-text {
-  background: #f8f9fa;
+/* Enhanced Help Modal Styles */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.help-modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.help-modal-header {
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.help-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  line-height: 1;
+}
+
+.help-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.help-modal-body {
+  padding: 30px;
+  color: #333;
+}
+
+.guide-intro {
+  background: #e3f2fd;
   padding: 16px;
   border-radius: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   border-left: 4px solid #079baa;
 }
 
-.help-text p {
-  margin: 0 0 8px 0;
-  font-weight: 600;
+.guide-intro p {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
   color: #555;
 }
 
-.help-text ul {
+.help-modal-body h3 {
+  color: #079baa;
+  margin: 24px 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.guide-section {
+  margin-bottom: 24px;
+}
+
+.guide-section p {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #555;
+}
+
+.guide-section ul {
   margin: 0;
   padding-left: 20px;
 }
 
-.help-text li {
-  margin-bottom: 6px;
+.guide-section li {
+  margin-bottom: 10px;
+  line-height: 1.6;
+  color: #666;
+}
+
+.sentence-starters {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.sentence-starters h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #555;
+}
+
+.starter {
+  margin: 8px 0;
+  padding: 10px 14px;
+  background: white;
+  border-left: 3px solid #079baa;
+  border-radius: 4px;
+  font-style: italic;
+  color: #666;
+  font-size: 14px;
+}
+
+.guide-tips {
+  background: #fff3e0;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.guide-tips h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff9800;
+}
+
+.guide-tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.guide-tips li {
+  margin-bottom: 10px;
+  line-height: 1.6;
   color: #666;
 }
 

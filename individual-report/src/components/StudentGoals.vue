@@ -7,14 +7,56 @@
       </button>
     </div>
 
-    <div v-if="showHelp" class="help-text">
-      <p>Set SMART goals (Specific, Measurable, Achievable, Relevant, Time-bound):</p>
-      <ul>
-        <li>Be specific about what you want to achieve</li>
-        <li>Set realistic goals you can measure</li>
-        <li>Focus on areas where your VESPA scores are lower</li>
-        <li>Set a clear deadline for completion</li>
-      </ul>
+    <!-- Enhanced Goal-Setting Modal -->
+    <div v-if="showHelp" class="help-modal-overlay" @click="showHelp = false">
+      <div class="help-modal-content" @click.stop>
+        <div class="help-modal-header">
+          <h2>Setting Effective Study Goals</h2>
+          <button class="help-modal-close" @click="showHelp = false">&times;</button>
+        </div>
+        <div class="help-modal-body">
+          <h3>Tips for Effective Study Goals</h3>
+          <ul class="goal-tips-list">
+            <li><strong>Keep them specific and achievable</strong> - Instead of "study more", try "complete 2 practice papers this week"</li>
+            <li><strong>Focus on approach goals</strong> - Set targets you're working towards, not things you're trying to avoid</li>
+            <li><strong>Make them measurable</strong> - Include numbers or specific outcomes so you know when you've achieved them</li>
+            <li><strong>Set a timeframe</strong> - Give yourself a deadline to create urgency and track progress</li>
+          </ul>
+          
+          <h3>Types of Effective Approach Goals</h3>
+          
+          <div class="goal-type">
+            <h4>🎯 Performance Goals</h4>
+            <p class="goal-example">"I want to achieve 75% or higher in my next test"</p>
+            <p class="goal-description">Focus on achieving a specific ranking or score</p>
+          </div>
+          
+          <div class="goal-type">
+            <h4>📈 Mastery Goals</h4>
+            <p class="goal-example">"I will improve my essay structure by practicing introductions daily"</p>
+            <p class="goal-description">Focus on developing specific skills</p>
+          </div>
+          
+          <div class="goal-type">
+            <h4>🏆 Personal Best Goals</h4>
+            <p class="goal-example">"I aim to beat my previous score of 68% by at least 5%"</p>
+            <p class="goal-description">Focus on improving your own previous performance</p>
+          </div>
+          
+          <div class="avoid-section">
+            <h4>❌ Avoid These Types of Goals</h4>
+            <ul>
+              <li>"I just don't want to fail" (avoidance goal)</li>
+              <li>"I hope I don't run out of time" (focuses on negative)</li>
+              <li>"As long as I pass" (lacks ambition)</li>
+            </ul>
+          </div>
+          
+          <div class="goal-prompt">
+            <p><strong>Now write your study goals focusing on what you want to achieve, not what you want to avoid!</strong></p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <textarea
@@ -177,7 +219,95 @@ const saveGoals = async () => {
   background: #e0e0e0;
 }
 
-.help-text {
+/* Enhanced Goal-Setting Modal Styles */
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.help-modal-content {
+  background: white;
+  border-radius: 16px;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.help-modal-header {
+  padding: 24px 30px;
+  background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+  color: white;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-modal-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.help-modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  font-size: 32px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  line-height: 1;
+}
+
+.help-modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.help-modal-body {
+  padding: 30px;
+  color: #333;
+}
+
+.help-modal-body h3 {
+  color: #ff9800;
+  margin: 24px 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.help-modal-body h3:first-child {
+  margin-top: 0;
+}
+
+.goal-tips-list {
+  margin: 0 0 20px 0;
+  padding-left: 20px;
+}
+
+.goal-tips-list li {
+  margin-bottom: 12px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.goal-type {
   background: #f8f9fa;
   padding: 16px;
   border-radius: 8px;
@@ -185,20 +315,66 @@ const saveGoals = async () => {
   border-left: 4px solid #079baa;
 }
 
-.help-text p {
+.goal-type h4 {
   margin: 0 0 8px 0;
-  font-weight: 600;
-  color: #555;
+  font-size: 17px;
+  font-weight: 700;
+  color: #333;
 }
 
-.help-text ul {
+.goal-example {
+  margin: 0 0 8px 0;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  font-style: italic;
+  color: #666;
+  font-size: 15px;
+}
+
+.goal-description {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.avoid-section {
+  background: #ffebee;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border-left: 4px solid #f44336;
+}
+
+.avoid-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #d32f2f;
+}
+
+.avoid-section ul {
   margin: 0;
   padding-left: 20px;
 }
 
-.help-text li {
-  margin-bottom: 6px;
+.avoid-section li {
+  margin-bottom: 8px;
   color: #666;
+}
+
+.goal-prompt {
+  background: #e8f5e9;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border-left: 4px solid #4caf50;
+}
+
+.goal-prompt p {
+  margin: 0;
+  font-size: 16px;
+  color: #2e7d32;
 }
 
 .goal-textarea {

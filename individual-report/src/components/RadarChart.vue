@@ -29,6 +29,10 @@ const props = defineProps({
   selectedCycle: {
     type: Number,
     required: true
+  },
+  compact: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -82,91 +86,96 @@ const chartData = computed(() => {
   }
 })
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: true,
-  aspectRatio: 1.2,
-  scales: {
-    r: {
-      min: 0,
-      max: 10,
-      ticks: {
-        stepSize: 2,
-        font: {
-          size: 12,
-          weight: '600'
+const chartOptions = computed(() => {
+  const baseOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: props.compact ? 1 : 1.2,
+    scales: {
+      r: {
+        min: 0,
+        max: 10,
+        ticks: {
+          stepSize: 2,
+          font: {
+            size: props.compact ? 9 : 12,
+            weight: '600'
+          },
+          color: props.compact ? 'rgba(255, 255, 255, 0.8)' : '#666'
         },
-        color: '#666'
-      },
-      pointLabels: {
-        font: {
-          size: 14,
-          weight: '700'
+        pointLabels: {
+          font: {
+            size: props.compact ? 11 : 14,
+            weight: '700'
+          },
+          color: props.compact ? 'white' : '#333'
         },
-        color: '#333'
-      },
-      grid: {
-        color: 'rgba(0, 0, 0, 0.1)'
-      },
-      angleLines: {
-        color: 'rgba(0, 0, 0, 0.1)'
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      position: 'bottom',
-      labels: {
-        font: {
-          size: 13,
-          weight: '600'
+        grid: {
+          color: props.compact ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
         },
-        color: '#333',
-        padding: 15,
-        usePointStyle: true,
-        pointStyle: 'circle'
+        angleLines: {
+          color: props.compact ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'
+        }
       }
     },
-    tooltip: {
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      padding: 12,
-      titleFont: {
-        size: 14,
-        weight: 'bold'
+    plugins: {
+      legend: {
+        display: !props.compact,
+        position: 'bottom',
+        labels: {
+          font: {
+            size: 13,
+            weight: '600'
+          },
+          color: '#333',
+          padding: 15,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
       },
-      bodyFont: {
-        size: 13
-      },
-      callbacks: {
-        label: function(context) {
-          return `${context.dataset.label}: ${context.parsed.r}/10`
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        padding: props.compact ? 8 : 12,
+        titleFont: {
+          size: props.compact ? 12 : 14,
+          weight: 'bold'
+        },
+        bodyFont: {
+          size: props.compact ? 11 : 13
+        },
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: ${context.parsed.r}/10`
+          }
         }
       }
     }
   }
-}
+  
+  return baseOptions
+})
 </script>
 
 <style scoped>
 .radar-chart-container {
   width: 100%;
-  max-width: 600px;
-  padding: 20px;
+  max-width: v-bind('compact ? "250px" : "600px"');
+  padding: v-bind('compact ? "10px" : "20px"');
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .no-data {
-  color: #999;
-  font-size: 16px;
+  color: v-bind('compact ? "rgba(255, 255, 255, 0.8)" : "#999"');
+  font-size: v-bind('compact ? "12px" : "16px"');
   text-align: center;
 }
 
 @media (max-width: 1024px) {
   .radar-chart-container {
-    max-width: 500px;
-    padding: 15px;
+    max-width: v-bind('compact ? "200px" : "500px"');
+    padding: v-bind('compact ? "5px" : "15px"');
   }
 }
 

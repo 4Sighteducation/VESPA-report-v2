@@ -9,11 +9,12 @@
     />
     
     <div v-else-if="reportData" class="report-container">
-      <!-- Header with student info and cycle selector -->
+      <!-- Header with student info, radar chart, and cycle selector -->
       <ReportHeader
         :student="reportData.student"
         :availableCycles="availableCycles"
         :selectedCycle="selectedCycle"
+        :allScores="reportData.scores"
         @cycle-changed="handleCycleChange"
       />
       
