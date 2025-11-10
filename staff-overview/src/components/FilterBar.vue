@@ -191,23 +191,22 @@ const clearFilters = () => {
 <style scoped>
 .filter-bar {
   background: white;
-  padding: 20px;
+  padding: 12px 16px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
   align-items: flex-end;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  min-width: 150px;
-  padding: 8px;
-  border-radius: 6px;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 4px;
   transition: background 0.3s, border 0.3s;
   border: 2px solid transparent;
 }
@@ -221,23 +220,24 @@ const clearFilters = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 18px;
 }
 
 .filter-group label {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #555;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .lock-button {
   background: none;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
+  padding: 2px;
+  border-radius: 3px;
   transition: background 0.2s;
   line-height: 1;
 }
@@ -248,10 +248,10 @@ const clearFilters = () => {
 
 .filter-group select,
 .search-input {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 13px;
   transition: border-color 0.3s;
   background: white;
 }
@@ -263,19 +263,20 @@ const clearFilters = () => {
 }
 
 .search-input {
-  min-width: 200px;
+  min-width: 140px;
 }
 
 .clear-button {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: #f0f0f0;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: background 0.3s;
   color: #666;
+  align-self: flex-end;
 }
 
 .clear-button:hover {

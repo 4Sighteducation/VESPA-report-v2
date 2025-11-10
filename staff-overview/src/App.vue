@@ -225,14 +225,14 @@ onMounted(() => {
 #staff-overview-app {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 12px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
 .overview-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
 }
 
 @media (max-width: 768px) {

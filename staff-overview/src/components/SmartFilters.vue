@@ -1,17 +1,26 @@
 <template>
   <div class="smart-filters-section">
-    <div class="smart-filters-header">
-      <h3>Smart Filters</h3>
-      <button @click="addFilter" class="add-filter-button">
-        + Add Filter
+    <div class="smart-filters-header" @click="toggleExpanded">
+      <div class="header-left">
+        <span class="expand-icon">{{ isExpanded ? '▼' : '▶' }}</span>
+        <h3>Smart Filters</h3>
+        <span v-if="smartFilters.length > 0" class="filter-count-badge">{{ smartFilters.length }}</span>
+      </div>
+      <button 
+        @click.stop="addFilter" 
+        class="add-filter-button"
+        :class="{ compact: !isExpanded }"
+      >
+        +
       </button>
     </div>
     
-    <div v-if="smartFilters.length === 0" class="no-filters-message">
-      <p>No smart filters applied. Click "+ Add Filter" to filter by VESPA scores.</p>
-    </div>
-    
-    <div v-else class="smart-filters-list">
+    <div v-show="isExpanded" class="smart-filters-content">
+      <div v-if="smartFilters.length === 0" class="no-filters-message">
+        <p>Click "+ Add Filter" to filter by VESPA scores (e.g., Vision ≥ 7)</p>
+      </div>
+      
+      <div v-else class="smart-filters-list">
       <div 
         v-for="(filter, index) in smartFilters" 
         :key="filter.id"
@@ -57,12 +66,16 @@
           ×
         </button>
       </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+
+// Expand/collapse state
+const isExpanded = ref(false)
 
 const props = defineProps({
   modelValue: {
@@ -79,6 +92,10 @@ const smartFilters = ref([...props.modelValue])
 // Counter for unique IDs
 let filterIdCounter = 0
 
+const toggleExpanded = () => {
+  isExpanded.value = !isExpanded.value
+}
+
 const addFilter = () => {
   smartFilters.value.push({
     id: `filter-${Date.now()}-${filterIdCounter++}`,
@@ -86,6 +103,7 @@ const addFilter = () => {
     operator: 'gte',
     value: 5
   })
+  isExpanded.value = true // Auto-expand when adding filter
   emitFilters()
 }
 
@@ -102,53 +120,87 @@ const emitFilters = () => {
 <style scoped>
 .smart-filters-section {
   background: white;
-  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  overflow: hidden;
 }
 
 .smart-filters-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: background 0.3s;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.smart-filters-header:hover {
+  background: #f0f1f2;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.expand-icon {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.3s;
 }
 
 .smart-filters-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   color: #333;
   font-weight: 700;
 }
 
+.filter-count-badge {
+  background: #079baa;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .add-filter-button {
-  padding: 10px 20px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, #079baa, #7bd8d0);
   color: white;
   border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 2px 6px rgba(7, 155, 170, 0.3);
+  box-shadow: 0 2px 4px rgba(7, 155, 170, 0.3);
+  line-height: 1;
+  min-width: 32px;
+  height: 32px;
 }
 
 .add-filter-button:hover {
   background: linear-gradient(135deg, #067a87, #62d1d2);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(7, 155, 170, 0.4);
+  transform: scale(1.05);
+  box-shadow: 0 3px 6px rgba(7, 155, 170, 0.4);
+}
+
+.smart-filters-content {
+  padding: 12px 16px;
 }
 
 .no-filters-message {
-  padding: 20px;
+  padding: 12px;
   text-align: center;
   color: #999;
+  font-size: 13px;
   font-style: italic;
-  background: #f9f9f9;
-  border-radius: 6px;
-  border: 2px dashed #e0e0e0;
 }
 
 .no-filters-message p {
@@ -158,17 +210,17 @@ const emitFilters = () => {
 .smart-filters-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .smart-filter-row {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
-  padding: 12px;
+  padding: 8px;
   background: #f8f9fa;
-  border-radius: 6px;
-  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
   transition: border-color 0.3s;
 }
 
@@ -178,10 +230,10 @@ const emitFilters = () => {
 
 .filter-select,
 .filter-input {
-  padding: 10px 12px;
+  padding: 6px 10px;
   border: 2px solid #e0e0e0;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 4px;
+  font-size: 13px;
   background: white;
   transition: border-color 0.3s;
 }
@@ -222,13 +274,13 @@ const emitFilters = () => {
 }
 
 .remove-filter-button {
-  flex: 0 0 40px;
-  height: 40px;
+  flex: 0 0 32px;
+  height: 32px;
   background: #fee;
   color: #c00;
   border: 2px solid #fcc;
-  border-radius: 6px;
-  font-size: 24px;
+  border-radius: 4px;
+  font-size: 20px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s;
@@ -241,7 +293,7 @@ const emitFilters = () => {
 .remove-filter-button:hover {
   background: #fcc;
   border-color: #faa;
-  transform: scale(1.1);
+  transform: scale(1.05);
 }
 
 @media (max-width: 768px) {

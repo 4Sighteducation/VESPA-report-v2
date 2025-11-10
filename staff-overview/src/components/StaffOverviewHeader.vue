@@ -1,17 +1,13 @@
 <template>
   <div class="staff-overview-header">
     <div class="header-content">
-      <div class="staff-info">
-        <h1>{{ staffMember.name || 'Staff Overview' }}</h1>
-        <div class="staff-details">
-          <span class="role-badge" v-for="role in displayRoles" :key="role">
-            {{ role }}
-          </span>
-        </div>
-      </div>
-      <div class="student-count">
-        <div class="count-number">{{ totalStudents }}</div>
-        <div class="count-label">Students</div>
+      <h1>Staff Overview</h1>
+      <div class="header-meta">
+        <span class="staff-name">{{ staffMember.name }}</span>
+        <span class="role-badge" v-for="role in displayRoles" :key="role">
+          {{ role }}
+        </span>
+        <span class="student-count">{{ totalStudents }} students</span>
       </div>
     </div>
   </div>
@@ -46,84 +42,75 @@ const displayRoles = computed(() => {
 <style scoped>
 .staff-overview-header {
   background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
-  padding: 30px 40px;
+  padding: 16px 24px;
   color: white;
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 30px;
-}
-
-.staff-info {
-  flex: 1;
-}
-
-.staff-info h1 {
-  margin: 0 0 12px 0;
-  font-size: 32px;
-  font-weight: 700;
-}
-
-.staff-details {
-  display: flex;
-  gap: 12px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
-.role-badge {
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+.header-content h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.header-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.staff-name {
   font-size: 14px;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 12px;
   font-weight: 600;
   backdrop-filter: blur(10px);
 }
 
 .student-count {
-  text-align: center;
-  padding: 20px 30px;
-  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.25);
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  min-width: 120px;
-}
-
-.count-number {
-  font-size: 48px;
-  font-weight: 900;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-
-.count-label {
   font-size: 14px;
-  font-weight: 600;
-  opacity: 0.9;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
 }
 
 @media (max-width: 768px) {
   .staff-overview-header {
-    padding: 20px;
+    padding: 12px 16px;
   }
   
   .header-content {
     flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
   }
   
-  .staff-info h1 {
-    font-size: 24px;
+  .header-content h1 {
+    font-size: 20px;
   }
   
-  .student-count {
+  .header-meta {
     width: 100%;
+    justify-content: space-between;
   }
 }
 </style>
