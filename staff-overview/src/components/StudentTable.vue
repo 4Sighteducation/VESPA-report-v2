@@ -200,6 +200,10 @@ const props = defineProps({
   activeFilters: {
     type: Object,
     default: () => ({})
+  },
+  smartFilters: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -242,6 +246,41 @@ const filteredStudents = computed(() => {
       s.name.toLowerCase().includes(search) ||
       (s.group && s.group.toLowerCase().includes(search))
     )
+  }
+
+  // Apply Smart Filters (VESPA score filtering)
+  if (props.smartFilters && props.smartFilters.length > 0) {
+    filtered = filtered.filter(student => {
+      // Student must pass ALL smart filter conditions (AND logic)
+      return props.smartFilters.every(filter => {
+        // Get the score for this dimension
+        const score = student.scores?.[filter.dimension]
+        
+        // If score is null/undefined, student doesn't pass this filter
+        if (score === null || score === undefined) {
+          return false
+        }
+        
+        const numericScore = parseFloat(score)
+        const filterValue = parseFloat(filter.value)
+        
+        // Apply the operator
+        switch (filter.operator) {
+          case 'gt':
+            return numericScore > filterValue
+          case 'gte':
+            return numericScore >= filterValue
+          case 'lt':
+            return numericScore < filterValue
+          case 'lte':
+            return numericScore <= filterValue
+          case 'eq':
+            return Math.abs(numericScore - filterValue) < 0.01 // Handle float precision
+          default:
+            return true
+        }
+      })
+    })
   }
 
   return filtered

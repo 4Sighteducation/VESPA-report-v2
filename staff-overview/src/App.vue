@@ -24,10 +24,14 @@
         @lock-changed="handleLockChange"
       />
       
+      <!-- Smart Filters (VESPA Score filtering) -->
+      <SmartFilters v-model="smartFilters" />
+      
       <!-- Student table -->
       <StudentTable
         :students="overviewData.students"
         :activeFilters="activeFilters"
+        :smartFilters="smartFilters"
         @view-report="handleViewReport"
       />
     </div>
@@ -48,6 +52,7 @@ import LoadingState from './components/LoadingState.vue'
 import ErrorState from './components/ErrorState.vue'
 import StaffOverviewHeader from './components/StaffOverviewHeader.vue'
 import FilterBar from './components/FilterBar.vue'
+import SmartFilters from './components/SmartFilters.vue'
 import StudentTable from './components/StudentTable.vue'
 import StudentReportModal from './components/StudentReportModal.vue'
 import { staffAPI } from './services/api.js'
@@ -78,6 +83,9 @@ const preservedFilterValues = ref({})
 // Track previous cycle to detect changes (MUST be declared before loadOverviewData uses it!)
 const previousCycle = ref(null)
 const initialLoadDone = ref(false) // Prevent unnecessary reload on FilterBar mount
+
+// Smart filters for VESPA score filtering
+const smartFilters = ref([])
 
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
