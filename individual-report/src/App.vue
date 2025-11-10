@@ -320,6 +320,12 @@ const handleSaveCoaching = async (data) => {
 // Lifecycle
 onMounted(() => {
   loadReportData()
+  
+  // Watch for hash changes (for staff viewing different students)
+  window.addEventListener('hashchange', () => {
+    console.log('[VESPA Report] Hash changed, reloading data...')
+    loadReportData()
+  })
 })
 </script>
 
