@@ -52,8 +52,20 @@
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.attitude) }">
               {{ student.scores?.attitude || '-' }}
             </td>
-            <td class="text-preview">{{ truncate(student.response, 50) }}</td>
-            <td class="text-preview">{{ truncate(student.goals, 50) }}</td>
+            <td 
+              class="text-preview clickable"
+              :class="{ 'has-content': student.hasResponse, 'no-content': !student.hasResponse }"
+              @click="openTextModal(student.name, 'Response', student.response)"
+              :title="student.hasResponse ? 'Click to view full response' : 'No response yet'">
+              {{ truncate(student.response, 50) }}
+            </td>
+            <td 
+              class="text-preview clickable"
+              :class="{ 'has-content': student.hasGoals, 'no-content': !student.hasGoals }"
+              @click="openTextModal(student.name, 'Action Plan', student.goals)"
+              :title="student.hasGoals ? 'Click to view full action plan' : 'No action plan yet'">
+              {{ truncate(student.goals, 50) }}
+            </td>
             <td>
               <button @click="viewReport(student)" class="report-button">
                 REPORT
@@ -67,12 +79,21 @@
     <div v-if="filteredStudents.length === 0" class="no-results">
       <p>No students match the current filters.</p>
     </div>
+    
+    <!-- Text View Modal -->
+    <TextViewModal
+      :isOpen="modalOpen"
+      :title="modalTitle"
+      :text="modalText"
+      @close="closeTextModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { getScoreColor } from '../data/vespaColors.js'
+import TextViewModal from './TextViewModal.vue'
 
 const props = defineProps({
   students: {
@@ -89,6 +110,9 @@ const emit = defineEmits(['view-report'])
 
 const sortField = ref('name')
 const sortDirection = ref('asc')
+const modalOpen = ref(false)
+const modalTitle = ref('')
+const modalText = ref('')
 
 const filteredStudents = computed(() => {
   let filtered = [...props.students]
@@ -170,6 +194,21 @@ const truncate = (text, length) => {
 
 const viewReport = (student) => {
   emit('view-report', student)
+}
+
+const openTextModal = (studentName, type, text) => {
+  if (!text || text.trim() === '' || text === '-') {
+    return // Don't open modal for empty content
+  }
+  modalTitle.value = `${studentName} - ${type}`
+  modalText.value = text
+  modalOpen.value = true
+}
+
+const closeTextModal = () => {
+  modalOpen.value = false
+  modalTitle.value = ''
+  modalText.value = ''
 }
 </script>
 
@@ -283,7 +322,34 @@ const viewReport = (student) => {
 .text-preview {
   max-width: 200px;
   font-size: 13px;
-  color: #666;
+  color: #333;
+}
+
+.text-preview.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 14px 12px !important;
+}
+
+.text-preview.clickable:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.text-preview.has-content {
+  background-color: #d4edda !important;
+  color: #155724;
+  font-weight: 500;
+}
+
+.text-preview.no-content {
+  background-color: #f8d7da !important;
+  color: #721c24;
+  font-style: italic;
+}
+
+.text-preview.clickable:hover {
+  opacity: 0.85;
 }
 
 .report-button {
