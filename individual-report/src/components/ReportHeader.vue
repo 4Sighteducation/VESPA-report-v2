@@ -16,6 +16,9 @@
             <span v-if="student.yearGroup">Year {{ student.yearGroup }}</span>
             <span v-if="student.group">{{ student.group }}</span>
             <span v-if="student.establishment">{{ student.establishment }}</span>
+            <span v-if="completionDate" class="completion-date">
+              Completed: {{ formatDate(completionDate) }}
+            </span>
           </div>
           <!-- Action buttons below student name -->
           <div class="action-buttons">
@@ -63,7 +66,7 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
 
 const props = defineProps({
   student: {
@@ -112,6 +115,24 @@ const handleLogoError = (e) => {
 
 const handlePrint = () => {
   window.print()
+}
+
+// Get completion date for selected cycle
+const completionDate = computed(() => {
+  if (!props.allScores || props.allScores.length === 0) return null
+  const cycleData = props.allScores.find(s => s.cycle === props.selectedCycle)
+  return cycleData?.completion_date || null
+})
+
+// Format date nicely
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  try {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  } catch (e) {
+    return dateStr
+  }
 }
 </script>
 
@@ -175,6 +196,11 @@ const handlePrint = () => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   backdrop-filter: blur(10px);
+}
+
+.completion-date {
+  background: rgba(255, 255, 255, 0.3) !important;
+  font-weight: 600;
 }
 
 .action-buttons {

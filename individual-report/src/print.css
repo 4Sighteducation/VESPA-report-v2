@@ -4,14 +4,16 @@
    ============================================ */
 
 @media print {
-  /* Page setup */
+  /* Page setup - MINIMAL margins */
   @page {
     size: A4 portrait;
-    margin: 5mm !important;
+    margin: 3mm 5mm 5mm 5mm !important; /* top, right, bottom, left */
   }
   
   * {
     box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   body, html {
@@ -19,6 +21,12 @@
     padding: 0 !important;
     font-size: 7pt !important;
     line-height: 1.2 !important;
+  }
+  
+  #vespa-report-app,
+  .report-container {
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
   /* Hide ALL buttons and interactive elements */
@@ -45,33 +53,46 @@
     display: none !important;
   }
   
-  /* Compact header */
+  /* Compact header - NO TOP MARGIN */
   .report-header {
-    padding: 2mm !important;
+    padding: 1mm 2mm !important;
     min-height: auto !important;
-    max-height: 18mm !important;
+    max-height: 16mm !important;
+    margin-top: 0 !important;
   }
   
   .header-top {
     display: flex !important;
     gap: 2mm !important;
+    align-items: center !important;
   }
   
   .school-logo {
-    height: 12mm !important;
+    height: 10mm !important;
   }
   
   .student-info h1 {
-    font-size: 11pt !important;
+    font-size: 10pt !important;
     margin: 0 !important;
+    line-height: 1 !important;
   }
   
   .student-details {
     font-size: 6pt !important;
+    margin-top: 0.5mm !important;
   }
   
   .student-details span {
     padding: 0.5mm 1mm !important;
+  }
+  
+  /* Show completion date */
+  .completion-date {
+    display: inline-block !important;
+    font-size: 6pt !important;
+    padding: 0.5mm 1mm !important;
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-radius: 3px !important;
   }
   
   /* CRITICAL: FORCE 3-COLUMN GRID */
