@@ -31,6 +31,6 @@ export const getScoreColor = (score) => {
   if (numScore >= 7) return '#bbf7d0'  // 7-8: Light green
   if (numScore >= 5) return '#fed7aa'  // 5-6: Light orange
   if (numScore >= 3) return '#fee2e2'  // 3-4: Light red
-  return '#ff8787'                     // 1-2: Soft red
+  return '#ffb5bb'                     // 1-2: Subtle pink-red
 }
 
