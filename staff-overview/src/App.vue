@@ -77,6 +77,7 @@ const preservedFilterValues = ref({})
 
 // Track previous cycle to detect changes (MUST be declared before loadOverviewData uses it!)
 const previousCycle = ref(null)
+const initialLoadDone = ref(false) // Prevent unnecessary reload on FilterBar mount
 
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
@@ -108,6 +109,7 @@ const loadOverviewData = async (cycleFilter = null) => {
     
     overviewData.value = data
     console.log('[Staff Overview] Data loaded successfully:', data)
+    initialLoadDone.value = true // Mark initial load as complete
     
   } catch (err) {
     console.error('[Staff Overview] Error loading data:', err)
@@ -145,10 +147,15 @@ const handleFilterChange = (filters) => {
   const cycleFilter = filters.cycle && filters.cycle !== '' ? parseInt(filters.cycle) : null
   const cycleChanged = cycleFilter !== previousCycle.value
   
-  if (cycleChanged) {
+  // Skip reload if this is the initial filter emit (FilterBar mounting)
+  if (cycleChanged && initialLoadDone.value) {
     console.log('[Staff Overview] Cycle filter changed, re-fetching data for cycle:', cycleFilter)
     previousCycle.value = cycleFilter
     loadOverviewData(cycleFilter)
+  } else if (cycleChanged && !initialLoadDone.value) {
+    // First filter emit - just sync the state, don't reload
+    console.log('[Staff Overview] Initial filter sync, skipping reload')
+    previousCycle.value = cycleFilter
   } else {
     console.log('[Staff Overview] Filter changed (non-cycle), updating local state only')
     // Just update activeFilters - no backend reload needed for group/year/status/search

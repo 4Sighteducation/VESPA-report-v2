@@ -16,6 +16,38 @@
       </div>
     </div>
 
+    <!-- Pagination Controls - Top -->
+    <div v-if="filteredStudents.length > 0" class="pagination-controls pagination-top">
+      <button 
+        @click="goToPage(currentPage - 1)" 
+        :disabled="currentPage === 1"
+        class="pagination-button"
+      >
+        Previous
+      </button>
+      
+      <div class="page-numbers">
+        <template v-for="page in visiblePages" :key="page">
+          <button
+            v-if="page !== '...'"
+            @click="goToPage(page)"
+            :class="['page-button', { active: page === currentPage }]"
+          >
+            {{ page }}
+          </button>
+          <span v-else class="page-ellipsis">...</span>
+        </template>
+      </div>
+      
+      <button 
+        @click="goToPage(currentPage + 1)" 
+        :disabled="currentPage === totalPages"
+        class="pagination-button"
+      >
+        Next
+      </button>
+    </div>
+
     <div class="table-wrapper">
       <table class="student-table">
         <thead>
@@ -594,6 +626,12 @@ const closeTextModal = () => {
   gap: 12px;
   border-top: 2px solid #f0f0f0;
   flex-wrap: wrap;
+}
+
+/* Top pagination has border on bottom instead */
+.pagination-top {
+  border-top: none;
+  border-bottom: 2px solid #f0f0f0;
 }
 
 .pagination-button {
