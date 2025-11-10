@@ -70,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import LoadingState from './components/LoadingState.vue'
 import ErrorState from './components/ErrorState.vue'
 import ReportHeader from './components/ReportHeader.vue'
@@ -317,15 +317,24 @@ const handleSaveCoaching = async (data) => {
   }
 }
 
+// Hash change handler (needs to be stored for cleanup)
+const handleHashChange = () => {
+  console.log('[VESPA Report] Hash changed, reloading data...')
+  loadReportData()
+}
+
 // Lifecycle
 onMounted(() => {
   loadReportData()
   
   // Watch for hash changes (for staff viewing different students)
-  window.addEventListener('hashchange', () => {
-    console.log('[VESPA Report] Hash changed, reloading data...')
-    loadReportData()
-  })
+  window.addEventListener('hashchange', handleHashChange)
+})
+
+onBeforeUnmount(() => {
+  // CRITICAL: Remove hash listener to prevent memory leaks and conflicts
+  window.removeEventListener('hashchange', handleHashChange)
+  console.log('[VESPA Report] Cleanup: Removed hashchange listener')
 })
 </script>
 
