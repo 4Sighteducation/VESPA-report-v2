@@ -2,7 +2,18 @@
   <div class="student-table-container">
     <div class="table-header">
       <h3>Student Overview</h3>
-      <p class="student-count">Showing {{ filteredStudents.length }} of {{ students.length }} students</p>
+      <div class="header-controls">
+        <p class="student-count">{{ paginationInfo }}</p>
+        <div class="page-size-selector">
+          <label for="page-size">Show:</label>
+          <select id="page-size" v-model="pageSize" @change="handlePageSizeChange">
+            <option :value="10">10</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+            <option :value="500">500</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="table-wrapper">
@@ -48,7 +59,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="student in sortedStudents" :key="student.id">
+          <tr v-for="student in paginatedStudents" :key="student.id">
             <td class="student-name">{{ student.name }}</td>
             <td>{{ student.group || '-' }}</td>
             <td class="status-cell">
@@ -98,6 +109,38 @@
       </table>
     </div>
 
+    <!-- Pagination Controls -->
+    <div v-if="filteredStudents.length > 0" class="pagination-controls">
+      <button 
+        @click="goToPage(currentPage - 1)" 
+        :disabled="currentPage === 1"
+        class="pagination-button"
+      >
+        Previous
+      </button>
+      
+      <div class="page-numbers">
+        <template v-for="page in visiblePages" :key="page">
+          <button
+            v-if="page !== '...'"
+            @click="goToPage(page)"
+            :class="['page-button', { active: page === currentPage }]"
+          >
+            {{ page }}
+          </button>
+          <span v-else class="page-ellipsis">...</span>
+        </template>
+      </div>
+      
+      <button 
+        @click="goToPage(currentPage + 1)" 
+        :disabled="currentPage === totalPages"
+        class="pagination-button"
+      >
+        Next
+      </button>
+    </div>
+
     <div v-if="filteredStudents.length === 0" class="no-results">
       <p>No students match the current filters.</p>
     </div>
@@ -113,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { getScoreColor } from '../data/vespaColors.js'
 import TextViewModal from './TextViewModal.vue'
 
@@ -135,6 +178,10 @@ const sortDirection = ref('asc')
 const modalOpen = ref(false)
 const modalTitle = ref('')
 const modalText = ref('')
+
+// Pagination state
+const currentPage = ref(1)
+const pageSize = ref(50)
 
 const filteredStudents = computed(() => {
   let filtered = [...props.students]
@@ -210,6 +257,87 @@ const sortedStudents = computed(() => {
   return sorted
 })
 
+// Pagination computed properties
+const totalPages = computed(() => {
+  return Math.ceil(filteredStudents.value.length / pageSize.value)
+})
+
+const paginatedStudents = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return sortedStudents.value.slice(start, end)
+})
+
+const paginationInfo = computed(() => {
+  const total = filteredStudents.value.length
+  if (total === 0) return 'No students'
+  
+  const start = (currentPage.value - 1) * pageSize.value + 1
+  const end = Math.min(currentPage.value * pageSize.value, total)
+  return `Showing ${start}-${end} of ${total} students`
+})
+
+const visiblePages = computed(() => {
+  const total = totalPages.value
+  const current = currentPage.value
+  const pages = []
+  
+  if (total <= 7) {
+    // Show all pages if 7 or fewer
+    for (let i = 1; i <= total; i++) {
+      pages.push(i)
+    }
+  } else {
+    // Show first page
+    pages.push(1)
+    
+    // Add ellipsis if current page is far from start
+    if (current > 3) {
+      pages.push('...')
+    }
+    
+    // Add pages around current
+    const start = Math.max(2, current - 1)
+    const end = Math.min(total - 1, current + 1)
+    
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+    
+    // Add ellipsis if current page is far from end
+    if (current < total - 2) {
+      pages.push('...')
+    }
+    
+    // Add last page
+    if (total > 1) {
+      pages.push(total)
+    }
+  }
+  
+  return pages
+})
+
+// Reset to page 1 when filters change
+watch(() => [props.activeFilters, filteredStudents.value.length], () => {
+  currentPage.value = 1
+})
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // Scroll to top of table
+    const container = document.querySelector('.student-table-container')
+    if (container) {
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const handlePageSizeChange = () => {
+  currentPage.value = 1 // Reset to first page when changing page size
+}
+
 const sortBy = (field) => {
   console.log('[Table] Sorting by:', field)
   if (sortField.value === field) {
@@ -265,6 +393,8 @@ const closeTextModal = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .table-header h3 {
@@ -273,10 +403,44 @@ const closeTextModal = () => {
   color: #333;
 }
 
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
 .student-count {
   margin: 0;
   font-size: 14px;
   color: #666;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-size-selector label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #555;
+}
+
+.page-size-selector select {
+  padding: 6px 10px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: #079baa;
 }
 
 .table-wrapper {
@@ -420,6 +584,77 @@ const closeTextModal = () => {
   background: #067a87;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.pagination-controls {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  border-top: 2px solid #f0f0f0;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  padding: 10px 20px;
+  background: #079baa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: #067a87;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.pagination-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.page-button {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.page-button:hover {
+  border-color: #079baa;
+  color: #079baa;
+}
+
+.page-button.active {
+  background: #079baa;
+  border-color: #079baa;
+  color: white;
+}
+
+.page-ellipsis {
+  padding: 0 8px;
+  color: #999;
+  font-size: 14px;
 }
 
 .no-results {

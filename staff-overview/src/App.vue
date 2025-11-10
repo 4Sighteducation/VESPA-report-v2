@@ -18,7 +18,10 @@
       <!-- Filter bar -->
       <FilterBar
         :filters="overviewData.filters"
+        :lockedFilters="lockedFilters"
+        :preservedValues="preservedFilterValues"
         @filter-changed="handleFilterChange"
+        @lock-changed="handleLockChange"
       />
       
       <!-- Student table -->
@@ -60,6 +63,18 @@ const reportModalOpen = ref(false)
 const selectedStudentEmail = ref(null)
 const selectedStudentName = ref(null)
 
+// Filter lock state
+const lockedFilters = ref({
+  cycle: false,
+  group: false,
+  year: false,
+  status: false,
+  search: false
+})
+
+// Preserved filter values (for locked filters)
+const preservedFilterValues = ref({})
+
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
   loading.value = true
@@ -100,10 +115,58 @@ const loadOverviewData = async (cycleFilter = null) => {
 const handleFilterChange = (filters) => {
   activeFilters.value = filters
   
+  // Preserve locked filter values
+  if (lockedFilters.value.group && filters.group) {
+    preservedFilterValues.value.group = filters.group
+  }
+  if (lockedFilters.value.year && filters.year) {
+    preservedFilterValues.value.year = filters.year
+  }
+  if (lockedFilters.value.status && filters.status) {
+    preservedFilterValues.value.status = filters.status
+  }
+  if (lockedFilters.value.search && filters.search) {
+    preservedFilterValues.value.search = filters.search
+  }
+  
   // If cycle filter changed, re-fetch data from backend
+  // But preserve locked filter values when re-fetching
   const cycleFilter = filters.cycle && filters.cycle !== '' ? parseInt(filters.cycle) : null
   console.log('[Staff Overview] Cycle filter changed, re-fetching data for cycle:', cycleFilter)
+  console.log('[Staff Overview] Preserved locked values:', preservedFilterValues.value)
   loadOverviewData(cycleFilter)
+}
+
+const handleLockChange = (newLockState) => {
+  lockedFilters.value = newLockState
+  
+  // When a filter is locked, preserve its current value
+  if (newLockState.group && activeFilters.value.group) {
+    preservedFilterValues.value.group = activeFilters.value.group
+  }
+  if (newLockState.year && activeFilters.value.year) {
+    preservedFilterValues.value.year = activeFilters.value.year
+  }
+  if (newLockState.status && activeFilters.value.status) {
+    preservedFilterValues.value.status = activeFilters.value.status
+  }
+  if (newLockState.search && activeFilters.value.search) {
+    preservedFilterValues.value.search = activeFilters.value.search
+  }
+  
+  // When a filter is unlocked, clear its preserved value
+  if (!newLockState.group) {
+    delete preservedFilterValues.value.group
+  }
+  if (!newLockState.year) {
+    delete preservedFilterValues.value.year
+  }
+  if (!newLockState.status) {
+    delete preservedFilterValues.value.status
+  }
+  if (!newLockState.search) {
+    delete preservedFilterValues.value.search
+  }
 }
 
 const handleViewReport = (student) => {
