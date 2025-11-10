@@ -16,8 +16,8 @@
             <span v-if="student.yearGroup">Year {{ student.yearGroup }}</span>
             <span v-if="student.group">{{ student.group }}</span>
             <span v-if="student.establishment">{{ student.establishment }}</span>
-            <span v-if="completionDate" class="completion-date">
-              Completed: {{ formatDate(completionDate) }}
+            <span v-if="completionDate" class="completion-date" :key="`date-${selectedCycle}`">
+              📅 Cycle {{ selectedCycle }}: {{ formatDate(completionDate) }}
             </span>
           </div>
           <!-- Action buttons below student name -->
@@ -121,7 +121,9 @@ const handlePrint = () => {
 const completionDate = computed(() => {
   if (!props.allScores || props.allScores.length === 0) return null
   const cycleData = props.allScores.find(s => s.cycle === props.selectedCycle)
-  return cycleData?.completion_date || null
+  const date = cycleData?.completion_date || null
+  console.log(`[ReportHeader] Cycle ${props.selectedCycle} completion date:`, date)
+  return date
 })
 
 // Format date nicely
@@ -199,8 +201,9 @@ const formatDate = (dateStr) => {
 }
 
 .completion-date {
-  background: rgba(255, 255, 255, 0.3) !important;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.35) !important;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .action-buttons {
