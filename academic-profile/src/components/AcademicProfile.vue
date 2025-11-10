@@ -210,6 +210,9 @@ const showTemporaryMessage = (message, type) => {
 /* Container */
 .vespa-profile-display {
   margin-bottom: 24px;
+  width: 100%;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
 .vespa-section {

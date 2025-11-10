@@ -155,14 +155,18 @@ onMounted(() => {
 /* Import existing academicProfile.css styles */
 .academic-profile-container {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  max-width: 1400px; /* Match report width */
-  margin: 0 auto 20px auto;
+  max-width: 1400px !important; /* Match report width */
+  width: 100%;
+  margin: 20px auto 20px auto; /* Top margin to clear header */
+  padding: 0 20px;
   color: #ffffff;
+  box-sizing: border-box;
 }
 
 /* Toggle Button Styles */
 .profile-toggle-bar {
   margin-bottom: 12px;
+  margin-top: 20px; /* Extra space to clear any overlapping headers */
 }
 
 .toggle-button {
