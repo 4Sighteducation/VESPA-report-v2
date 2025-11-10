@@ -8,14 +8,16 @@ export default defineConfig({
     rollupOptions: {
       input: './index.html',
       output: {
-        entryFileNames: 'report1ad.js',
+        entryFileNames: 'report1ae.js',
         chunkFileNames: '[name]-[hash].js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name?.endsWith('.css')) {
-            return 'report1ad.css'
+            return 'report1ae.css'
           }
           return '[name]-[hash][extname]'
-        }
+        },
+        format: 'iife', // Wrap in IIFE to isolate variables
+        name: 'VESPAReport' // Window global for the IIFE
       }
     },
     cssCodeSplit: false // Bundle all CSS into one file
