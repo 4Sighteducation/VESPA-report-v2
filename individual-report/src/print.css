@@ -10,7 +10,10 @@
     margin: 3mm 5mm 5mm 5mm !important; /* top, right, bottom, left */
   }
   
-  * {
+  /* NUCLEAR OPTION: Reset EVERYTHING */
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -21,12 +24,20 @@
     padding: 0 !important;
     font-size: 7pt !important;
     line-height: 1.2 !important;
+    height: auto !important;
   }
   
+  /* Target ALL possible wrapper elements */
   #vespa-report-app,
-  .report-container {
+  .report-container,
+  .kn-content,
+  .kn-view,
+  #view_3250,
+  .view,
+  .scene {
     margin: 0 !important;
     padding: 0 !important;
+    transform: translateY(0) !important;
   }
   
   /* Hide ALL buttons and interactive elements */
@@ -53,12 +64,14 @@
     display: none !important;
   }
   
-  /* Compact header - NO TOP MARGIN */
+  /* Compact header - ZERO TOP SPACING */
   .report-header {
-    padding: 1mm 2mm !important;
+    padding: 0 2mm 1mm 2mm !important;
     min-height: auto !important;
-    max-height: 16mm !important;
-    margin-top: 0 !important;
+    max-height: 14mm !important;
+    margin: 0 !important;
+    position: relative !important;
+    top: 0 !important;
   }
   
   .header-top {
