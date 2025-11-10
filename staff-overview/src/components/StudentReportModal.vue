@@ -8,16 +8,17 @@
         </button>
       </div>
       <div class="report-modal-body">
-        <iframe
-          v-if="reportUrl"
-          :src="reportUrl"
-          class="report-iframe"
-          @load="handleIframeLoad"
-        ></iframe>
         <div v-if="loading" class="iframe-loading">
           <div class="spinner"></div>
           <p>Loading report...</p>
         </div>
+        <iframe
+          v-if="reportUrl"
+          ref="reportIframe"
+          :src="reportUrl"
+          class="report-iframe"
+          @load="handleIframeLoad"
+        ></iframe>
       </div>
     </div>
   </div>
@@ -45,11 +46,11 @@ const emit = defineEmits(['close'])
 
 const reportUrl = ref(null)
 const loading = ref(true)
+const reportIframe = ref(null)
 
 // Build the report URL
 watch(() => [props.isOpen, props.studentEmail], ([open, email]) => {
   if (open && email) {
-    // Use the full Knack URL with the email parameter
     reportUrl.value = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}`
     loading.value = true
     console.log('[Report Modal] Opening report for:', email)
@@ -61,6 +62,31 @@ watch(() => [props.isOpen, props.studentEmail], ([open, email]) => {
 const handleIframeLoad = () => {
   loading.value = false
   console.log('[Report Modal] Report loaded')
+  
+  // Try to hide the header in the iframe (may not work due to cross-origin)
+  try {
+    const iframe = reportIframe.value
+    if (iframe && iframe.contentDocument) {
+      const header = iframe.contentDocument.querySelector('.vespa-general-header')
+      const knackMenu = iframe.contentDocument.querySelector('.kn-menu')
+      
+      if (header) {
+        header.style.display = 'none'
+        console.log('[Report Modal] Hid general header')
+      }
+      if (knackMenu) {
+        knackMenu.style.display = 'none'
+        console.log('[Report Modal] Hid Knack menu')
+      }
+      
+      // Also try to hide back to home button
+      const backButton = iframe.contentDocument.querySelector('.back-to-home')
+      if (backButton) backButton.style.display = 'none'
+    }
+  } catch (e) {
+    // Cross-origin restrictions - can't access iframe content
+    console.log('[Report Modal] Cannot hide header (cross-origin):', e.message)
+  }
 }
 
 const close = () => {
@@ -185,10 +211,10 @@ watch(() => props.isOpen, (isOpen) => {
   background: #f5f5f5;
 }
 
-.report-iframe {
+.report-content-wrapper {
   width: 100%;
   height: 100%;
-  border: none;
+  overflow-y: auto;
   background: white;
 }
 
