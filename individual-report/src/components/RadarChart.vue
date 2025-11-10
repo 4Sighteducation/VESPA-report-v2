@@ -93,8 +93,8 @@ const chartData = computed(() => {
       pointHoverBackgroundColor: pointColors,
       pointHoverBorderColor: '#fff',
       pointHoverBorderWidth: 3,
-      pointRadius: isSelected ? 7 : 6,
-      pointHoverRadius: 10,
+      pointRadius: isSelected ? 5 : 4,  // Reduced by ~30%
+      pointHoverRadius: 7,
       fill: true
     })
   })

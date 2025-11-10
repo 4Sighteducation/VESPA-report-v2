@@ -430,6 +430,7 @@ const saveGoals = async () => {
   resize: vertical;
   transition: all 0.3s;
   cursor: text;
+  white-space: pre-wrap; /* Preserve line breaks */
 }
 
 .goal-textarea:focus {
@@ -614,11 +615,12 @@ const saveGoals = async () => {
   .goal-textarea {
     border: 0.3pt solid #ccc !important;
     padding: 1mm !important;
-    min-height: 8mm !important;
-    max-height: 12mm !important;
-    font-size: 6pt !important;
-    line-height: 1.1 !important;
+    min-height: 15mm !important;
+    max-height: 20mm !important;
+    font-size: 7pt !important;
+    line-height: 1.3 !important;
     overflow: hidden !important;
+    white-space: pre-wrap !important;
   }
   
   .date-field input[type="date"] {

@@ -463,12 +463,25 @@ onMounted(() => {
     font-weight: 700 !important;
   }
   
-  /* Keep 3-column structure: score | statement | coaching */
+  /* FORCE 3-column structure: score | statement | coaching */
   .row-content {
     display: grid !important;
     grid-template-columns: 18mm 1fr 1fr !important;
+    grid-template-rows: auto !important;
     padding: 2mm !important;
-    gap: 3mm !important;
+    gap: 2mm !important;
+  }
+  
+  /* Ensure student content stays in column 2 */
+  .student-content {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+  
+  /* Ensure staff content stays in column 3 */
+  .staff-content {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
   }
   
   /* Score card - minimal */
