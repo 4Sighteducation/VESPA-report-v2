@@ -44,6 +44,7 @@
       
       <!-- Student reflection section -->
       <StudentResponse
+        :key="`response-${selectedCycle}`"
         :cycle="selectedCycle"
         :existing="currentProfile.response"
         @save="handleSaveResponse"
@@ -51,6 +52,7 @@
       
       <!-- Student goals section -->
       <StudentGoals
+        :key="`goals-${selectedCycle}`"
         :cycle="selectedCycle"
         :existing="currentProfile.goals"
         @save="handleSaveGoals"
@@ -139,11 +141,17 @@ const currentProfile = computed(() => {
       coaching: null
     }
   }
-  return reportData.value.studentProfile[selectedCycle.value] || {
+  const profile = reportData.value.studentProfile[selectedCycle.value] || {
     response: null,
     goals: null,
     coaching: null
   }
+  console.log(`[App] Cycle ${selectedCycle.value} profile:`, {
+    hasResponse: !!profile.response?.response_text,
+    hasGoals: !!profile.goals?.goal_text,
+    responsePreview: profile.response?.response_text?.substring(0, 50)
+  })
+  return profile
 })
 
 // Methods
