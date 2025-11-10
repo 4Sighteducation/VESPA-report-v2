@@ -2,46 +2,59 @@
   <div class="staff-coaching-record">
     <div class="section-header">
       <h3>👨‍🏫 Staff Coaching Notes (Confidential)</h3>
-      <span class="staff-badge">Staff Only</span>
+      <div class="header-actions">
+        <button @click="showGuide = true" class="coaching-guide-btn">
+          💬 Conversation Guide
+        </button>
+        <span class="staff-badge">Staff Only</span>
+      </div>
     </div>
 
-    <p class="info-text">
-      These notes are confidential and will not be visible to students. Use this space to record observations, 
-      coaching conversations, and action plans.
-    </p>
+    <div class="section-body">
+      <p class="info-text">
+        These notes are confidential and will not be visible to students. Use this space to record observations, 
+        coaching conversations, and action plans.
+      </p>
 
-    <textarea
-      v-model="coachingText"
-      class="coaching-textarea"
-      placeholder="Record coaching observations and notes here..."
-      rows="8"
-      :disabled="saving"
-    ></textarea>
-
-    <div class="date-field">
-      <label for="coaching-date">Coaching Date:</label>
-      <input
-        id="coaching-date"
-        v-model="coachingDate"
-        type="date"
+      <textarea
+        v-model="coachingText"
+        class="coaching-textarea"
+        placeholder="Record coaching observations and notes here..."
+        rows="8"
         :disabled="saving"
-      />
+      ></textarea>
+
+      <div class="date-field">
+        <label for="coaching-date">Coaching Date:</label>
+        <input
+          id="coaching-date"
+          v-model="coachingDate"
+          type="date"
+          :disabled="saving"
+        />
+      </div>
+
+      <div class="action-bar">
+        <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
+        <button @click="saveCoaching" :disabled="saving || !hasChanges" class="save-button">
+          {{ saving ? 'Saving...' : 'Save Coaching Notes' }}
+        </button>
+      </div>
+
+      <div v-if="error" class="error-message">{{ error }}</div>
+      <div v-if="success" class="success-message">Coaching notes saved successfully!</div>
     </div>
 
-    <div class="action-bar">
-      <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
-      <button @click="saveCoaching" :disabled="saving || !hasChanges" class="save-button">
-        {{ saving ? 'Saving...' : 'Save Coaching Notes' }}
-      </button>
-    </div>
-
-    <div v-if="error" class="error-message">{{ error }}</div>
-    <div v-if="success" class="success-message">Coaching notes saved successfully!</div>
+    <CoachingGuideModal 
+      :isOpen="showGuide" 
+      @close="showGuide = false" 
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import CoachingGuideModal from './CoachingGuideModal.vue'
 
 const props = defineProps({
   cycle: {
@@ -66,6 +79,7 @@ const saving = ref(false)
 const error = ref(null)
 const success = ref(false)
 const lastSaved = ref(props.existing?.coaching_date ? new Date(props.existing.coaching_date).toLocaleString() : null)
+const showGuide = ref(false)
 
 const hasChanges = computed(() => {
   return (
@@ -121,62 +135,109 @@ const saveCoaching = async () => {
 
 <style scoped>
 .staff-coaching-record {
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  padding: 24px;
+  background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
   border-left: 4px solid #ff9800;
 }
 
 .section-header {
+  background: linear-gradient(135deg, #079baa, #7bd8d0);
+  padding: 20px 24px;
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .section-header h3 {
   margin: 0;
-  font-size: 22px;
-  color: #333;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.coaching-guide-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.coaching-guide-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 .staff-badge {
   padding: 6px 12px;
-  background: #ff9800;
+  background: rgba(255, 255, 255, 0.2);
   color: white;
   border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.section-body {
+  padding: 24px;
 }
 
 .info-text {
   margin: 0 0 16px 0;
-  padding: 12px;
-  background: rgba(255, 152, 0, 0.1);
-  border-radius: 6px;
+  padding: 12px 16px;
+  background: #e3f2fd;
+  border-left: 4px solid #079baa;
+  border-radius: 4px;
   font-size: 14px;
-  color: #666;
-  line-height: 1.5;
+  color: #555;
+  line-height: 1.6;
+}
+
+.info-text p {
+  margin: 0;
 }
 
 .coaching-textarea {
   width: 100%;
-  padding: 16px;
-  border: 2px solid #e0e0e0;
+  padding: 20px;
+  border: 3px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
+  line-height: 1.6;
   resize: vertical;
-  transition: border-color 0.3s;
-  background: white;
+  transition: all 0.3s ease;
+  background: #fafafa;
   margin-bottom: 16px;
+  min-height: 200px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .coaching-textarea:focus {
   outline: none;
-  border-color: #ff9800;
+  background: white;
+  border-color: #079baa;
+  box-shadow: 0 0 0 4px rgba(7, 155, 170, 0.1);
+}
+
+.coaching-textarea::placeholder {
+  color: #999;
+  font-style: italic;
 }
 
 .coaching-textarea:disabled {
@@ -209,7 +270,8 @@ const saveCoaching = async () => {
 
 .date-field input[type="date"]:focus {
   outline: none;
-  border-color: #ff9800;
+  border-color: #079baa;
+  box-shadow: 0 0 0 3px rgba(7, 155, 170, 0.1);
 }
 
 .action-bar {
@@ -227,18 +289,20 @@ const saveCoaching = async () => {
 
 .save-button {
   padding: 12px 24px;
-  background: #ff9800;
+  background: #079baa;
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s ease;
 }
 
 .save-button:hover:not(:disabled) {
-  background: #f57c00;
+  background: #067a87;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(7, 155, 170, 0.3);
 }
 
 .save-button:disabled {
@@ -275,6 +339,17 @@ const saveCoaching = async () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+  }
+  
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .coaching-guide-btn {
+    width: 100%;
   }
   
   .date-field {

@@ -200,10 +200,10 @@ const loadReportData = async () => {
       questionResponses.value = data.responses
     }
     
-    // Set selected cycle to most recent completed cycle
+    // Set selected cycle to Cycle 1 by default
+    // Users should start with Cycle 1 even if they completed later cycles
     if (data.scores && data.scores.length > 0) {
-      const maxCycle = Math.max(...data.scores.map(s => s.cycle))
-      selectedCycle.value = maxCycle
+      selectedCycle.value = 1  // Always default to Cycle 1
     }
     
     console.log('[VESPA Report] Data loaded successfully:', data)

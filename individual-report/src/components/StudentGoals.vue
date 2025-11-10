@@ -3,7 +3,8 @@
     <div class="section-header">
       <h3>🎯 Your Study Goals</h3>
       <button @click="showHelp = !showHelp" class="help-button">
-        {{ showHelp ? 'Hide Help' : 'Need help?' }}
+        <span class="help-icon">💡</span>
+        {{ showHelp ? 'Hide Help' : 'Need Help?' }}
       </button>
     </div>
 
@@ -59,15 +60,21 @@
       </div>
     </div>
 
-    <div class="textarea-wrapper">
-      <textarea
-        v-model="goalText"
-        class="goal-textarea"
-        placeholder="Describe your study goals for this cycle..."
-        rows="6"
-        :disabled="saving"
-        @focus="showFocusModal = true"
-      ></textarea>
+    <div class="section-body">
+      <div class="info-text">
+        <p>✍️ Click here to write your study goals. Focus on what you want to achieve, not what you want to avoid!</p>
+      </div>
+
+      <div class="textarea-wrapper">
+        <textarea
+          v-model="goalText"
+          class="goal-textarea"
+          placeholder="✍️ Click here to write your study goals. Focus on what you want to achieve, not what you want to avoid!"
+          rows="6"
+          :disabled="saving"
+          @click="handleTextareaClick"
+          @focus="handleTextareaFocus"
+        ></textarea>
       <button 
         class="expand-button" 
         @click="showFocusModal = true"
@@ -82,16 +89,16 @@
       </button>
     </div>
 
-    <TextareaFocusModal
-      v-model="goalText"
-      :is-open="showFocusModal"
-      title="🎯 Your Study Goals"
-      placeholder="Describe your study goals for this cycle..."
-      @close="showFocusModal = false"
-      @save="handleModalSave"
-    />
+      <TextareaFocusModal
+        v-model="goalText"
+        :is-open="showFocusModal"
+        title="🎯 Your Study Goals"
+        placeholder="✍️ Click here to write your study goals. Focus on what you want to achieve, not what you want to avoid!"
+        @close="showFocusModal = false"
+        @save="handleModalSave"
+      />
 
-    <div class="date-fields">
+      <div class="date-fields">
       <div class="date-field">
         <label for="goal-set-date">Set Date:</label>
         <input
@@ -112,20 +119,21 @@
       </div>
     </div>
 
-    <div class="action-bar">
-      <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
-      <button @click="saveGoals" :disabled="saving || !hasChanges" class="save-button">
-        {{ saving ? 'Saving...' : 'Save Goals' }}
-      </button>
-    </div>
+      <div class="action-bar">
+        <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
+        <button @click="saveGoals" :disabled="saving || !hasChanges" class="save-button">
+          {{ saving ? 'Saving...' : 'Save Goals' }}
+        </button>
+      </div>
 
-    <div v-if="error" class="error-message">{{ error }}</div>
-    <div v-if="success" class="success-message">Goals saved successfully!</div>
+      <div v-if="error" class="error-message">{{ error }}</div>
+      <div v-if="success" class="success-message">Goals saved successfully!</div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { stripHtml } from '../utils/textUtils.js'
 import TextareaFocusModal from './TextareaFocusModal.vue'
 
@@ -158,6 +166,42 @@ const saving = ref(false)
 const error = ref(null)
 const success = ref(false)
 const lastSaved = ref(null)
+
+// Mobile detection - reactive computed for responsiveness
+const isMobile = computed(() => {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth < 768
+})
+
+// Auto-open help on first visit
+onMounted(() => {
+  const storageKey = `vespa_help_seen_${props.cycle}_goals`
+  const hasSeenBefore = localStorage.getItem(storageKey)
+  
+  if (!hasSeenBefore) {
+    // Small delay so user sees the page first
+    setTimeout(() => {
+      showHelp.value = true
+      localStorage.setItem(storageKey, 'true')
+    }, 1000)
+  }
+})
+
+// Handle textarea click - on mobile, open modal instead of focusing
+const handleTextareaClick = (e) => {
+  if (isMobile.value) {
+    e.preventDefault()
+    showFocusModal.value = true
+  }
+}
+
+// Handle textarea focus - on desktop, open modal for better UX
+const handleTextareaFocus = (e) => {
+  if (!isMobile.value) {
+    // On desktop, still allow normal focus but also offer modal
+    // User can click expand button if they want full-screen
+  }
+}
 
 const hasChanges = computed(() => {
   return (
@@ -223,37 +267,84 @@ const saveGoals = async () => {
 <style scoped>
 .student-goals {
   background: white;
-  padding: 24px;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
 }
 
 .section-header {
+  background: linear-gradient(135deg, #079baa, #7bd8d0);
+  padding: 20px 24px;
+  color: white;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 0;
 }
 
 .section-header h3 {
   margin: 0;
-  font-size: 22px;
-  color: #333;
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .help-button {
-  padding: 8px 16px;
-  background: #f0f0f0;
+  background: linear-gradient(135deg, #079baa, #62d1d2);
+  color: white;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 700;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
+  box-shadow: 0 4px 12px rgba(7, 155, 170, 0.4);
+  animation: pulse 2s infinite;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.help-button .help-icon {
+  font-size: 20px;
 }
 
 .help-button:hover {
-  background: #e0e0e0;
+  background: linear-gradient(135deg, #067a87, #079baa);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(7, 155, 170, 0.6);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(7, 155, 170, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(7, 155, 170, 0.6);
+  }
+}
+
+.section-body {
+  padding: 24px;
+}
+
+.info-text {
+  background: #e3f2fd;
+  padding: 12px 16px;
+  border-left: 4px solid #079baa;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+}
+
+.info-text p {
+  margin: 0;
 }
 
 /* Enhanced Goal-Setting Modal Styles */
@@ -282,7 +373,7 @@ const saveGoals = async () => {
 
 .help-modal-header {
   padding: 24px 30px;
-  background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+  background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
   color: white;
   border-radius: 16px 16px 0 0;
   display: flex;
@@ -323,7 +414,7 @@ const saveGoals = async () => {
 }
 
 .help-modal-body h3 {
-  color: #ff9800;
+  color: #079baa;
   margin: 24px 0 12px 0;
   font-size: 20px;
   font-weight: 700;
@@ -421,22 +512,32 @@ const saveGoals = async () => {
 
 .goal-textarea {
   width: 100%;
-  padding: 16px;
+  padding: 20px;
   padding-right: 50px;
-  border: 2px solid #e0e0e0;
+  border: 3px solid #e0e0e0;
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
+  line-height: 1.6;
   resize: vertical;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   cursor: text;
   white-space: pre-wrap; /* Preserve line breaks */
+  background: #fafafa;
+  min-height: 150px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .goal-textarea:focus {
   outline: none;
+  background: white;
   border-color: #079baa;
-  box-shadow: 0 0 0 3px rgba(7, 155, 170, 0.1);
+  box-shadow: 0 0 0 4px rgba(7, 155, 170, 0.1);
+}
+
+.goal-textarea::placeholder {
+  color: #999;
+  font-style: italic;
 }
 
 .goal-textarea:disabled {
