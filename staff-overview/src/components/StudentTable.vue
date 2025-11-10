@@ -139,10 +139,9 @@ const modalText = ref('')
 const filteredStudents = computed(() => {
   let filtered = [...props.students]
 
-  // Apply filters
-  if (props.activeFilters.cycle) {
-    filtered = filtered.filter(s => s.currentCycle === parseInt(props.activeFilters.cycle))
-  }
+  // NOTE: Cycle filtering is now handled by backend API (via &cycle= parameter)
+  // The backend returns only students who completed the selected cycle
+  // So we don't filter by cycle here to avoid double-filtering
 
   if (props.activeFilters.group) {
     filtered = filtered.filter(s => s.group === props.activeFilters.group)
