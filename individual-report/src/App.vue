@@ -171,10 +171,23 @@ const loadReportData = async () => {
       throw new Error('Please log in to view your report')
     }
     
-    console.log('[VESPA Report] Loading data for:', user.value.email)
+    // Check for email parameter in URL (for staff viewing student reports)
+    // Knack uses hash-based routing, so check hash for query parameters
+    let studentEmail = null
+    const hash = window.location.hash
+    if (hash && hash.includes('?')) {
+      const queryString = hash.split('?')[1]
+      const urlParams = new URLSearchParams(queryString)
+      studentEmail = urlParams.get('email')
+    }
+    
+    // Use student email from URL if provided (staff view), otherwise use logged-in user's email
+    const targetEmail = studentEmail || user.value.email
+    
+    console.log('[VESPA Report] Loading data for:', targetEmail, studentEmail ? '(staff view)' : '(student view)')
     
     // Fetch report data from API
-    const data = await reportAPI.getReportData(user.value.email)
+    const data = await reportAPI.getReportData(targetEmail)
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to load report data')
