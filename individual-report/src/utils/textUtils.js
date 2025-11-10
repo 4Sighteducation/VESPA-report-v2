@@ -10,12 +10,18 @@
 export function stripHtml(html) {
   if (!html || typeof html !== 'string') return ''
   
+  // First convert <br> tags to newlines BEFORE stripping HTML
+  let text = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<p>/gi, '')
+  
   // Create a temporary div to parse HTML
   const tmp = document.createElement('div')
-  tmp.innerHTML = html
+  tmp.innerHTML = text
   
   // Extract text content (automatically strips tags)
-  let text = tmp.textContent || tmp.innerText || ''
+  text = tmp.textContent || tmp.innerText || ''
   
   // Decode common HTML entities
   text = text
@@ -32,8 +38,11 @@ export function stripHtml(html) {
     .replace(/&mdash;/g, '—')
     .replace(/&ndash;/g, '–')
   
-  // Remove excessive whitespace
-  text = text.replace(/\s+/g, ' ').trim()
+  // Clean up excessive whitespace but PRESERVE single line breaks
+  text = text
+    .replace(/ +/g, ' ')           // Multiple spaces to single space
+    .replace(/\n\n\n+/g, '\n\n')  // Max 2 consecutive line breaks
+    .trim()
   
   return text
 }

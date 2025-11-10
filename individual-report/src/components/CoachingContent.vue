@@ -390,12 +390,15 @@ const parseActivities = (toolsStr) => {
   
   .row-content {
     display: grid !important;
-    grid-template-columns: 15mm 1fr 1fr !important;
+    grid-template-columns: 18mm 1fr 1fr !important;
+    grid-template-rows: auto !important;
     padding: 2mm !important;
     gap: 2mm !important;
   }
   
   .score-card {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
     padding: 2mm 1mm !important;
     min-height: auto !important;
   }
@@ -409,6 +412,8 @@ const parseActivities = (toolsStr) => {
   }
   
   .student-content {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
     font-size: 7pt !important;
     line-height: 1.2 !important;
   }
