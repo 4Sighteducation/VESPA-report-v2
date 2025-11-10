@@ -62,10 +62,10 @@
         </div>
       </div>
 
-      <!-- Data source indicator (for debugging) -->
-      <div v-if="dataSource" class="data-source-indicator" 
-           :title="`Data loaded from ${dataSource}`">
-        {{ dataSource === 'supabase' ? '⚡ Live' : '📦 Fallback' }}
+      <!-- Data source indicator (subtle dot for admin) -->
+      <div v-if="dataSource" class="data-source-dot" 
+           :class="dataSource === 'supabase' ? 'live-source' : 'fallback-source'"
+           :title="`Data loaded from ${dataSource === 'supabase' ? 'Supabase (live)' : 'Knack (fallback)'}`">
       </div>
     </section>
 
@@ -348,16 +348,26 @@ const showTemporaryMessage = (message, type) => {
 }
 
 /* Data source indicator */
-.data-source-indicator {
+/* Data source indicator - subtle dot */
+.data-source-dot {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 10px;
-  padding: 3px 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 3px;
-  color: #00e5db;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   cursor: help;
+  z-index: 10;
+}
+
+.data-source-dot.live-source {
+  background: #4caf50; /* Green dot for live Supabase data */
+  box-shadow: 0 0 4px rgba(76, 175, 80, 0.6);
+}
+
+.data-source-dot.fallback-source {
+  background: #ff9800; /* Orange dot for Knack fallback */
+  box-shadow: 0 0 4px rgba(255, 152, 0, 0.6);
 }
 
 /* Saving overlay */
