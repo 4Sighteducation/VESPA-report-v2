@@ -6,6 +6,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // CRITICAL: Use IIFE format to isolate scope and prevent variable collisions
+        format: 'iife',
+        name: 'AcademicProfileApp', // Unique namespace
         // Single file output with version suffix for cache busting
         entryFileNames: 'academic-profile1d.js',
         assetFileNames: (assetInfo) => {
