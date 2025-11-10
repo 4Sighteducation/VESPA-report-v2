@@ -8,17 +8,19 @@
         </button>
       </div>
       <div class="report-modal-body">
-        <div v-if="loading" class="iframe-loading">
-          <div class="spinner"></div>
-          <p>Loading report...</p>
-        </div>
         <iframe
           v-if="reportUrl"
           ref="reportIframe"
           :src="reportUrl"
           class="report-iframe"
           @load="handleIframeLoad"
+          frameborder="0"
+          allowfullscreen
         ></iframe>
+        <div v-show="loading" class="iframe-loading">
+          <div class="spinner"></div>
+          <p>Loading report...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -60,33 +62,11 @@ watch(() => [props.isOpen, props.studentEmail], ([open, email]) => {
 }, { immediate: true })
 
 const handleIframeLoad = () => {
-  loading.value = false
-  console.log('[Report Modal] Report loaded')
-  
-  // Try to hide the header in the iframe (may not work due to cross-origin)
-  try {
-    const iframe = reportIframe.value
-    if (iframe && iframe.contentDocument) {
-      const header = iframe.contentDocument.querySelector('.vespa-general-header')
-      const knackMenu = iframe.contentDocument.querySelector('.kn-menu')
-      
-      if (header) {
-        header.style.display = 'none'
-        console.log('[Report Modal] Hid general header')
-      }
-      if (knackMenu) {
-        knackMenu.style.display = 'none'
-        console.log('[Report Modal] Hid Knack menu')
-      }
-      
-      // Also try to hide back to home button
-      const backButton = iframe.contentDocument.querySelector('.back-to-home')
-      if (backButton) backButton.style.display = 'none'
-    }
-  } catch (e) {
-    // Cross-origin restrictions - can't access iframe content
-    console.log('[Report Modal] Cannot hide header (cross-origin):', e.message)
-  }
+  // Add a delay to ensure content is fully rendered
+  setTimeout(() => {
+    loading.value = false
+    console.log('[Report Modal] Report loaded')
+  }, 500)
 }
 
 const close = () => {
@@ -211,11 +191,12 @@ watch(() => props.isOpen, (isOpen) => {
   background: #f5f5f5;
 }
 
-.report-content-wrapper {
+.report-iframe {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
+  border: none;
   background: white;
+  display: block;
 }
 
 .iframe-loading {
@@ -229,7 +210,12 @@ watch(() => props.isOpen, (isOpen) => {
   align-items: center;
   justify-content: center;
   background: white;
-  z-index: 1;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.iframe-loading.hidden {
+  display: none;
 }
 
 .spinner {
