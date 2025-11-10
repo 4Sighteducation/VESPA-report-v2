@@ -61,7 +61,7 @@
     </div>
 
     <div class="section-body">
-      <div class="info-text">
+      <div class="info-text" @click="handleInfoTextClick" :class="{ 'clickable': isMobile }">
         <p>✍️ Click here to write your study goals. Focus on what you want to achieve, not what you want to avoid!</p>
       </div>
 
@@ -133,7 +133,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { stripHtml } from '../utils/textUtils.js'
 import TextareaFocusModal from './TextareaFocusModal.vue'
 
@@ -173,33 +173,60 @@ const isMobile = computed(() => {
   return window.innerWidth < 768
 })
 
-// Auto-open help on first visit
-onMounted(() => {
-  const storageKey = `vespa_help_seen_${props.cycle}_goals`
-  const hasSeenBefore = localStorage.getItem(storageKey)
-  
-  if (!hasSeenBefore) {
-    // Small delay so user sees the page first
-    setTimeout(() => {
-      showHelp.value = true
-      localStorage.setItem(storageKey, 'true')
-    }, 1000)
-  }
-})
+// Track if user has interacted with textarea before
+const hasInteractedWithTextarea = ref(false)
 
 // Handle textarea click - on mobile, open modal instead of focusing
+// Also show help modal on first interaction if not seen before
 const handleTextareaClick = (e) => {
+  // Check if this is first interaction and help hasn't been seen
+  if (!hasInteractedWithTextarea.value) {
+    hasInteractedWithTextarea.value = true
+    const storageKey = `vespa_help_seen_${props.cycle}_goals`
+    const hasSeenBefore = localStorage.getItem(storageKey)
+    
+    if (!hasSeenBefore) {
+      // Show help modal on first click
+      showHelp.value = true
+      localStorage.setItem(storageKey, 'true')
+    }
+  }
+  
+  // On mobile, open focus modal instead of focusing textarea
   if (isMobile.value) {
     e.preventDefault()
+    e.stopPropagation()
     showFocusModal.value = true
   }
 }
 
-// Handle textarea focus - on desktop, open modal for better UX
+// Handle textarea focus - show help on first focus if not seen before
 const handleTextareaFocus = (e) => {
-  if (!isMobile.value) {
-    // On desktop, still allow normal focus but also offer modal
-    // User can click expand button if they want full-screen
+  // Check if this is first interaction and help hasn't been seen
+  if (!hasInteractedWithTextarea.value) {
+    hasInteractedWithTextarea.value = true
+    const storageKey = `vespa_help_seen_${props.cycle}_goals`
+    const hasSeenBefore = localStorage.getItem(storageKey)
+    
+    if (!hasSeenBefore) {
+      // Show help modal on first focus
+      showHelp.value = true
+      localStorage.setItem(storageKey, 'true')
+    }
+  }
+  
+  // On mobile, open modal instead
+  if (isMobile.value) {
+    e.preventDefault()
+    e.target.blur()
+    showFocusModal.value = true
+  }
+}
+
+// Handle info text click on mobile - open modal
+const handleInfoTextClick = () => {
+  if (isMobile.value) {
+    showFocusModal.value = true
   }
 }
 
@@ -341,6 +368,16 @@ const saveGoals = async () => {
   font-size: 14px;
   color: #555;
   line-height: 1.6;
+}
+
+.info-text.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.info-text.clickable:hover {
+  background: #bbdefb;
+  transform: translateX(2px);
 }
 
 .info-text p {
