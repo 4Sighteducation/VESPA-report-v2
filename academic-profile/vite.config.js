@@ -10,10 +10,10 @@ export default defineConfig({
         format: 'iife',
         name: 'AcademicProfileApp', // Unique namespace
         // Single file output with version suffix for cache busting
-        entryFileNames: 'academic-profile1f.js',
+        entryFileNames: 'academic-profile1g.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name.endsWith('.css')) {
-            return 'academic-profile1f.css'
+            return 'academic-profile1g.css'
           }
           return assetInfo.name
         },

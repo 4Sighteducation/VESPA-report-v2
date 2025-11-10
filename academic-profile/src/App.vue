@@ -60,7 +60,7 @@ const profileData = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const config = ref(props.config)
-const isVisible = ref(true) // Toggle state for show/hide
+const isVisible = ref(false) // Toggle state for show/hide - default to hidden
 
 // Computed
 const studentEmail = computed(() => {
@@ -87,16 +87,18 @@ const studentEmail = computed(() => {
 })
 
 const canEdit = computed(() => {
-  // Staff can edit, students cannot
+  // Only staff roles can edit: Tutor, Staff Admin, Head of Year, Subject Teacher
   if (typeof Knack === 'undefined') return false
   
   const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
-  const isStudent = roles.some(role => 
-    role.name === 'Student' || 
-    role.toLowerCase().includes('student')
-  )
   
-  return !isStudent && config.value.editable !== false
+  // Staff role IDs in Knack
+  const staffRoles = ['object_5', 'object_7', 'object_18', 'object_78']
+  const isStaff = roles.some(role => staffRoles.includes(role))
+  
+  console.log('[Academic Profile V2] User roles:', roles, 'Is staff:', isStaff)
+  
+  return isStaff && config.value.editable !== false
 })
 
 // Methods
