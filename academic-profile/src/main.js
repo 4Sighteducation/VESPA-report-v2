@@ -23,6 +23,9 @@ function initAcademicProfile() {
     return
   }
   
+  // Clear existing content (remove "New Rich Text" placeholder)
+  mountPoint.innerHTML = ''
+  
   // Create a container div for the Vue app
   const appContainer = document.createElement('div')
   appContainer.id = 'academic-profile-app'
