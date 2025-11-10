@@ -28,6 +28,14 @@
         @view-report="handleViewReport"
       />
     </div>
+    
+    <!-- Student Report Modal -->
+    <StudentReportModal
+      :isOpen="reportModalOpen"
+      :studentEmail="selectedStudentEmail"
+      :studentName="selectedStudentName"
+      @close="closeReportModal"
+    />
   </div>
 </template>
 
@@ -38,6 +46,7 @@ import ErrorState from './components/ErrorState.vue'
 import StaffOverviewHeader from './components/StaffOverviewHeader.vue'
 import FilterBar from './components/FilterBar.vue'
 import StudentTable from './components/StudentTable.vue'
+import StudentReportModal from './components/StudentReportModal.vue'
 import { staffAPI } from './services/api.js'
 import { knackAuth } from './services/knackAuth.js'
 
@@ -47,6 +56,9 @@ const activeFilters = ref({})
 const loading = ref(true)
 const error = ref(null)
 const user = ref(null)
+const reportModalOpen = ref(false)
+const selectedStudentEmail = ref(null)
+const selectedStudentName = ref(null)
 
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
@@ -95,14 +107,16 @@ const handleFilterChange = (filters) => {
 }
 
 const handleViewReport = (student) => {
-  console.log('[Staff Overview] View report for:', student.name, student.email)
-  
-  // Navigate to individual report page (scene_1284, slug: vespa-coaching-report)
-  // Pass student email as URL parameter
-  const reportUrl = `#vespa-coaching-report?email=${encodeURIComponent(student.email)}`
-  
-  console.log('[Staff Overview] Navigating to:', reportUrl)
-  window.location.hash = reportUrl
+  console.log('[Staff Overview] Opening report modal for:', student.name, student.email)
+  selectedStudentEmail.value = student.email
+  selectedStudentName.value = student.name
+  reportModalOpen.value = true
+}
+
+const closeReportModal = () => {
+  reportModalOpen.value = false
+  selectedStudentEmail.value = null
+  selectedStudentName.value = null
 }
 
 // Lifecycle
