@@ -7,10 +7,10 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Single file output with version suffix for cache busting
-        entryFileNames: 'academic-profile1c.js',
+        entryFileNames: 'academic-profile1d.js',
         assetFileNames: (assetInfo) => {
           if (assetInfo.name.endsWith('.css')) {
-            return 'academic-profile1c.css'
+            return 'academic-profile1d.css'
           }
           return assetInfo.name
         },
