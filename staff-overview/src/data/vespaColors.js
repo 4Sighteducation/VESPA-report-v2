@@ -22,11 +22,15 @@ export const getCategoryColor = (category) => {
 }
 
 export const getScoreColor = (score) => {
-  if (score === null || score === undefined) return '#eee'
-  if (score >= 9) return '#4caf50'  // Excellent - green
-  if (score >= 7) return '#8bc34a'  // Good - light green
-  if (score >= 5) return '#ffeb3b'  // Average - yellow
-  if (score >= 3) return '#ff9800'  // Below average - orange
-  return '#f44336'                  // Needs improvement - red
+  if (score === null || score === undefined) return '#f5f5f5'  // Light grey for missing scores
+  
+  const numScore = parseFloat(score)
+  
+  // Subtle color scheme for better readability
+  if (numScore >= 9) return '#86efac'  // 9-10: Soft green
+  if (numScore >= 7) return '#bbf7d0'  // 7-8: Light green
+  if (numScore >= 5) return '#fed7aa'  // 5-6: Light orange
+  if (numScore >= 3) return '#fee2e2'  // 3-4: Light red
+  return '#ff8787'                     // 1-2: Soft red
 }
 

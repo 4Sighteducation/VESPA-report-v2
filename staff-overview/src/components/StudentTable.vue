@@ -18,11 +18,30 @@
               <span class="sort-indicator">{{ getSortIndicator('group') }}</span>
             </th>
             <th>Focus</th>
-            <th class="score-cell" title="Vision">V</th>
-            <th class="score-cell" title="Effort">E</th>
-            <th class="score-cell" title="Systems">S</th>
-            <th class="score-cell" title="Practice">P</th>
-            <th class="score-cell" title="Attitude">A</th>
+            <th @click="sortBy('vision')" class="score-cell sortable" title="Vision">
+              V
+              <span class="sort-indicator">{{ getSortIndicator('vision') }}</span>
+            </th>
+            <th @click="sortBy('effort')" class="score-cell sortable" title="Effort">
+              E
+              <span class="sort-indicator">{{ getSortIndicator('effort') }}</span>
+            </th>
+            <th @click="sortBy('systems')" class="score-cell sortable" title="Systems">
+              S
+              <span class="sort-indicator">{{ getSortIndicator('systems') }}</span>
+            </th>
+            <th @click="sortBy('practice')" class="score-cell sortable" title="Practice">
+              P
+              <span class="sort-indicator">{{ getSortIndicator('practice') }}</span>
+            </th>
+            <th @click="sortBy('attitude')" class="score-cell sortable" title="Attitude">
+              A
+              <span class="sort-indicator">{{ getSortIndicator('attitude') }}</span>
+            </th>
+            <th @click="sortBy('overall')" class="score-cell sortable" title="Overall">
+              O
+              <span class="sort-indicator">{{ getSortIndicator('overall') }}</span>
+            </th>
             <th>Response</th>
             <th>Action Plan</th>
             <th>Report</th>
@@ -51,6 +70,9 @@
             </td>
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.attitude) }">
               {{ student.scores?.attitude || '-' }}
+            </td>
+            <td class="score-cell overall-cell" :style="{ background: getScoreColor(student.scores?.overall) }">
+              {{ student.scores?.overall || '-' }}
             </td>
             <td 
               class="text-preview clickable"
@@ -151,17 +173,34 @@ const sortedStudents = computed(() => {
   const sorted = [...filteredStudents.value]
 
   sorted.sort((a, b) => {
-    let aVal = a[sortField.value]
-    let bVal = b[sortField.value]
-
-    // Handle null/undefined
-    if (aVal === null || aVal === undefined) aVal = ''
-    if (bVal === null || bVal === undefined) bVal = ''
-
-    // String comparison
-    if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase()
-      bVal = bVal.toLowerCase()
+    let aVal, bVal
+    
+    // Handle score fields (nested in scores object)
+    if (['vision', 'effort', 'systems', 'practice', 'attitude', 'overall'].includes(sortField.value)) {
+      aVal = a.scores?.[sortField.value]
+      bVal = b.scores?.[sortField.value]
+      
+      // Treat null/undefined as -1 for scores (so they sort to bottom)
+      if (aVal === null || aVal === undefined) aVal = -1
+      if (bVal === null || bVal === undefined) bVal = -1
+      
+      // Convert to numbers
+      aVal = parseFloat(aVal)
+      bVal = parseFloat(bVal)
+    } else {
+      // Handle regular fields
+      aVal = a[sortField.value]
+      bVal = b[sortField.value]
+      
+      // Handle null/undefined
+      if (aVal === null || aVal === undefined) aVal = ''
+      if (bVal === null || bVal === undefined) bVal = ''
+      
+      // String comparison
+      if (typeof aVal === 'string') {
+        aVal = aVal.toLowerCase()
+        bVal = bVal.toLowerCase()
+      }
     }
 
     if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1
@@ -173,11 +212,12 @@ const sortedStudents = computed(() => {
 })
 
 const sortBy = (field) => {
+  console.log('[Table] Sorting by:', field)
   if (sortField.value === field) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortField.value = field
-    sortDirection.value = 'asc'
+    sortDirection.value = field.includes('score') || ['vision', 'effort', 'systems', 'practice', 'attitude', 'overall'].includes(field) ? 'desc' : 'asc'
   }
 }
 
@@ -268,10 +308,15 @@ const closeTextModal = () => {
   cursor: pointer;
   user-select: none;
   transition: background 0.3s;
+  position: relative;
 }
 
 .student-table th.sortable:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.student-table th.score-cell.sortable {
+  cursor: pointer;
 }
 
 .sort-indicator {
@@ -317,6 +362,12 @@ const closeTextModal = () => {
   font-weight: 700;
   color: #333;
   min-width: 40px;
+}
+
+.overall-cell {
+  font-size: 15px;
+  font-weight: 800;
+  border-left: 2px solid #ccc;
 }
 
 .text-preview {
