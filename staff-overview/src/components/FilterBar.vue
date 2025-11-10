@@ -126,40 +126,40 @@ const props = defineProps({
 
 const emit = defineEmits(['filter-changed', 'lock-changed'])
 
-const selectedCycle = ref(props.preservedValues.cycle || '')
-const selectedGroup = ref(props.preservedValues.group || '')
-const selectedYear = ref(props.preservedValues.year || '')
-const selectedStatus = ref(props.preservedValues.status || '')
-const searchText = ref(props.preservedValues.search || '')
+// Initialize with string values (selects need strings)
+const selectedCycle = ref(String(props.preservedValues.cycle || ''))
+const selectedGroup = ref(String(props.preservedValues.group || ''))
+const selectedYear = ref(String(props.preservedValues.year || ''))
+const selectedStatus = ref(String(props.preservedValues.status || ''))
+const searchText = ref(String(props.preservedValues.search || ''))
 
 // Watch for preserved values changes (when cycle changes and locked filters are restored)
 watch(() => props.preservedValues, (newValues) => {
   let changed = false
-  if (newValues.cycle !== undefined && selectedCycle.value !== newValues.cycle) {
-    selectedCycle.value = newValues.cycle || ''
+  // Always sync cycle (it's always in preservedValues)
+  if (newValues.cycle !== undefined && selectedCycle.value !== String(newValues.cycle || '')) {
+    selectedCycle.value = String(newValues.cycle || '')
     changed = true
   }
-  if (newValues.group !== undefined && selectedGroup.value !== newValues.group) {
+  if (newValues.group !== undefined && selectedGroup.value !== (newValues.group || '')) {
     selectedGroup.value = newValues.group || ''
     changed = true
   }
-  if (newValues.year !== undefined && selectedYear.value !== newValues.year) {
+  if (newValues.year !== undefined && selectedYear.value !== (newValues.year || '')) {
     selectedYear.value = newValues.year || ''
     changed = true
   }
-  if (newValues.status !== undefined && selectedStatus.value !== newValues.status) {
+  if (newValues.status !== undefined && selectedStatus.value !== (newValues.status || '')) {
     selectedStatus.value = newValues.status || ''
     changed = true
   }
-  if (newValues.search !== undefined && searchText.value !== newValues.search) {
+  if (newValues.search !== undefined && searchText.value !== (newValues.search || '')) {
     searchText.value = newValues.search || ''
     changed = true
   }
-  // Re-emit filters if values were restored (but don't trigger cycle change if cycle wasn't locked)
-  if (changed) {
-    emitFilters()
-  }
-}, { deep: true })
+  // Don't re-emit if this was triggered by our own change (would cause loop)
+  // Only emit if values were restored from parent (e.g., after cycle change)
+}, { deep: true, immediate: false })
 
 const toggleLock = (filterName) => {
   const newLockState = { ...props.lockedFilters }
@@ -169,21 +169,21 @@ const toggleLock = (filterName) => {
 
 const emitFilters = () => {
   emit('filter-changed', {
-    cycle: selectedCycle.value,
-    group: selectedGroup.value,
-    year: selectedYear.value,
-    status: selectedStatus.value,
-    search: searchText.value
+    cycle: selectedCycle.value || '',
+    group: selectedGroup.value || '',
+    year: selectedYear.value || '',
+    status: selectedStatus.value || '',
+    search: searchText.value || ''
   })
 }
 
 const clearFilters = () => {
   // Only clear unlocked filters
-  if (!lockedFilters.value.cycle) selectedCycle.value = ''
-  if (!lockedFilters.value.group) selectedGroup.value = ''
-  if (!lockedFilters.value.year) selectedYear.value = ''
-  if (!lockedFilters.value.status) selectedStatus.value = ''
-  if (!lockedFilters.value.search) searchText.value = ''
+  if (!props.lockedFilters.cycle) selectedCycle.value = ''
+  if (!props.lockedFilters.group) selectedGroup.value = ''
+  if (!props.lockedFilters.year) selectedYear.value = ''
+  if (!props.lockedFilters.status) selectedStatus.value = ''
+  if (!props.lockedFilters.search) searchText.value = ''
   emitFilters()
 }
 </script>

@@ -77,6 +77,8 @@ const preservedFilterValues = ref({})
 
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
+  // Store cycle for comparison
+  previousCycle.value = cycleFilter
   loading.value = true
   error.value = null
   
@@ -112,10 +114,20 @@ const loadOverviewData = async (cycleFilter = null) => {
   }
 }
 
+// Track previous cycle to detect changes
+const previousCycle = ref(null)
+
 const handleFilterChange = (filters) => {
   activeFilters.value = filters
   
-  // Preserve locked filter values
+  // Update preserved values to sync filter display state
+  preservedFilterValues.value.cycle = filters.cycle || ''
+  if (filters.group) preservedFilterValues.value.group = filters.group
+  if (filters.year) preservedFilterValues.value.year = filters.year
+  if (filters.status) preservedFilterValues.value.status = filters.status
+  if (filters.search) preservedFilterValues.value.search = filters.search
+  
+  // Preserve locked filter values for persistence
   if (lockedFilters.value.group && filters.group) {
     preservedFilterValues.value.group = filters.group
   }
@@ -129,12 +141,18 @@ const handleFilterChange = (filters) => {
     preservedFilterValues.value.search = filters.search
   }
   
-  // If cycle filter changed, re-fetch data from backend
-  // But preserve locked filter values when re-fetching
+  // ONLY reload if cycle filter actually changed (not for other filters!)
   const cycleFilter = filters.cycle && filters.cycle !== '' ? parseInt(filters.cycle) : null
-  console.log('[Staff Overview] Cycle filter changed, re-fetching data for cycle:', cycleFilter)
-  console.log('[Staff Overview] Preserved locked values:', preservedFilterValues.value)
-  loadOverviewData(cycleFilter)
+  const cycleChanged = cycleFilter !== previousCycle.value
+  
+  if (cycleChanged) {
+    console.log('[Staff Overview] Cycle filter changed, re-fetching data for cycle:', cycleFilter)
+    previousCycle.value = cycleFilter
+    loadOverviewData(cycleFilter)
+  } else {
+    console.log('[Staff Overview] Filter changed (non-cycle), updating local state only')
+    // Just update activeFilters - no backend reload needed for group/year/status/search
+  }
 }
 
 const handleLockChange = (newLockState) => {
