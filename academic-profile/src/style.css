@@ -1,0 +1,39 @@
+/* 
+ * Academic Profile V2 - Global Styles
+ * Matches existing academicProfile.css patterns
+ */
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Loading spinner */
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(7, 155, 170, 0.3);
+  border-top-color: #00e5db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Global resets for Vue app */
+#academic-profile-v2 * {
+  box-sizing: border-box;
+}
+
+#academic-profile-v2 button {
+  font-family: inherit;
+}
+
+/* Hide Knack's default rich text content if we're replacing it */
+.kn-rich_text__content > #academic-profile-app {
+  display: block !important;
+}
+

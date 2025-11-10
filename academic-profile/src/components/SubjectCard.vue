@@ -1,0 +1,437 @@
+<template>
+  <div class="subject-card" :class="qualTypeClass">
+    <div class="subject-name">{{ subject.subjectName || 'Unknown Subject' }}</div>
+    
+    <div class="subject-meta">
+      {{ subject.examType || 'N/A' }}
+      <span v-if="subject.examBoard"> • {{ subject.examBoard }}</span>
+    </div>
+
+    <!-- Grades Container -->
+    <div class="grades-container">
+      <!-- MEG -->
+      <div class="grade-item">
+        <div class="grade-label">
+          MEG
+          <span class="meg-info-button" @click="showMEGInfo = true" title="Understanding MEG">i</span>
+        </div>
+        <div class="grade-value grade-meg">
+          <span class="grade-text">{{ subject.minimumExpectedGrade || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <!-- STG -->
+      <div class="grade-item">
+        <div class="grade-label">STG</div>
+        <div class="grade-value grade-stg">
+          <span class="grade-text">{{ subject.subjectTargetGrade || subject.minimumExpectedGrade || 'N/A' }}</span>
+        </div>
+      </div>
+
+      <!-- Current Grade -->
+      <div class="grade-item current-grade-item">
+        <div class="grade-label">Current</div>
+        <div class="grade-value-display">
+          <input 
+            v-if="editMode && isStaff && hasRecordId"
+            type="text"
+            class="grade-input-dynamic"
+            :value="subject.currentGrade || ''"
+            @input="handleGradeChange('currentGrade', $event.target.value)"
+            placeholder="N/A"
+          />
+          <span v-else class="grade-text" :class="getGradeColorClass(subject.currentGrade, stgGrade)">
+            {{ subject.currentGrade || 'N/A' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Target Grade -->
+      <div class="grade-item target-grade-item">
+        <div class="grade-label">Target</div>
+        <div class="grade-value-display">
+          <input 
+            v-if="editMode && isStaff && hasRecordId"
+            type="text"
+            class="grade-input-dynamic"
+            :value="subject.targetGrade || ''"
+            @input="handleGradeChange('targetGrade', $event.target.value)"
+            placeholder="N/A"
+          />
+          <span v-else class="grade-text" :class="getGradeColorClass(subject.targetGrade, stgGrade)">
+            {{ subject.targetGrade || 'N/A' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optional Grades (Effort, Behaviour, Attendance) -->
+    <div v-if="hasOptionalGrades || editMode" class="optional-grades-container">
+      <!-- Effort -->
+      <div class="optional-grade-item">
+        <span class="optional-grade-label">Eff:</span>
+        <input 
+          v-if="editMode && isStaff && hasRecordId"
+          type="text"
+          class="optional-grade-input"
+          :value="subject.effortGrade || ''"
+          @input="handleGradeChange('effortGrade', $event.target.value)"
+          placeholder="-"
+        />
+        <span v-else>{{ subject.effortGrade || '-' }}</span>
+      </div>
+
+      <!-- Behaviour -->
+      <div class="optional-grade-item">
+        <span class="optional-grade-label">Beh:</span>
+        <input 
+          v-if="editMode && isStaff && hasRecordId"
+          type="text"
+          class="optional-grade-input"
+          :value="subject.behaviourGrade || ''"
+          @input="handleGradeChange('behaviourGrade', $event.target.value)"
+          placeholder="-"
+        />
+        <span v-else>{{ subject.behaviourGrade || '-' }}</span>
+      </div>
+
+      <!-- Attendance -->
+      <div class="optional-grade-item">
+        <span class="optional-grade-label">Att:</span>
+        <input 
+          v-if="editMode && isStaff && hasRecordId"
+          type="text"
+          class="optional-grade-input attendance-input"
+          :value="subject.subjectAttendance ? Math.round(subject.subjectAttendance * 100) : ''"
+          @input="handleAttendanceChange($event.target.value)"
+          placeholder="%"
+        />
+        <span v-else>{{ formatPercentage(subject.subjectAttendance) }}</span>
+      </div>
+    </div>
+
+    <!-- MEG Info Modal -->
+    <div v-if="showMEGInfo" class="meg-info-overlay" @click="showMEGInfo = false">
+      <div class="meg-info-modal" @click.stop>
+        <span class="modal-close" @click="showMEGInfo = false">&times;</span>
+        <h4>Understanding MEG (Minimum Expected Grade)</h4>
+        <p v-if="isStaff">
+          <strong>Teacher View:</strong> The MEG provides a baseline expectation derived from national data for students with similar prior attainment. 
+          Schools can adjust ambition levels - some choose aspirational targets to drive achievement. 
+          Consider all factors when setting targets: prior attainment, subject difficulty, student circumstances, and school context.
+        </p>
+        <p v-else>
+          <strong>Your MEG:</strong> This represents an aspirational grade based on how students with similar GCSE results have performed nationally. 
+          It's a starting point showing what's typically achievable. Many students exceed their MEG! 
+          Check your Subject Target Grade (STG) for a more personalized target.
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed } from 'vue'
+import { getGradeColorClass } from '../utils/gradeColors.js'
+
+const props = defineProps({
+  subject: {
+    type: Object,
+    required: true
+  },
+  editMode: {
+    type: Boolean,
+    default: false
+  },
+  isStaff: {
+    type: Boolean,
+    default: false
+  }
+})
+
+const emit = defineEmits(['update'])
+
+// State
+const showMEGInfo = ref(false)
+
+// Computed
+const stgGrade = computed(() => {
+  return props.subject.subjectTargetGrade || props.subject.minimumExpectedGrade || 'N/A'
+})
+
+const hasRecordId = computed(() => {
+  return !!(props.subject.id || props.subject.originalRecordId)
+})
+
+const hasOptionalGrades = computed(() => {
+  return props.subject.effortGrade || 
+         props.subject.behaviourGrade || 
+         props.subject.subjectAttendance
+})
+
+const qualTypeClass = computed(() => {
+  const examType = (props.subject.examType || '').trim().toLowerCase()
+  
+  const typeMap = {
+    'a-level': 'qual-a-level',
+    'btec (2016)': 'qual-btec-2016',
+    'btec (2010)': 'qual-btec-2010',
+    'ib': 'qual-ib',
+    'pre-u': 'qual-pre-u',
+    'ual': 'qual-ual',
+    'wjec': 'qual-wjec',
+    'cache': 'qual-cache',
+    'gcse': 'qual-gcse',
+    'vocational': 'qual-vocational-generic'
+  }
+  
+  return typeMap[examType] || ''
+})
+
+// Methods
+const handleGradeChange = (field, value) => {
+  emit('update', props.subject.id, field, value)
+}
+
+const handleAttendanceChange = (value) => {
+  // Convert percentage input to decimal (89 → 0.89)
+  const numValue = parseFloat(value)
+  if (!isNaN(numValue)) {
+    emit('update', props.subject.id, 'subjectAttendance', numValue / 100)
+  } else {
+    emit('update', props.subject.id, 'subjectAttendance', null)
+  }
+}
+
+const formatPercentage = (decimal) => {
+  if (decimal === null || decimal === undefined) return 'N/A'
+  return `${Math.round(decimal * 100)}%`
+}
+</script>
+
+<style scoped>
+/* Subject Card */
+.subject-card {
+  background-color: #334285;
+  color: #ffffff;
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+  border: 1px solid rgba(7, 155, 170, 0.3);
+  position: relative;
+}
+
+.subject-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.subject-name {
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 6px;
+  font-size: 0.95em;
+}
+
+.subject-meta {
+  font-size: 0.75em;
+  color: #bdc3c7;
+  margin-bottom: 8px;
+}
+
+/* Grades */
+.grades-container {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.grade-item {
+  text-align: center;
+  flex: 1;
+  padding: 4px;
+}
+
+.grade-label {
+  font-size: 0.7em;
+  color: #bdc3c7;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+.meg-info-button {
+  font-size: 11px;
+  color: #00e5db;
+  cursor: pointer;
+  border: 1px solid #00e5db;
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-style: normal;
+  transition: all 0.2s;
+}
+
+.meg-info-button:hover {
+  background-color: #00e5db;
+  color: #23356f;
+  transform: scale(1.1);
+}
+
+.grade-value-display {
+  font-size: 1em;
+}
+
+.grade-text {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.grade-meg .grade-text {
+  color: #00e5db;
+}
+
+.grade-stg .grade-text {
+  color: #79d2e6;
+}
+
+/* Grade input fields */
+.grade-input-dynamic {
+  width: 50px;
+  padding: 4px;
+  font-size: 0.9em;
+  text-align: center;
+  border: 1px solid #079baa;
+  background-color: #23356f;
+  color: #ffffff;
+  border-radius: 3px;
+}
+
+.grade-input-dynamic:focus {
+  outline: none;
+  border-color: #00e5db;
+  box-shadow: 0 0 4px rgba(0, 229, 219, 0.4);
+}
+
+/* Optional grades */
+.optional-grades-container {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  font-size: 0.75em;
+}
+
+.optional-grade-item {
+  text-align: center;
+  color: #e0e0e0;
+}
+
+.optional-grade-label {
+  font-weight: 600;
+  color: #00e5db;
+  margin-right: 3px;
+}
+
+.optional-grade-input {
+  width: 40px;
+  padding: 3px;
+  font-size: 0.9em;
+  text-align: center;
+  border: 1px solid #079baa;
+  background-color: #23356f;
+  color: #ffffff;
+  border-radius: 3px;
+}
+
+.attendance-input {
+  width: 35px;
+}
+
+/* Grade color classes */
+.grade-significantly-above { color: #00E676 !important; }
+.grade-above { color: #00C853 !important; }
+.grade-matching { color: #4CAF50 !important; }
+.grade-one-below { color: #FF9800 !important; }
+.grade-two-below { color: #F44336 !important; }
+.grade-far-below { color: #C62828 !important; }
+
+/* Qualification-specific borders */
+.qual-a-level { border-left: 5px solid #FF6347; }
+.qual-btec-2016 { border-left: 5px solid #4682B4; }
+.qual-btec-2010 { border-left: 5px solid #32CD32; }
+.qual-ib { border-left: 5px solid #FFD700; }
+.qual-pre-u { border-left: 5px solid #DA70D6; }
+.qual-ual { border-left: 5px solid #FFA500; }
+.qual-wjec { border-left: 5px solid #8A2BE2; }
+.qual-cache { border-left: 5px solid #00CED1; }
+.qual-gcse { border-left: 5px solid #DC143C; }
+
+/* MEG Info Overlay */
+.meg-info-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+}
+
+.meg-info-modal {
+  background: #1c2b5f;
+  color: #ffffff;
+  border: 2px solid #00e5db;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  color: #00e5db;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal-close:hover {
+  color: #ffffff;
+}
+
+.meg-info-modal h4 {
+  color: #00e5db;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 229, 219, 0.4);
+  padding-bottom: 10px;
+}
+
+.meg-info-modal p {
+  line-height: 1.6;
+  margin-bottom: 15px;
+}
+
+.meg-info-modal strong {
+  color: #00e5db;
+}
+</style>
+
