@@ -5,11 +5,17 @@ export const staffAPI = {
   /**
    * Fetch staff overview data (all connected students)
    * @param {string} staffEmail - Staff member email
+   * @param {number|null} cycle - Optional cycle filter (1, 2, 3, or null for all)
    * @returns {Promise} Staff info and student list with scores
    */
-  async getStaffOverview(staffEmail) {
+  async getStaffOverview(staffEmail, cycle = null) {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/vespa/staff-overview?email=${encodeURIComponent(staffEmail)}`)
+      let url = `${API_BASE_URL}/api/vespa/staff-overview?email=${encodeURIComponent(staffEmail)}`
+      if (cycle !== null && cycle !== undefined && cycle !== '') {
+        url += `&cycle=${cycle}`
+      }
+      
+      const response = await fetch(url)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

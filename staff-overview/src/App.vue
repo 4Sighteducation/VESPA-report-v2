@@ -49,7 +49,7 @@ const error = ref(null)
 const user = ref(null)
 
 // Methods
-const loadOverviewData = async () => {
+const loadOverviewData = async (cycleFilter = null) => {
   loading.value = true
   error.value = null
   
@@ -65,10 +65,10 @@ const loadOverviewData = async () => {
       throw new Error('This page is only accessible to staff members')
     }
     
-    console.log('[Staff Overview] Loading data for:', user.value.email)
+    console.log('[Staff Overview] Loading data for:', user.value.email, 'cycle filter:', cycleFilter)
     
-    // Fetch overview data from API
-    const data = await staffAPI.getStaffOverview(user.value.email)
+    // Fetch overview data from API with cycle filter
+    const data = await staffAPI.getStaffOverview(user.value.email, cycleFilter)
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to load staff overview')
@@ -87,21 +87,22 @@ const loadOverviewData = async () => {
 
 const handleFilterChange = (filters) => {
   activeFilters.value = filters
+  
+  // If cycle filter changed, re-fetch data from backend
+  const cycleFilter = filters.cycle && filters.cycle !== '' ? parseInt(filters.cycle) : null
+  console.log('[Staff Overview] Cycle filter changed, re-fetching data for cycle:', cycleFilter)
+  loadOverviewData(cycleFilter)
 }
 
 const handleViewReport = (student) => {
-  console.log('[Staff Overview] View report for:', student.name)
+  console.log('[Staff Overview] View report for:', student.name, student.email)
   
-  // Navigate to individual report page (scene_1284)
+  // Navigate to individual report page (scene_1284, slug: vespa-coaching-report)
   // Pass student email as URL parameter
-  const reportUrl = `#vespa-coaching-report/?email=${encodeURIComponent(student.email)}`
+  const reportUrl = `#vespa-coaching-report?email=${encodeURIComponent(student.email)}`
   
-  // Use Knack navigation if available
-  if (typeof Knack !== 'undefined' && Knack.router) {
-    window.location.hash = reportUrl
-  } else {
-    window.location.hash = reportUrl
-  }
+  console.log('[Staff Overview] Navigating to:', reportUrl)
+  window.location.hash = reportUrl
 }
 
 // Lifecycle
