@@ -75,6 +75,9 @@ const lockedFilters = ref({
 // Preserved filter values (for locked filters)
 const preservedFilterValues = ref({})
 
+// Track previous cycle to detect changes (MUST be declared before loadOverviewData uses it!)
+const previousCycle = ref(null)
+
 // Methods
 const loadOverviewData = async (cycleFilter = null) => {
   // Store cycle for comparison
@@ -113,9 +116,6 @@ const loadOverviewData = async (cycleFilter = null) => {
     loading.value = false
   }
 }
-
-// Track previous cycle to detect changes
-const previousCycle = ref(null)
 
 const handleFilterChange = (filters) => {
   activeFilters.value = filters

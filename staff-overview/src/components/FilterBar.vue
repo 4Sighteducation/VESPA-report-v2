@@ -1,6 +1,6 @@
 <template>
   <div class="filter-bar">
-    <div class="filter-group" :class="{ 'locked': lockedFilters.group }">
+    <div class="filter-group" :class="{ 'locked': lockedFilters.cycle }">
       <div class="filter-label-row">
         <label for="cycle-filter">Cycle:</label>
         <button 
