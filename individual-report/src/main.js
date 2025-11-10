@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import './style.css'
+import './print.css' // Global print styles
 
 // Initialize function called by KnackAppLoader
 function initializeReportV2() {

@@ -1,0 +1,210 @@
+/* ============================================
+   GLOBAL PRINT STYLES - NOT SCOPED
+   These styles MUST work in print preview
+   ============================================ */
+
+@media print {
+  /* Page setup */
+  @page {
+    size: A4 portrait;
+    margin: 5mm !important;
+  }
+  
+  * {
+    box-sizing: border-box !important;
+  }
+  
+  body, html {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Hide ALL buttons and interactive elements */
+  button,
+  input[type="date"],
+  .action-buttons,
+  .action-button,
+  .cycle-selector,
+  .cycle-button,
+  .help-button,
+  .expand-button,
+  .save-button,
+  .action-bar,
+  .last-saved,
+  .error-message,
+  .success-message {
+    display: none !important;
+  }
+  
+  /* HIDE radar chart in print */
+  .header-center,
+  .radar-chart-container,
+  canvas {
+    display: none !important;
+  }
+  
+  /* Compact header */
+  .report-header {
+    padding: 2mm !important;
+    min-height: auto !important;
+    max-height: 18mm !important;
+  }
+  
+  .header-top {
+    display: flex !important;
+    gap: 2mm !important;
+  }
+  
+  .school-logo {
+    height: 12mm !important;
+  }
+  
+  .student-info h1 {
+    font-size: 11pt !important;
+    margin: 0 !important;
+  }
+  
+  .student-details {
+    font-size: 6pt !important;
+  }
+  
+  .student-details span {
+    padding: 0.5mm 1mm !important;
+  }
+  
+  /* CRITICAL: FORCE 3-COLUMN GRID */
+  .row-content {
+    display: grid !important;
+    grid-template-columns: 18mm 1fr 1fr !important;
+    padding: 2mm !important;
+    gap: 2mm !important;
+  }
+  
+  .score-card {
+    grid-column: 1 / 2 !important;
+    padding: 2mm 1mm !important;
+  }
+  
+  .score-number {
+    font-size: 18pt !important;
+  }
+  
+  .score-label {
+    font-size: 6pt !important;
+  }
+  
+  /* Column 2: Statement (NO questions) */
+  .student-content {
+    grid-column: 2 / 3 !important;
+    font-size: 7pt !important;
+  }
+  
+  .statement p {
+    font-size: 7pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .questions {
+    display: none !important;
+  }
+  
+  /* Column 3: Coaching + Activities */
+  .staff-content {
+    display: block !important;
+    grid-column: 3 / 4 !important;
+    background: #f8f9fa !important;
+    padding: 2mm !important;
+  }
+  
+  .coaching-comments,
+  .activities {
+    display: block !important;
+  }
+  
+  .coaching-comments h4,
+  .activities h4 {
+    font-size: 7pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  .coaching-comments ul,
+  .activities ul {
+    margin: 0 !important;
+    padding-left: 3mm !important;
+  }
+  
+  .coaching-comments li {
+    font-size: 6pt !important;
+    line-height: 1.1 !important;
+  }
+  
+  .activity-buttons {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 1mm !important;
+  }
+  
+  .activity-button {
+    display: inline-block !important;
+    padding: 0.5mm 2mm !important;
+    font-size: 6pt !important;
+  }
+  
+  /* Category styling */
+  .category-row {
+    page-break-inside: avoid !important;
+    margin-bottom: 1mm !important;
+    border: 0.3pt solid #999 !important;
+  }
+  
+  .category-header {
+    padding: 1mm 2mm !important;
+  }
+  
+  .category-header h3 {
+    font-size: 9pt !important;
+    margin: 0 !important;
+  }
+  
+  /* Student response and goals */
+  .student-response,
+  .student-goals {
+    display: block !important;
+    padding: 2mm !important;
+    margin-bottom: 2mm !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .section-header h3 {
+    font-size: 9pt !important;
+    margin: 0 0 1mm 0 !important;
+  }
+  
+  textarea {
+    border: 0.3pt solid #ccc !important;
+    padding: 1mm !important;
+    min-height: 15mm !important;
+    max-height: 20mm !important;
+    font-size: 7pt !important;
+    line-height: 1.3 !important;
+    white-space: pre-wrap !important;
+  }
+  
+  .date-fields {
+    display: none !important;
+  }
+  
+  .staff-coaching-record {
+    display: none !important;
+  }
+  
+  /* Typography */
+  h1 { font-size: 11pt !important; margin: 0 !important; }
+  h2 { font-size: 10pt !important; margin: 0 !important; }
+  h3 { font-size: 9pt !important; margin: 0 !important; }
+  h4 { font-size: 7pt !important; margin: 0 !important; }
+  p, li, span { font-size: 7pt !important; line-height: 1.2 !important; }
+}
+
