@@ -62,6 +62,44 @@ watch(() => [props.isOpen, props.studentEmail], ([open, email]) => {
 }, { immediate: true })
 
 const handleIframeLoad = () => {
+  // Hide Knack headers and navigation in the iframe
+  try {
+    const iframe = reportIframe.value
+    if (iframe && iframe.contentDocument) {
+      // Inject CSS to hide Knack elements
+      const style = iframe.contentDocument.createElement('style')
+      style.textContent = `
+        /* Hide Knack default headers and navigation */
+        .knHeader,
+        .kn-menu,
+        .kn-info,
+        .kn-current_user,
+        #kn-app-menu,
+        .kn-back,
+        .breadcrumb-back,
+        .header-breadcrumb {
+          display: none !important;
+        }
+        
+        /* Adjust body padding to account for hidden header */
+        body {
+          padding-top: 0 !important;
+        }
+        
+        /* Ensure content starts at top */
+        .kn-scene,
+        #kn-app-container {
+          padding-top: 0 !important;
+          margin-top: 0 !important;
+        }
+      `
+      iframe.contentDocument.head.appendChild(style)
+      console.log('[Report Modal] Hid Knack headers in iframe')
+    }
+  } catch (e) {
+    console.log('[Report Modal] Could not hide headers (cross-origin):', e.message)
+  }
+  
   // Add a delay to ensure content is fully rendered
   setTimeout(() => {
     loading.value = false
