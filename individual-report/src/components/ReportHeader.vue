@@ -43,7 +43,7 @@
         </div>
       </div>
 
-      <!-- Center: Radar Chart Slot -->
+      <!-- Center: Radar Chart Slot (Desktop) -->
       <div class="header-center">
         <slot name="radar-chart"></slot>
       </div>
@@ -61,6 +61,11 @@
           </button>
         </div>
       </div>
+    </div>
+    
+    <!-- Mobile: Radar Chart Below Header -->
+    <div class="header-radar-mobile">
+      <slot name="radar-chart"></slot>
     </div>
   </div>
 </template>
@@ -336,25 +341,103 @@ const formatDate = (dateStr) => {
 
 @media (max-width: 768px) {
   .report-header {
-    padding: 20px;
+    padding: 16px;
+    min-height: auto;
   }
   
   .header-top {
+    display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    width: 100%;
+  }
+  
+  /* Hide desktop radar chart */
+  .header-center {
+    display: none;
+  }
+  
+  /* Show mobile radar chart below header */
+  .header-radar-mobile {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px 0 0 0;
+    width: 100%;
+  }
+  
+  .header-left {
+    width: 100%;
+    flex-direction: row;
+    gap: 12px;
     align-items: flex-start;
   }
   
   .school-logo {
-    height: 60px;
+    height: 50px;
+    flex-shrink: 0;
+  }
+  
+  .student-info {
+    flex: 1;
+    min-width: 0;
   }
   
   .student-info h1 {
-    font-size: 24px;
+    font-size: 20px;
+    margin: 0 0 6px 0;
+  }
+  
+  .student-details {
+    font-size: 12px;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  
+  .student-details span {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 8px;
+  }
+  
+  .action-button {
+    width: 100%;
+    justify-content: center;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: center;
   }
   
   .cycle-selector {
     width: 100%;
     justify-content: center;
+    gap: 8px;
+  }
+  
+  .cycle-button {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+    flex: 0 0 auto;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Hide mobile radar chart on desktop */
+  .header-radar-mobile {
+    display: none;
   }
 }
 

@@ -5,14 +5,48 @@
       v-for="category in categories" 
       :key="category.name" 
       class="category-row"
+      :class="{ 'mobile-collapsed': isMobile && !expandedThemes[category.name] }"
       :style="{ borderLeftColor: category.color }"
     >
-      <!-- Category Header -->
-      <div class="category-header" :style="{ background: category.color }">
-        <h3>{{ category.name }}</h3>
+      <!-- Category Header - Clickable on Mobile -->
+      <div 
+        class="category-header" 
+        :style="{ background: category.color }"
+        :class="{ 'clickable': isMobile }"
+        @click="isMobile && toggleTheme(category.name, $event)"
+      >
+        <div class="header-content">
+          <h3>{{ category.name }}</h3>
+          <!-- Mobile: Score Badge + Expand/Collapse Icon -->
+          <div v-if="isMobile" class="mobile-header-controls">
+            <span class="score-badge">
+              {{ scores[category.key] !== null && scores[category.key] !== undefined ? scores[category.key] : '-' }}/10
+            </span>
+            <span class="expand-icon" :class="{ 'expanded': expandedThemes[category.name] }">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div class="row-content">
+      <!-- Mobile: Collapsed Preview -->
+      <div v-if="isMobile && !expandedThemes[category.name]" class="mobile-preview">
+        <div class="preview-content">
+          <p class="preview-text">{{ getPreviewSnippet(category.name) }}</p>
+          <button class="expand-preview-button" @click.stop="toggleTheme(category.name)">
+            Tap to read full report →
+          </button>
+        </div>
+      </div>
+
+      <!-- Full Content (Desktop always shown, Mobile only when expanded) -->
+      <div 
+        v-if="!isMobile || expandedThemes[category.name]"
+        class="row-content"
+        :class="{ 'mobile-expanded': isMobile && expandedThemes[category.name] }"
+      >
         <!-- Column 1: Large Score Card -->
         <div class="score-card" :style="{ background: category.color }">
           <div class="score-number">
@@ -85,7 +119,7 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { vespaColors } from '../data/vespaColors.js'
 import { getActivityUrl } from '../data/activityLinks.js'
 
@@ -98,6 +132,80 @@ const props = defineProps({
     type: Object,
     required: true
   }
+})
+
+// Mobile detection
+const windowWidth = ref(window.innerWidth)
+const isMobile = computed(() => windowWidth.value < 768)
+
+// Expanded themes state (mobile only)
+const expandedThemes = ref({
+  Vision: false,
+  Effort: false,
+  Systems: false,
+  Practice: false,
+  Attitude: false
+})
+
+// Toggle theme expand/collapse
+const toggleTheme = (themeName, event) => {
+  if (event) {
+    event.stopPropagation()
+  }
+  if (isMobile.value) {
+    expandedThemes.value[themeName] = !expandedThemes.value[themeName]
+    // Scroll to top of expanded section
+    if (expandedThemes.value[themeName]) {
+      setTimeout(() => {
+        // Find the category row by looking for the header with matching text
+        const headers = document.querySelectorAll('.category-header h3')
+        headers.forEach((header, index) => {
+          if (header.textContent.trim() === themeName) {
+            const categoryRow = header.closest('.category-row')
+            if (categoryRow) {
+              categoryRow.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }
+        })
+      }, 350) // Wait for animation to complete
+    }
+  }
+}
+
+// Get preview snippet for collapsed view
+const getPreviewSnippet = (categoryName) => {
+  const categoryContent = props.content[categoryName]
+  if (!categoryContent || !categoryContent.statement_text) {
+    return 'Complete the questionnaire to see personalized content.'
+  }
+  
+  // Strip HTML tags and get first 120 characters
+  const text = categoryContent.statement_text
+    .replace(/<[^>]*>/g, '') // Remove HTML tags
+    .replace(/\s+/g, ' ') // Normalize whitespace
+    .trim()
+  
+  if (text.length <= 120) {
+    return text
+  }
+  
+  // Find last space before 120 chars to avoid cutting words
+  const truncated = text.substring(0, 120)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return truncated.substring(0, lastSpace > 80 ? lastSpace : 120) + '...'
+}
+
+// Handle window resize
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
 })
 
 const categories = [
@@ -173,12 +281,87 @@ const parseActivities = (toolsStr) => {
   color: white;
 }
 
+.category-header.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .category-header h3 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+
+.mobile-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-badge {
+  background: rgba(255, 255, 255, 0.25);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+
+.expand-icon {
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Mobile Preview (Collapsed State) */
+.mobile-preview {
+  padding: 16px 24px;
+  background: #f8f9fa;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.preview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #555;
+}
+
+.expand-preview-button {
+  align-self: flex-start;
+  padding: 8px 16px;
+  background: transparent;
+  border: 2px solid #079baa;
+  color: #079baa;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.expand-preview-button:hover {
+  background: #079baa;
+  color: white;
 }
 
 .row-content {
@@ -342,11 +525,47 @@ const parseActivities = (toolsStr) => {
 @media (max-width: 768px) {
   .coaching-content {
     padding: 15px;
+    gap: 12px;
+  }
+  
+  .category-row {
+    transition: all 0.3s ease;
+  }
+  
+  .category-row.mobile-collapsed {
+    overflow: hidden;
+  }
+  
+  .category-header {
+    padding: 14px 18px;
+  }
+  
+  .category-header h3 {
+    font-size: 18px;
+    letter-spacing: 0.5px;
   }
   
   .row-content {
     grid-template-columns: 1fr;
     gap: 16px;
+    padding: 18px;
+    max-height: none;
+    overflow: visible;
+  }
+  
+  .row-content.mobile-expanded {
+    animation: expandContent 0.3s ease;
+  }
+  
+  @keyframes expandContent {
+    from {
+      opacity: 0;
+      max-height: 0;
+    }
+    to {
+      opacity: 1;
+      max-height: 5000px;
+    }
   }
   
   .score-card {
@@ -360,6 +579,11 @@ const parseActivities = (toolsStr) => {
   
   .staff-content {
     margin-top: 0;
+  }
+  
+  /* Hide preview when expanded */
+  .category-row:not(.mobile-collapsed) .mobile-preview {
+    display: none;
   }
 }
 

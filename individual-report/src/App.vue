@@ -200,10 +200,29 @@ const loadReportData = async () => {
       questionResponses.value = data.responses
     }
     
-    // Set selected cycle to Cycle 1 by default
-    // Users should start with Cycle 1 even if they completed later cycles
+    // Smart cycle selection: Open on the latest completed cycle
     if (data.scores && data.scores.length > 0) {
-      selectedCycle.value = 1  // Always default to Cycle 1
+      // Find cycles that have actual score data (not null/undefined)
+      const cyclesWithData = data.scores
+        .filter(score => {
+          // Check if cycle has at least one valid score
+          return score.vision !== null && score.vision !== undefined ||
+                 score.effort !== null && score.effort !== undefined ||
+                 score.systems !== null && score.systems !== undefined ||
+                 score.practice !== null && score.practice !== undefined ||
+                 score.attitude !== null && score.attitude !== undefined
+        })
+        .map(score => score.cycle)
+      
+      // Set to highest cycle with data, or default to 1 if no valid data
+      if (cyclesWithData.length > 0) {
+        const latestCycle = Math.max(...cyclesWithData)
+        selectedCycle.value = latestCycle
+        console.log(`[VESPA Report] Smart cycle selection: Opening Cycle ${latestCycle} (latest completed)`)
+      } else {
+        selectedCycle.value = 1
+        console.log('[VESPA Report] No valid cycle data found, defaulting to Cycle 1')
+      }
     }
     
     console.log('[VESPA Report] Data loaded successfully:', data)
