@@ -612,6 +612,7 @@ const saveResponse = async () => {
     margin-bottom: 2mm !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
+    page-break-before: always !important; /* Force to page 2 */
   }
   
   .section-header h3 {
@@ -624,7 +625,8 @@ const saveResponse = async () => {
   .action-bar,
   .error-message,
   .success-message,
-  .expand-button {
+  .expand-button,
+  .info-text {
     display: none !important;
     visibility: hidden !important;
   }
@@ -636,12 +638,14 @@ const saveResponse = async () => {
   .response-textarea {
     border: 0.3pt solid #ccc !important;
     padding: 1mm !important;
-    min-height: 15mm !important;
-    max-height: 20mm !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
     font-size: 7pt !important;
     line-height: 1.3 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     white-space: pre-wrap !important;
+    display: block !important;
   }
 }
 </style>

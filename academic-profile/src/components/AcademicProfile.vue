@@ -340,6 +340,20 @@ const showTemporaryMessage = (message, type) => {
   gap: 12px;
 }
 
+@media (max-width: 768px) {
+  .subjects-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .subjects-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 .no-subjects {
   padding: 20px;
   text-align: center;
@@ -397,6 +411,12 @@ const showTemporaryMessage = (message, type) => {
     flex-direction: column;
   }
   
+  .subjects-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 400px) {
   .subjects-grid {
     grid-template-columns: 1fr;
   }

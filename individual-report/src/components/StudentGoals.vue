@@ -677,6 +677,7 @@ const saveGoals = async () => {
     margin-bottom: 2mm !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
+    /* Continue on same page as response */
   }
   
   .section-header h3 {
@@ -690,7 +691,8 @@ const saveGoals = async () => {
   .error-message,
   .success-message,
   .expand-button,
-  .date-fields {
+  .date-fields,
+  .info-text {
     display: none !important;
     visibility: hidden !important;
   }
@@ -703,12 +705,14 @@ const saveGoals = async () => {
   .goal-textarea {
     border: 0.3pt solid #ccc !important;
     padding: 1mm !important;
-    min-height: 15mm !important;
-    max-height: 20mm !important;
+    min-height: auto !important;
+    max-height: none !important;
+    height: auto !important;
     font-size: 7pt !important;
     line-height: 1.3 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     white-space: pre-wrap !important;
+    display: block !important;
   }
   
   .date-field input[type="date"] {

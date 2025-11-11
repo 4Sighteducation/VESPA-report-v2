@@ -8,12 +8,12 @@ export default defineConfig({
     rollupOptions: {
       input: './index.html',
       output: {
-        entryFileNames: 'report1af.js',
-        chunkFileNames: '[name]-[hash].js',
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name?.endsWith('.css')) {
-            return 'report1af.css'
-          }
+                    entryFileNames: 'report1ag.js',
+                    chunkFileNames: '[name]-[hash].js',
+                    assetFileNames: (assetInfo) => {
+                      if (assetInfo.name?.endsWith('.css')) {
+                        return 'report1ag.css'
+                      }
           return '[name]-[hash][extname]'
         },
         format: 'iife', // Wrap in IIFE to isolate variables

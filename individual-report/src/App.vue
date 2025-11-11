@@ -493,9 +493,26 @@ onBeforeUnmount(() => {
   }
   
   /* ========== CATEGORY ROWS - EXTREME COMPRESSION ========== */
+  /* FORCE ALL THEMES TO BE OPEN IN PRINT */
+  .category-row.mobile-collapsed {
+    overflow: visible !important;
+  }
+  
+  .mobile-preview {
+    display: none !important;
+  }
+  
+  .row-content {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-height: none !important;
+  }
+  
   .coaching-content {
     padding: 1mm !important;
     gap: 1mm !important;
+    page-break-after: always !important; /* Force themes to page 1 */
   }
   
   .category-row {

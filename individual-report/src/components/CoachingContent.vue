@@ -551,6 +551,21 @@ const parseActivities = (toolsStr) => {
     padding: 18px;
     max-height: none;
     overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .row-content * {
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  
+  .student-content,
+  .staff-content {
+    width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
   }
   
   .row-content.mobile-expanded {
@@ -588,6 +603,22 @@ const parseActivities = (toolsStr) => {
 }
 
 @media print {
+  /* FORCE ALL THEMES TO BE OPEN IN PRINT */
+  .category-row.mobile-collapsed {
+    overflow: visible !important;
+  }
+  
+  .mobile-preview {
+    display: none !important;
+  }
+  
+  .row-content {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    max-height: none !important;
+  }
+  
   .coaching-content {
     background: white !important;
     padding: 1mm !important;
