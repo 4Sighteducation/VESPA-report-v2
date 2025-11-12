@@ -516,6 +516,14 @@ const handleSaveGoals = async (newText) => {
   try {
     console.log('[StudentTable] Saving goals for:', editingStudent.value.email, 'Knack ID:', editingStudent.value.id)
     
+    // OPTIMISTIC UPDATE: Update UI immediately before save completes
+    const originalGoals = editingStudent.value.goals
+    const originalHasGoals = editingStudent.value.hasGoals
+    
+    editingStudent.value.goals = newText
+    editingStudent.value.hasGoals = !!newText.trim()
+    console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
+    
     const result = await staffAPI.saveStudentGoals(
       editingStudent.value.email,
       editingStudent.value.targetCycle,
@@ -525,21 +533,20 @@ const handleSaveGoals = async (newText) => {
       }
     )
     
-    // Update local data
-    editingStudent.value.goals = newText
-    editingStudent.value.hasGoals = !!newText.trim()
-    
     // Log Knack write status
     if (result.knackWritten) {
       console.log('[StudentTable] ✅ Goals saved to BOTH Supabase AND Knack')
     } else {
       console.warn('[StudentTable] ⚠️ Goals saved to Supabase ONLY. Knack error:', result.knackError)
+      // Revert optimistic update on Knack failure
+      editingStudent.value.goals = originalGoals
+      editingStudent.value.hasGoals = originalHasGoals
+      throw new Error('Failed to save to Knack: ' + result.knackError)
     }
     
-    // Notify parent to refresh data
-    emit('data-updated')
-    
-    console.log('[StudentTable] Goals saved successfully')
+    // DON'T refresh immediately - keep optimistic update
+    // Refresh will happen when report modal closes
+    console.log('[StudentTable] Goals saved successfully - keeping optimistic update')
   } catch (error) {
     console.error('[StudentTable] Error saving goals:', error)
     throw error
@@ -567,6 +574,14 @@ const handleSaveCoaching = async (newText) => {
   try {
     console.log('[StudentTable] Saving coaching comments for:', editingCoachingStudent.value.email, 'Knack ID:', editingCoachingStudent.value.id)
     
+    // OPTIMISTIC UPDATE: Update UI immediately before save completes
+    const originalCoaching = editingCoachingStudent.value.coachingComments
+    const originalHasCoaching = editingCoachingStudent.value.hasCoaching
+    
+    editingCoachingStudent.value.coachingComments = newText
+    editingCoachingStudent.value.hasCoaching = !!newText.trim()
+    console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
+    
     const result = await staffAPI.saveCoachingComments(
       editingCoachingStudent.value.email,
       editingCoachingStudent.value.targetCycle,
@@ -576,21 +591,20 @@ const handleSaveCoaching = async (newText) => {
       }
     )
     
-    // Update local data
-    editingCoachingStudent.value.coachingComments = newText
-    editingCoachingStudent.value.hasCoaching = !!newText.trim()
-    
     // Log Knack write status
     if (result.knackWritten) {
       console.log('[StudentTable] ✅ Coaching saved to BOTH Supabase AND Knack')
     } else {
       console.warn('[StudentTable] ⚠️ Coaching saved to Supabase ONLY. Knack error:', result.knackError)
+      // Revert optimistic update on Knack failure
+      editingCoachingStudent.value.coachingComments = originalCoaching
+      editingCoachingStudent.value.hasCoaching = originalHasCoaching
+      throw new Error('Failed to save to Knack: ' + result.knackError)
     }
     
-    // Notify parent to refresh data
-    emit('data-updated')
-    
-    console.log('[StudentTable] Coaching comments saved successfully')
+    // DON'T refresh immediately - keep optimistic update
+    // Refresh will happen when report modal closes
+    console.log('[StudentTable] Coaching comments saved successfully - keeping optimistic update')
   } catch (error) {
     console.error('[StudentTable] Error saving coaching comments:', error)
     throw error
