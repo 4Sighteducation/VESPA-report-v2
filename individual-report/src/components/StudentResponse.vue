@@ -45,13 +45,35 @@
               <li><strong>Daily reality:</strong> What does a typical study session look like?</li>
               <li><strong>Challenges:</strong> What's been particularly difficult lately?</li>
               <li><strong>Successes:</strong> What study strategies are working well?</li>
+              <li><strong>Time management:</strong> How do you balance study with other commitments?</li>
             </ul>
             
             <div class="sentence-starters">
               <h4>Express yourself with:</h4>
               <p class="starter">"Right now, I'm finding it hard to..."</p>
               <p class="starter">"My biggest challenge with studying is..."</p>
+              <p class="starter">"I usually study by... but I'm not sure if..."</p>
               <p class="starter">"Something that's been working well for me is..."</p>
+              <p class="starter">"I struggle most when..."</p>
+            </div>
+          </div>
+          
+          <h3>🎯 What You Want to Achieve</h3>
+          <div class="guide-section">
+            <p>Share what matters most to you academically:</p>
+            <ul>
+              <li><strong>Immediate concerns:</strong> What needs attention first?</li>
+              <li><strong>Long-term goals:</strong> Where do you want to be?</li>
+              <li><strong>Support needed:</strong> What kind of help would be most valuable?</li>
+              <li><strong>Motivation:</strong> What drives you to succeed?</li>
+            </ul>
+            
+            <div class="sentence-starters">
+              <h4>Share your thoughts:</h4>
+              <p class="starter">"What I really need help with is..."</p>
+              <p class="starter">"I'm motivated by..."</p>
+              <p class="starter">"My main priority right now is..."</p>
+              <p class="starter">"I'd like to improve my ability to..."</p>
             </div>
           </div>
           
@@ -61,7 +83,12 @@
               <li><strong>Be specific:</strong> Instead of "I procrastinate," try "I often leave essays until 2 days before they're due"</li>
               <li><strong>Include context:</strong> Mention relevant factors (work commitments, health, family responsibilities)</li>
               <li><strong>Be honest:</strong> Your tutor/mentor is here to help, not judge</li>
+              <li><strong>Ask for what you need:</strong> If you want specific strategies or support, say so!</li>
             </ul>
+          </div>
+          
+          <div class="response-prompt">
+            <p><strong>Remember:</strong> This is the start of a conversation. Your tutor/mentor will use your response to tailor their support specifically to you. The more open and detailed you are, the more helpful they can be!</p>
           </div>
         </div>
       </div>
@@ -483,6 +510,21 @@ const saveResponse = async () => {
   margin-bottom: 10px;
   line-height: 1.6;
   color: #666;
+}
+
+.response-prompt {
+  background: #e3f2fd;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 20px;
+  border-left: 4px solid #079baa;
+}
+
+.response-prompt p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
 }
 
 .textarea-wrapper {
