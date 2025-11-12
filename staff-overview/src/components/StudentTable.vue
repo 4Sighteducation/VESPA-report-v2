@@ -513,40 +513,52 @@ const closeEditModal = () => {
 const handleSaveGoals = async (newText) => {
   if (!editingStudent.value) return
   
+  // Store reference BEFORE modal closes (modal clearing editingStudent causes null error)
+  const studentEmail = editingStudent.value.email
+  const studentId = editingStudent.value.id
+  const targetCycle = editingStudent.value.targetCycle
+  
   try {
-    console.log('[StudentTable] Saving goals for:', editingStudent.value.email, 'Knack ID:', editingStudent.value.id)
+    console.log('[StudentTable] Saving goals for:', studentEmail, 'Knack ID:', studentId)
     
-    // OPTIMISTIC UPDATE: Update UI immediately before save completes
-    const originalGoals = editingStudent.value.goals
-    const originalHasGoals = editingStudent.value.hasGoals
+    // Find the actual student in the props.students array for optimistic update
+    const studentInArray = props.students.find(s => s.id === studentId)
     
-    editingStudent.value.goals = newText
-    editingStudent.value.hasGoals = !!newText.trim()
-    console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
-    
-    const result = await staffAPI.saveStudentGoals(
-      editingStudent.value.email,
-      editingStudent.value.targetCycle,
-      { 
-        goalText: newText,
-        knackRecordId: editingStudent.value.id // CRITICAL: Pass Knack record ID
+    if (studentInArray) {
+      // Store original for rollback
+      const originalGoals = studentInArray.goals
+      const originalHasGoals = studentInArray.hasGoals
+      
+      // OPTIMISTIC UPDATE: Update the actual array element immediately
+      studentInArray.goals = newText
+      studentInArray.hasGoals = !!newText.trim()
+      console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
+      
+      const result = await staffAPI.saveStudentGoals(
+        studentEmail,
+        targetCycle,
+        { 
+          goalText: newText,
+          knackRecordId: studentId
+        }
+      )
+      
+      // Log Knack write status
+      if (result.knackWritten) {
+        console.log('[StudentTable] ✅ Goals saved to BOTH Supabase AND Knack')
+      } else {
+        console.warn('[StudentTable] ⚠️ Goals saved to Supabase ONLY. Knack error:', result.knackError)
+        // Revert optimistic update on Knack failure
+        studentInArray.goals = originalGoals
+        studentInArray.hasGoals = originalHasGoals
+        throw new Error('Failed to save to Knack: ' + result.knackError)
       }
-    )
-    
-    // Log Knack write status
-    if (result.knackWritten) {
-      console.log('[StudentTable] ✅ Goals saved to BOTH Supabase AND Knack')
+      
+      console.log('[StudentTable] Goals saved successfully - optimistic update persists in table')
     } else {
-      console.warn('[StudentTable] ⚠️ Goals saved to Supabase ONLY. Knack error:', result.knackError)
-      // Revert optimistic update on Knack failure
-      editingStudent.value.goals = originalGoals
-      editingStudent.value.hasGoals = originalHasGoals
-      throw new Error('Failed to save to Knack: ' + result.knackError)
+      console.error('[StudentTable] Could not find student in array for optimistic update')
+      throw new Error('Student not found in table')
     }
-    
-    // DON'T refresh immediately - keep optimistic update
-    // Refresh will happen when report modal closes
-    console.log('[StudentTable] Goals saved successfully - keeping optimistic update')
   } catch (error) {
     console.error('[StudentTable] Error saving goals:', error)
     throw error
@@ -571,40 +583,52 @@ const closeEditCoaching = () => {
 const handleSaveCoaching = async (newText) => {
   if (!editingCoachingStudent.value) return
   
+  // Store reference BEFORE modal closes (modal clearing editingCoachingStudent causes null error)
+  const studentEmail = editingCoachingStudent.value.email
+  const studentId = editingCoachingStudent.value.id
+  const targetCycle = editingCoachingStudent.value.targetCycle
+  
   try {
-    console.log('[StudentTable] Saving coaching comments for:', editingCoachingStudent.value.email, 'Knack ID:', editingCoachingStudent.value.id)
+    console.log('[StudentTable] Saving coaching comments for:', studentEmail, 'Knack ID:', studentId)
     
-    // OPTIMISTIC UPDATE: Update UI immediately before save completes
-    const originalCoaching = editingCoachingStudent.value.coachingComments
-    const originalHasCoaching = editingCoachingStudent.value.hasCoaching
+    // Find the actual student in the props.students array for optimistic update
+    const studentInArray = props.students.find(s => s.id === studentId)
     
-    editingCoachingStudent.value.coachingComments = newText
-    editingCoachingStudent.value.hasCoaching = !!newText.trim()
-    console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
-    
-    const result = await staffAPI.saveCoachingComments(
-      editingCoachingStudent.value.email,
-      editingCoachingStudent.value.targetCycle,
-      { 
-        coachingText: newText,
-        knackRecordId: editingCoachingStudent.value.id // CRITICAL: Pass Knack record ID
+    if (studentInArray) {
+      // Store original for rollback
+      const originalCoaching = studentInArray.coachingComments
+      const originalHasCoaching = studentInArray.hasCoaching
+      
+      // OPTIMISTIC UPDATE: Update the actual array element immediately
+      studentInArray.coachingComments = newText
+      studentInArray.hasCoaching = !!newText.trim()
+      console.log('[StudentTable] ✨ Optimistic update applied - UI updated instantly')
+      
+      const result = await staffAPI.saveCoachingComments(
+        studentEmail,
+        targetCycle,
+        { 
+          coachingText: newText,
+          knackRecordId: studentId
+        }
+      )
+      
+      // Log Knack write status
+      if (result.knackWritten) {
+        console.log('[StudentTable] ✅ Coaching saved to BOTH Supabase AND Knack')
+      } else {
+        console.warn('[StudentTable] ⚠️ Coaching saved to Supabase ONLY. Knack error:', result.knackError)
+        // Revert optimistic update on Knack failure
+        studentInArray.coachingComments = originalCoaching
+        studentInArray.hasCoaching = originalHasCoaching
+        throw new Error('Failed to save to Knack: ' + result.knackError)
       }
-    )
-    
-    // Log Knack write status
-    if (result.knackWritten) {
-      console.log('[StudentTable] ✅ Coaching saved to BOTH Supabase AND Knack')
+      
+      console.log('[StudentTable] Coaching comments saved successfully - optimistic update persists in table')
     } else {
-      console.warn('[StudentTable] ⚠️ Coaching saved to Supabase ONLY. Knack error:', result.knackError)
-      // Revert optimistic update on Knack failure
-      editingCoachingStudent.value.coachingComments = originalCoaching
-      editingCoachingStudent.value.hasCoaching = originalHasCoaching
-      throw new Error('Failed to save to Knack: ' + result.knackError)
+      console.error('[StudentTable] Could not find student in array for optimistic update')
+      throw new Error('Student not found in table')
     }
-    
-    // DON'T refresh immediately - keep optimistic update
-    // Refresh will happen when report modal closes
-    console.log('[StudentTable] Coaching comments saved successfully - keeping optimistic update')
   } catch (error) {
     console.error('[StudentTable] Error saving coaching comments:', error)
     throw error
