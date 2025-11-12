@@ -68,7 +68,12 @@
     </div>
 
     <div class="section-body">
-      <div class="info-text">
+      <!-- Read-only notice for staff -->
+      <div v-if="isStaff" class="info-text staff-readonly-notice">
+        <p>👁️ <strong>View Only:</strong> This is the student's reflection. Only the student can edit this section.</p>
+      </div>
+      
+      <div v-else class="info-text">
         <p>✍️ Click here to write your reflection. Think about: What surprised you? What makes sense? What do you want to improve?</p>
       </div>
 
@@ -76,13 +81,16 @@
         <textarea
           v-model="responseText"
           class="response-textarea"
+          :class="{ 'readonly': isStaff }"
           placeholder="✍️ Click here to write your reflection. Think about: What surprised you? What makes sense? What do you want to improve?"
           rows="8"
-          :disabled="saving"
+          :disabled="saving || isStaff"
+          :readonly="isStaff"
           @click="handleTextareaClick"
           @focus="handleTextareaFocus"
         ></textarea>
         <button 
+          v-if="!isStaff"
           class="expand-button" 
           @click="showFocusModal = true"
           title="Expand to full screen"
@@ -97,6 +105,7 @@
       </div>
 
       <TextareaFocusModal
+        v-if="!isStaff"
         v-model="responseText"
         :is-open="showFocusModal"
         title="💡 Your Reflection"
@@ -105,7 +114,7 @@
         @save="handleModalSave"
       />
 
-      <div class="action-bar">
+      <div v-if="!isStaff" class="action-bar">
         <span v-if="lastSaved" class="last-saved">Last saved: {{ lastSaved }}</span>
         <button @click="saveResponse" :disabled="saving || !hasChanges" class="save-button">
           {{ saving ? 'Saving...' : 'Save Response' }}
@@ -131,6 +140,10 @@ const props = defineProps({
   existing: {
     type: Object,
     default: null
+  },
+  isStaff: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -155,6 +168,10 @@ const isMobile = computed(() => {
 
 // Handle textarea click - on mobile, open modal instead of focusing
 const handleTextareaClick = (e) => {
+  if (props.isStaff) {
+    e.preventDefault()
+    return
+  }
   if (isMobile.value) {
     e.preventDefault()
     showFocusModal.value = true
@@ -163,6 +180,11 @@ const handleTextareaClick = (e) => {
 
 // Handle textarea focus - on desktop, allow normal focus
 const handleTextareaFocus = (e) => {
+  if (props.isStaff) {
+    e.preventDefault()
+    e.target.blur()
+    return
+  }
   // On mobile, open modal instead
   if (isMobile.value) {
     e.preventDefault()
@@ -501,6 +523,22 @@ const saveResponse = async () => {
 .response-textarea:disabled {
   background: #f5f5f5;
   cursor: not-allowed;
+}
+
+.response-textarea.readonly {
+  background: #f0f0f0;
+  color: #666;
+  cursor: default;
+  border-color: #d0d0d0;
+}
+
+.staff-readonly-notice {
+  background: #fff3e0 !important;
+  border-left-color: #ff9800 !important;
+}
+
+.staff-readonly-notice strong {
+  color: #e65100;
 }
 
 .expand-button {

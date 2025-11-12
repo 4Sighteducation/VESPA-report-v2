@@ -60,7 +60,6 @@
               Group
               <span class="sort-indicator">{{ getSortIndicator('group') }}</span>
             </th>
-            <th>Focus</th>
             <th @click="sortBy('vision')" class="score-cell sortable" title="Vision">
               V
               <span class="sort-indicator">{{ getSortIndicator('vision') }}</span>
@@ -85,20 +84,16 @@
               O
               <span class="sort-indicator">{{ getSortIndicator('overall') }}</span>
             </th>
+            <th class="report-col">Report</th>
             <th>Response</th>
             <th>Action Plan</th>
-            <th>Report</th>
+            <th>Staff Comments</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="student in paginatedStudents" :key="student.id">
             <td class="student-name">{{ student.name }}</td>
             <td>{{ student.group || '-' }}</td>
-            <td class="status-cell">
-              <span :class="['status-badge', student.hasCompleted ? 'completed' : 'not-completed']">
-                {{ student.hasCompleted ? 'Yes' : 'No' }}
-              </span>
-            </td>
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.vision) }">
               {{ student.scores?.vision || '-' }}
             </td>
@@ -115,26 +110,35 @@
               {{ student.scores?.attitude || '-' }}
             </td>
             <td class="score-cell overall-cell" :style="{ background: getScoreColor(student.scores?.overall) }">
-              {{ student.scores?.overall || '-' }}
+              {{ formatOverall(student.scores?.overall) }}
             </td>
-            <td 
-              class="text-preview clickable"
-              :class="{ 'has-content': student.hasResponse, 'no-content': !student.hasResponse }"
-              @click="openTextModal(student.name, 'Response', student.response)"
-              :title="student.hasResponse ? 'Click to view full response' : 'No response yet'">
-              {{ truncate(student.response, 50) }}
-            </td>
-            <td 
-              class="text-preview clickable"
-              :class="{ 'has-content': student.hasGoals, 'no-content': !student.hasGoals }"
-              @click="openTextModal(student.name, 'Action Plan', student.goals)"
-              :title="student.hasGoals ? 'Click to view full action plan' : 'No action plan yet'">
-              {{ truncate(student.goals, 50) }}
-            </td>
-            <td>
-              <button @click="viewReport(student)" class="report-button">
-                REPORT
+            <td class="report-cell">
+              <button @click="viewReport(student)" class="report-button" title="View Full Report">
+                📄
               </button>
+            </td>
+            <td 
+              class="text-preview clickable view-only"
+              :class="{ 'has-content': student.hasResponse, 'no-content': !student.hasResponse }"
+              @click="openViewModal(student.name, 'Response', student.response)"
+              :title="student.hasResponse ? 'Click to view full response' : 'No response yet'">
+              <span v-if="!student.hasResponse" class="incomplete">Incomplete</span>
+              <span v-else>{{ truncate(student.response, 40) }}</span>
+            </td>
+            <td 
+              class="text-preview clickable editable"
+              :class="{ 'has-content': student.hasGoals, 'no-content': !student.hasGoals }"
+              @click="openEditGoals(student)"
+              :title="student.hasGoals ? 'Click to edit action plan' : 'No action plan yet - Click to add'">
+              <span v-if="!student.hasGoals" class="incomplete">Incomplete</span>
+              <span v-else>{{ truncate(student.goals, 40) }}</span>
+            </td>
+            <td 
+              class="text-preview clickable editable"
+              :class="{ 'has-content': student.hasCoaching, 'no-content-blank': !student.hasCoaching }"
+              @click="openEditCoaching(student)"
+              :title="student.hasCoaching ? 'Click to edit coaching comments' : 'No coaching comments - Click to add'">
+              {{ truncate(student.coachingComments, 40) }}
             </td>
           </tr>
         </tbody>
@@ -177,12 +181,32 @@
       <p>No students match the current filters.</p>
     </div>
     
-    <!-- Text View Modal -->
+    <!-- Read-Only View Modal (for Response) -->
     <TextViewModal
-      :isOpen="modalOpen"
-      :title="modalTitle"
-      :text="modalText"
-      @close="closeTextModal"
+      :isOpen="viewModalOpen"
+      :title="viewModalTitle"
+      :text="viewModalText"
+      @close="closeViewModal"
+    />
+    
+    <!-- Editable Modal for Action Plan -->
+    <EditableTextModal
+      :isOpen="editGoalsModalOpen"
+      :title="editModalTitle"
+      :text="editModalText"
+      placeholder="Enter action plan / study goals here..."
+      @close="closeEditModal"
+      @save="handleSaveGoals"
+    />
+    
+    <!-- Editable Modal for Staff Comments -->
+    <EditableTextModal
+      :isOpen="editCoachingModalOpen"
+      :title="editCoachingTitle"
+      :text="editCoachingText"
+      placeholder="Enter coaching comments and observations here..."
+      @close="closeEditCoaching"
+      @save="handleSaveCoaching"
     />
   </div>
 </template>
@@ -191,6 +215,8 @@
 import { ref, computed, watch } from 'vue'
 import { getScoreColor } from '../data/vespaColors.js'
 import TextViewModal from './TextViewModal.vue'
+import EditableTextModal from './EditableTextModal.vue'
+import { staffAPI } from '../services/api.js'
 
 const props = defineProps({
   students: {
@@ -207,13 +233,27 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['view-report'])
+const emit = defineEmits(['view-report', 'data-updated'])
 
 const sortField = ref('name')
 const sortDirection = ref('asc')
-const modalOpen = ref(false)
-const modalTitle = ref('')
-const modalText = ref('')
+
+// View-only modal state
+const viewModalOpen = ref(false)
+const viewModalTitle = ref('')
+const viewModalText = ref('')
+
+// Edit Goals modal state
+const editGoalsModalOpen = ref(false)
+const editModalTitle = ref('')
+const editModalText = ref('')
+const editingStudent = ref(null)
+
+// Edit Coaching modal state
+const editCoachingModalOpen = ref(false)
+const editCoachingTitle = ref('')
+const editCoachingText = ref('')
+const editingCoachingStudent = ref(null)
 
 // Pagination state
 const currentPage = ref(1)
@@ -430,23 +470,111 @@ const truncate = (text, length) => {
   return text.substring(0, length) + '...'
 }
 
+const formatOverall = (score) => {
+  if (score === null || score === undefined) return '-'
+  return Math.round(parseFloat(score))
+}
+
 const viewReport = (student) => {
   emit('view-report', student)
 }
 
-const openTextModal = (studentName, type, text) => {
+// View-only modal (for Response)
+const openViewModal = (studentName, type, text) => {
   if (!text || text.trim() === '' || text === '-') {
     return // Don't open modal for empty content
   }
-  modalTitle.value = `${studentName} - ${type}`
-  modalText.value = text
-  modalOpen.value = true
+  viewModalTitle.value = `${studentName} - ${type}`
+  viewModalText.value = text
+  viewModalOpen.value = true
 }
 
-const closeTextModal = () => {
-  modalOpen.value = false
-  modalTitle.value = ''
-  modalText.value = ''
+const closeViewModal = () => {
+  viewModalOpen.value = false
+  viewModalTitle.value = ''
+  viewModalText.value = ''
+}
+
+// Edit Goals modal
+const openEditGoals = (student) => {
+  editingStudent.value = student
+  editModalTitle.value = `${student.name} - Edit Action Plan`
+  editModalText.value = student.goals || ''
+  editGoalsModalOpen.value = true
+}
+
+const closeEditModal = () => {
+  editGoalsModalOpen.value = false
+  editModalTitle.value = ''
+  editModalText.value = ''
+  editingStudent.value = null
+}
+
+const handleSaveGoals = async (newText) => {
+  if (!editingStudent.value) return
+  
+  try {
+    console.log('[StudentTable] Saving goals for:', editingStudent.value.email)
+    
+    await staffAPI.saveStudentGoals(
+      editingStudent.value.email,
+      editingStudent.value.targetCycle,
+      { goalText: newText }
+    )
+    
+    // Update local data
+    editingStudent.value.goals = newText
+    editingStudent.value.hasGoals = !!newText.trim()
+    
+    // Notify parent to refresh data
+    emit('data-updated')
+    
+    console.log('[StudentTable] Goals saved successfully')
+  } catch (error) {
+    console.error('[StudentTable] Error saving goals:', error)
+    throw error
+  }
+}
+
+// Edit Coaching modal
+const openEditCoaching = (student) => {
+  editingCoachingStudent.value = student
+  editCoachingTitle.value = `${student.name} - Staff Coaching Comments`
+  editCoachingText.value = student.coachingComments || ''
+  editCoachingModalOpen.value = true
+}
+
+const closeEditCoaching = () => {
+  editCoachingModalOpen.value = false
+  editCoachingTitle.value = ''
+  editCoachingText.value = ''
+  editingCoachingStudent.value = null
+}
+
+const handleSaveCoaching = async (newText) => {
+  if (!editingCoachingStudent.value) return
+  
+  try {
+    console.log('[StudentTable] Saving coaching comments for:', editingCoachingStudent.value.email)
+    
+    await staffAPI.saveCoachingComments(
+      editingCoachingStudent.value.email,
+      editingCoachingStudent.value.targetCycle,
+      { coachingText: newText }
+    )
+    
+    // Update local data
+    editingCoachingStudent.value.coachingComments = newText
+    editingCoachingStudent.value.hasCoaching = !!newText.trim()
+    
+    // Notify parent to refresh data
+    emit('data-updated')
+    
+    console.log('[StudentTable] Coaching comments saved successfully')
+  } catch (error) {
+    console.error('[StudentTable] Error saving coaching comments:', error)
+    throw error
+  }
 }
 </script>
 
@@ -569,27 +697,6 @@ const closeTextModal = () => {
   color: #333;
 }
 
-.status-cell {
-  text-align: center;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.completed {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-badge.not-completed {
-  background: #f8d7da;
-  color: #721c24;
-}
 
 .score-cell {
   text-align: center;
@@ -604,8 +711,41 @@ const closeTextModal = () => {
   border-left: 2px solid #ccc;
 }
 
+.report-col {
+  width: 60px;
+  text-align: center;
+}
+
+.report-cell {
+  text-align: center;
+  padding: 8px !important;
+}
+
+.report-button {
+  padding: 8px 12px;
+  background: #079baa;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  width: 44px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-button:hover {
+  background: #067a87;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
 .text-preview {
-  max-width: 200px;
+  max-width: 150px;
   font-size: 13px;
   color: #333;
 }
@@ -616,9 +756,33 @@ const closeTextModal = () => {
   padding: 14px 12px !important;
 }
 
-.text-preview.clickable:hover {
+.text-preview.clickable.view-only:hover {
   transform: scale(1.02);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.text-preview.clickable.editable {
+  position: relative;
+}
+
+.text-preview.clickable.editable:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 8px rgba(7, 155, 170, 0.3);
+  border-left: 3px solid #079baa;
+}
+
+.text-preview.clickable.editable::after {
+  content: '✏️';
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.text-preview.clickable.editable:hover::after {
+  opacity: 0.7;
 }
 
 .text-preview.has-content {
@@ -633,28 +797,17 @@ const closeTextModal = () => {
   font-style: italic;
 }
 
-.text-preview.clickable:hover {
-  opacity: 0.85;
+.text-preview.no-content-blank {
+  background-color: #f5f5f5 !important;
+  color: #999;
+  font-style: italic;
 }
 
-.report-button {
-  padding: 8px 16px;
-  background: #079baa;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
+.incomplete {
+  color: #d32f2f;
   font-weight: 700;
-  cursor: pointer;
-  transition: background 0.3s;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.report-button:hover {
-  background: #067a87;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .pagination-controls {
@@ -741,9 +894,15 @@ const closeTextModal = () => {
   font-size: 16px;
 }
 
+@media (max-width: 1400px) {
+  .text-preview {
+    max-width: 120px;
+  }
+}
+
 @media (max-width: 1200px) {
   .text-preview {
-    max-width: 150px;
+    max-width: 100px;
   }
 }
 
@@ -764,7 +923,13 @@ const closeTextModal = () => {
   }
   
   .text-preview {
-    max-width: 100px;
+    max-width: 80px;
+  }
+  
+  .report-button {
+    font-size: 16px;
+    width: 36px;
+    height: 32px;
   }
 }
 </style>

@@ -27,6 +27,95 @@ export const staffAPI = {
       console.error('[Staff API] Error fetching overview:', error)
       throw error
     }
+  },
+  
+  /**
+   * Save student goals (Action Plan)
+   * @param {string} studentEmail - Student email
+   * @param {number} cycle - Cycle number (1, 2, or 3)
+   * @param {object} goalData - Goal data {goalText, goalSetDate, goalDueDate}
+   * @returns {Promise} Save result
+   */
+  async saveStudentGoals(studentEmail, cycle, goalData) {
+    try {
+      console.log('[Staff API] Saving student goals:', { studentEmail, cycle })
+      
+      const response = await fetch(`${API_BASE_URL}/api/vespa/report/save-goals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          studentEmail,
+          cycle,
+          goalText: goalData.goalText || '',
+          goalSetDate: goalData.goalSetDate || null,
+          goalDueDate: goalData.goalDueDate || null
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('[Staff API] Goals saved successfully')
+      return data
+    } catch (error) {
+      console.error('[Staff API] Error saving goals:', error)
+      throw error
+    }
+  },
+  
+  /**
+   * Save staff coaching comments
+   * @param {string} studentEmail - Student email
+   * @param {number} cycle - Cycle number (1, 2, or 3)
+   * @param {object} coachingData - Coaching data {coachingText, coachingDate}
+   * @returns {Promise} Save result
+   */
+  async saveCoachingComments(studentEmail, cycle, coachingData) {
+    try {
+      console.log('[Staff API] Saving coaching comments:', { studentEmail, cycle })
+      
+      // Get current staff email from Knack
+      let staffEmail = null
+      if (typeof Knack !== 'undefined' && Knack.getUserAttributes) {
+        const userAttrs = Knack.getUserAttributes()
+        staffEmail = userAttrs?.email
+      }
+      
+      if (!staffEmail) {
+        throw new Error('Staff email not available')
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/vespa/report/save-coaching`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          studentEmail,
+          staffEmail,
+          cycle,
+          coachingText: coachingData.coachingText || '',
+          coachingDate: coachingData.coachingDate || null
+        })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      console.log('[Staff API] Coaching comments saved successfully')
+      return data
+    } catch (error) {
+      console.error('[Staff API] Error saving coaching comments:', error)
+      throw error
+    }
   }
 }
 

@@ -213,6 +213,10 @@ const closeReportModal = () => {
   reportModalOpen.value = false
   selectedStudentEmail.value = null
   selectedStudentName.value = null
+  
+  // Refresh data to show any changes made in the report
+  console.log('[Staff Overview] Refreshing data after report modal closed')
+  loadOverviewData(previousCycle.value)
 }
 
 // Lifecycle

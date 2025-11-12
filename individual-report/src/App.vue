@@ -47,6 +47,7 @@
         :key="`response-${selectedCycle}`"
         :cycle="selectedCycle"
         :existing="currentProfile.response"
+        :is-staff="isStaff"
         @save="handleSaveResponse"
       />
       
