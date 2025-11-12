@@ -33,12 +33,12 @@ export const staffAPI = {
    * Save student goals (Action Plan)
    * @param {string} studentEmail - Student email
    * @param {number} cycle - Cycle number (1, 2, or 3)
-   * @param {object} goalData - Goal data {goalText, goalSetDate, goalDueDate}
+   * @param {object} goalData - Goal data {goalText, goalSetDate, goalDueDate, knackRecordId}
    * @returns {Promise} Save result
    */
   async saveStudentGoals(studentEmail, cycle, goalData) {
     try {
-      console.log('[Staff API] Saving student goals:', { studentEmail, cycle })
+      console.log('[Staff API] Saving student goals:', { studentEmail, cycle, knackRecordId: goalData.knackRecordId })
       
       const response = await fetch(`${API_BASE_URL}/api/vespa/report/save-goals`, {
         method: 'POST',
@@ -50,7 +50,8 @@ export const staffAPI = {
           cycle,
           goalText: goalData.goalText || '',
           goalSetDate: goalData.goalSetDate || null,
-          goalDueDate: goalData.goalDueDate || null
+          goalDueDate: goalData.goalDueDate || null,
+          knackRecordId: goalData.knackRecordId || null
         })
       })
       
@@ -60,7 +61,7 @@ export const staffAPI = {
       }
       
       const data = await response.json()
-      console.log('[Staff API] Goals saved successfully')
+      console.log('[Staff API] Goals saved successfully:', data)
       return data
     } catch (error) {
       console.error('[Staff API] Error saving goals:', error)
@@ -72,12 +73,12 @@ export const staffAPI = {
    * Save staff coaching comments
    * @param {string} studentEmail - Student email
    * @param {number} cycle - Cycle number (1, 2, or 3)
-   * @param {object} coachingData - Coaching data {coachingText, coachingDate}
+   * @param {object} coachingData - Coaching data {coachingText, coachingDate, knackRecordId}
    * @returns {Promise} Save result
    */
   async saveCoachingComments(studentEmail, cycle, coachingData) {
     try {
-      console.log('[Staff API] Saving coaching comments:', { studentEmail, cycle })
+      console.log('[Staff API] Saving coaching comments:', { studentEmail, cycle, knackRecordId: coachingData.knackRecordId })
       
       // Get current staff email from Knack
       let staffEmail = null
@@ -100,7 +101,8 @@ export const staffAPI = {
           staffEmail,
           cycle,
           coachingText: coachingData.coachingText || '',
-          coachingDate: coachingData.coachingDate || null
+          coachingDate: coachingData.coachingDate || null,
+          knackRecordId: coachingData.knackRecordId || null
         })
       })
       
@@ -110,7 +112,7 @@ export const staffAPI = {
       }
       
       const data = await response.json()
-      console.log('[Staff API] Coaching comments saved successfully')
+      console.log('[Staff API] Coaching comments saved successfully:', data)
       return data
     } catch (error) {
       console.error('[Staff API] Error saving coaching comments:', error)

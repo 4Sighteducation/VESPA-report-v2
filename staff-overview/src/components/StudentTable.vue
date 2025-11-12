@@ -514,17 +514,27 @@ const handleSaveGoals = async (newText) => {
   if (!editingStudent.value) return
   
   try {
-    console.log('[StudentTable] Saving goals for:', editingStudent.value.email)
+    console.log('[StudentTable] Saving goals for:', editingStudent.value.email, 'Knack ID:', editingStudent.value.id)
     
-    await staffAPI.saveStudentGoals(
+    const result = await staffAPI.saveStudentGoals(
       editingStudent.value.email,
       editingStudent.value.targetCycle,
-      { goalText: newText }
+      { 
+        goalText: newText,
+        knackRecordId: editingStudent.value.id // CRITICAL: Pass Knack record ID
+      }
     )
     
     // Update local data
     editingStudent.value.goals = newText
     editingStudent.value.hasGoals = !!newText.trim()
+    
+    // Log Knack write status
+    if (result.knackWritten) {
+      console.log('[StudentTable] ✅ Goals saved to BOTH Supabase AND Knack')
+    } else {
+      console.warn('[StudentTable] ⚠️ Goals saved to Supabase ONLY. Knack error:', result.knackError)
+    }
     
     // Notify parent to refresh data
     emit('data-updated')
@@ -555,17 +565,27 @@ const handleSaveCoaching = async (newText) => {
   if (!editingCoachingStudent.value) return
   
   try {
-    console.log('[StudentTable] Saving coaching comments for:', editingCoachingStudent.value.email)
+    console.log('[StudentTable] Saving coaching comments for:', editingCoachingStudent.value.email, 'Knack ID:', editingCoachingStudent.value.id)
     
-    await staffAPI.saveCoachingComments(
+    const result = await staffAPI.saveCoachingComments(
       editingCoachingStudent.value.email,
       editingCoachingStudent.value.targetCycle,
-      { coachingText: newText }
+      { 
+        coachingText: newText,
+        knackRecordId: editingCoachingStudent.value.id // CRITICAL: Pass Knack record ID
+      }
     )
     
     // Update local data
     editingCoachingStudent.value.coachingComments = newText
     editingCoachingStudent.value.hasCoaching = !!newText.trim()
+    
+    // Log Knack write status
+    if (result.knackWritten) {
+      console.log('[StudentTable] ✅ Coaching saved to BOTH Supabase AND Knack')
+    } else {
+      console.warn('[StudentTable] ⚠️ Coaching saved to Supabase ONLY. Knack error:', result.knackError)
+    }
     
     // Notify parent to refresh data
     emit('data-updated')
