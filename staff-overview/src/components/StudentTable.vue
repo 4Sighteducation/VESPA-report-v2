@@ -60,6 +60,7 @@
               Group
               <span class="sort-indicator">{{ getSortIndicator('group') }}</span>
             </th>
+            <th class="report-col">Report</th>
             <th @click="sortBy('vision')" class="score-cell sortable" title="Vision">
               V
               <span class="sort-indicator">{{ getSortIndicator('vision') }}</span>
@@ -84,7 +85,6 @@
               O
               <span class="sort-indicator">{{ getSortIndicator('overall') }}</span>
             </th>
-            <th class="report-col">Report</th>
             <th>Response</th>
             <th>Action Plan</th>
             <th>Staff Comments</th>
@@ -94,6 +94,11 @@
           <tr v-for="student in paginatedStudents" :key="student.id">
             <td class="student-name">{{ student.name }}</td>
             <td>{{ student.group || '-' }}</td>
+            <td class="report-cell">
+              <button @click="viewReport(student)" class="report-button" title="View Full Report">
+                📄
+              </button>
+            </td>
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.vision) }">
               {{ student.scores?.vision || '-' }}
             </td>
@@ -111,11 +116,6 @@
             </td>
             <td class="score-cell overall-cell" :style="{ background: getScoreColor(student.scores?.overall) }">
               {{ formatOverall(student.scores?.overall) }}
-            </td>
-            <td class="report-cell">
-              <button @click="viewReport(student)" class="report-button" title="View Full Report">
-                📄
-              </button>
             </td>
             <td 
               class="text-preview clickable view-only"
