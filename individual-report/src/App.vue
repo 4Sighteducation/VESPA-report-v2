@@ -100,11 +100,22 @@ const isStaff = computed(() => {
 })
 
 const availableCycles = computed(() => {
-  if (!reportData.value || !reportData.value.scores) return [1, 2, 3]
-  // Return cycles that have scores
-  const completedCycles = reportData.value.scores.map(s => s.cycle)
-  // Always show all 3 cycle buttons, but data will be missing for incomplete cycles
-  return [1, 2, 3]
+  if (!reportData.value || !reportData.value.scores) return [1]
+  
+  // CRITICAL FIX: Only show cycles that actually have score data
+  // Don't show empty cycles (prevents confusion when Supabase has bad data)
+  const cyclesWithData = reportData.value.scores
+    .filter(score => {
+      // Check if cycle has at least one valid score
+      return score.vision !== null || score.effort !== null || 
+             score.systems !== null || score.practice !== null || 
+             score.attitude !== null
+    })
+    .map(s => s.cycle)
+    .sort()
+  
+  // If no cycles with data, show at least Cycle 1
+  return cyclesWithData.length > 0 ? cyclesWithData : [1]
 })
 
 const currentCycleScores = computed(() => {
@@ -210,28 +221,32 @@ const loadReportData = async () => {
       questionResponses.value = data.responses
     }
     
-    // Smart cycle selection: Open on the latest completed cycle
-    if (data.scores && data.scores.length > 0) {
-      // Find cycles that have actual score data (not null/undefined)
-      const cyclesWithData = data.scores
-        .filter(score => {
-          // Check if cycle has at least one valid score
-          return score.vision !== null && score.vision !== undefined ||
-                 score.effort !== null && score.effort !== undefined ||
-                 score.systems !== null && score.systems !== undefined ||
-                 score.practice !== null && score.practice !== undefined ||
-                 score.attitude !== null && score.attitude !== undefined
-        })
-        .map(score => score.cycle)
-      
-      // Set to highest cycle with data, or default to 1 if no valid data
-      if (cyclesWithData.length > 0) {
-        const latestCycle = Math.max(...cyclesWithData)
-        selectedCycle.value = latestCycle
-        console.log(`[VESPA Report] Smart cycle selection: Opening Cycle ${latestCycle} (latest completed)`)
-      } else {
-        selectedCycle.value = 1
-        console.log('[VESPA Report] No valid cycle data found, defaulting to Cycle 1')
+    // CRITICAL FIX: Use student's CURRENT CYCLE from Knack (field_146)
+    // Don't rely on Supabase score data which may be incorrect/duplicated
+    if (data.student && data.student.currentCycle) {
+      selectedCycle.value = data.student.currentCycle
+      console.log(`[VESPA Report] Opening on student's current cycle from Knack: Cycle ${data.student.currentCycle}`)
+    } else {
+      // Fallback to smart selection if currentCycle not available
+      console.warn('[VESPA Report] No currentCycle from Knack, using fallback logic')
+      if (data.scores && data.scores.length > 0) {
+        const cyclesWithData = data.scores
+          .filter(score => {
+            return score.vision !== null && score.vision !== undefined ||
+                   score.effort !== null && score.effort !== undefined ||
+                   score.systems !== null && score.systems !== undefined ||
+                   score.practice !== null && score.practice !== undefined ||
+                   score.attitude !== null && score.attitude !== undefined
+          })
+          .map(score => score.cycle)
+        
+        if (cyclesWithData.length > 0) {
+          const latestCycle = Math.max(...cyclesWithData)
+          selectedCycle.value = latestCycle
+          console.log(`[VESPA Report] Fallback: Opening Cycle ${latestCycle}`)
+        } else {
+          selectedCycle.value = 1
+        }
       }
     }
     
