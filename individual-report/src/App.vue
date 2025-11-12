@@ -92,6 +92,7 @@ const error = ref(null)
 const user = ref(null)
 const showViewAnswersModal = ref(false)
 const questionResponses = ref({})
+const knackRecordId = ref(null) // CRITICAL: Store Object_10 record ID for saves
 
 // Computed properties
 const isStaff = computed(() => {
@@ -196,6 +197,14 @@ const loadReportData = async () => {
     
     reportData.value = data
     
+    // Store Knack Object_10 record ID for saves
+    if (data.student && data.student.knackRecordId) {
+      knackRecordId.value = data.student.knackRecordId
+      console.log('[VESPA Report] Stored Object_10 record ID:', knackRecordId.value)
+    } else {
+      console.warn('[VESPA Report] ⚠️ No Knack record ID returned - saves may fail!')
+    }
+    
     // Extract question responses for View Answers modal
     if (data.responses) {
       questionResponses.value = data.responses
@@ -237,13 +246,14 @@ const loadReportData = async () => {
 
 const handleSaveResponse = async (data) => {
   try {
-    console.log('[VESPA Report] Saving student response:', data)
+    console.log('[VESPA Report] Saving student response:', data, 'Knack ID:', knackRecordId.value)
     
     // Save to Supabase + Knack via API
     const result = await reportAPI.saveStudentResponse(
       user.value.email,
       data.cycle,
-      data.responseText
+      data.responseText,
+      knackRecordId.value // CRITICAL: Pass Object_10 record ID
     )
     
     // Update local state on success
@@ -256,8 +266,10 @@ const handleSaveResponse = async (data) => {
     }
     
     // Log dual-write status
-    if (!result.knackWritten) {
-      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    if (result.knackWritten) {
+      console.log('[VESPA Report] ✅ Response saved to BOTH Supabase AND Knack')
+    } else {
+      console.error('[VESPA Report] ❌ Response saved to Supabase ONLY. Knack error:', result.knackError)
     }
     
   } catch (err) {
@@ -268,7 +280,7 @@ const handleSaveResponse = async (data) => {
 
 const handleSaveGoals = async (data) => {
   try {
-    console.log('[VESPA Report] Saving student goals:', data)
+    console.log('[VESPA Report] Saving student goals:', data, 'Knack ID:', knackRecordId.value)
     
     // Save to Supabase + Knack via API
     const result = await reportAPI.saveStudentGoals(
@@ -278,7 +290,8 @@ const handleSaveGoals = async (data) => {
         goalText: data.goalText,
         goalSetDate: data.goalSetDate,
         goalDueDate: data.goalDueDate
-      }
+      },
+      knackRecordId.value // CRITICAL: Pass Object_10 record ID
     )
     
     // Update local state on success
@@ -292,8 +305,10 @@ const handleSaveGoals = async (data) => {
     }
     
     // Log dual-write status
-    if (!result.knackWritten) {
-      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    if (result.knackWritten) {
+      console.log('[VESPA Report] ✅ Goals saved to BOTH Supabase AND Knack')
+    } else {
+      console.error('[VESPA Report] ❌ Goals saved to Supabase ONLY. Knack error:', result.knackError)
     }
     
   } catch (err) {
@@ -304,17 +319,21 @@ const handleSaveGoals = async (data) => {
 
 const handleSaveCoaching = async (data) => {
   try {
-    console.log('[VESPA Report] Saving staff coaching:', data)
+    console.log('[VESPA Report] Saving staff coaching:', data, 'Knack ID:', knackRecordId.value)
+    
+    // Get the actual student email (not staff email) from reportData
+    const studentEmail = reportData.value?.student?.email || user.value.email
     
     // Save to Supabase + Knack via API
     const result = await reportAPI.saveStaffCoaching(
-      user.value.email,
+      studentEmail, // CRITICAL: Use student's email, not staff's
       user.value.email, // Staff email (same as logged-in user if staff)
       data.cycle,
       {
         coachingText: data.coachingText,
         coachingDate: data.coachingDate
-      }
+      },
+      knackRecordId.value // CRITICAL: Pass Object_10 record ID
     )
     
     // Update local state on success
@@ -327,8 +346,10 @@ const handleSaveCoaching = async (data) => {
     }
     
     // Log dual-write status
-    if (!result.knackWritten) {
-      console.warn('[VESPA Report] Supabase saved but Knack write failed:', result.knackError)
+    if (result.knackWritten) {
+      console.log('[VESPA Report] ✅ Coaching saved to BOTH Supabase AND Knack')
+    } else {
+      console.error('[VESPA Report] ❌ Coaching saved to Supabase ONLY. Knack error:', result.knackError)
     }
     
   } catch (err) {

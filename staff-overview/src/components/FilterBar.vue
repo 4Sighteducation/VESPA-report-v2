@@ -12,7 +12,6 @@
         </button>
       </div>
       <select id="cycle-filter" v-model="selectedCycle" @change="emitFilters">
-        <option value="">All Cycles</option>
         <option v-for="cycle in filters.cycles" :key="cycle" :value="cycle">
           Cycle {{ cycle }}
         </option>
@@ -127,7 +126,7 @@ const props = defineProps({
 const emit = defineEmits(['filter-changed', 'lock-changed'])
 
 // Initialize with string values (selects need strings)
-const selectedCycle = ref(String(props.preservedValues.cycle || ''))
+const selectedCycle = ref(String(props.preservedValues.cycle || '1')) // Default to Cycle 1
 const selectedGroup = ref(String(props.preservedValues.group || ''))
 const selectedYear = ref(String(props.preservedValues.year || ''))
 const selectedStatus = ref(String(props.preservedValues.status || ''))
@@ -178,8 +177,8 @@ const emitFilters = () => {
 }
 
 const clearFilters = () => {
-  // Only clear unlocked filters
-  if (!props.lockedFilters.cycle) selectedCycle.value = ''
+  // Only clear unlocked filters (cycle resets to 1, not empty)
+  if (!props.lockedFilters.cycle) selectedCycle.value = '1'
   if (!props.lockedFilters.group) selectedGroup.value = ''
   if (!props.lockedFilters.year) selectedYear.value = ''
   if (!props.lockedFilters.status) selectedStatus.value = ''

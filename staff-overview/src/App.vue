@@ -33,6 +33,7 @@
         :activeFilters="activeFilters"
         :smartFilters="smartFilters"
         @view-report="handleViewReport"
+        @data-updated="handleDataUpdated"
       />
     </div>
     
@@ -88,8 +89,8 @@ const initialLoadDone = ref(false) // Prevent unnecessary reload on FilterBar mo
 const smartFilters = ref([])
 
 // Methods
-const loadOverviewData = async (cycleFilter = null) => {
-  // Store cycle for comparison
+const loadOverviewData = async (cycleFilter = 1) => {
+  // Store cycle for comparison (default to Cycle 1)
   previousCycle.value = cycleFilter
   loading.value = true
   error.value = null
@@ -219,9 +220,15 @@ const closeReportModal = () => {
   loadOverviewData(previousCycle.value)
 }
 
+const handleDataUpdated = () => {
+  // Refresh data when student table emits update (after inline edits)
+  console.log('[Staff Overview] Data updated, refreshing from Knack')
+  loadOverviewData(previousCycle.value)
+}
+
 // Lifecycle
 onMounted(() => {
-  loadOverviewData()
+  loadOverviewData(1) // Default to Cycle 1
 })
 </script>
 
