@@ -13,6 +13,19 @@
 export async function fetchAcademicProfile(email, apiUrl, academicYear = null) {
   try {
     console.log('[Academic Profile API] Fetching profile for:', email)
+
+    // Helper: coerce json-ish values into clean strings for UI safety
+    const coerceText = (v) => {
+      if (v === null || v === undefined) return null
+      if (Array.isArray(v)) return v.length ? coerceText(v[0]) : null
+      if (typeof v === 'object') {
+        for (const k of ['identifier', 'name', 'text', 'label', 'value']) {
+          if (v && v[k]) return String(v[k]).trim()
+        }
+        return null
+      }
+      return String(v).trim()
+    }
     
     // Build URL with query parameters
     let url = `${apiUrl}/api/academic-profile/${encodeURIComponent(email)}`
@@ -47,6 +60,14 @@ export async function fetchAcademicProfile(email, apiUrl, academicYear = null) {
     
     const data = await response.json()
     console.log('[Academic Profile API] Profile fetched:', data.dataSource)
+
+    // Normalize student display fields (prevents "[object Object]" if API returns structured values)
+    if (data && data.student) {
+      data.student.name = coerceText(data.student.name) || data.student.name
+      data.student.school = coerceText(data.student.school) || data.student.school
+      data.student.yearGroup = coerceText(data.student.yearGroup) || data.student.yearGroup
+      data.student.tutorGroup = coerceText(data.student.tutorGroup) || data.student.tutorGroup
+    }
     
     return data
     

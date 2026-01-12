@@ -1,6 +1,8 @@
 <template>
-  <div class="subject-card" :class="qualTypeClass">
-    <div class="subject-name">{{ subject.subjectName || 'Unknown Subject' }}</div>
+  <div class="subject-card" :class="qualTypeClass" :style="cardStyle">
+    <div class="subject-title">
+      <div class="subject-name">{{ displaySubjectName }}</div>
+    </div>
     
     <div class="subject-meta">
       {{ subject.examType || 'N/A' }}
@@ -10,7 +12,7 @@
     <!-- Grades Container -->
     <div class="grades-container">
       <!-- MEG -->
-      <div v-if="showMegStg" class="grade-item">
+      <div v-if="showMeg" class="grade-item">
         <div class="grade-label">
           MEG
           <span class="meg-info-button" @click="showMEGInfo = true" title="Understanding MEG">i</span>
@@ -21,7 +23,7 @@
       </div>
 
       <!-- STG -->
-      <div v-if="showMegStg" class="grade-item">
+      <div v-if="showStg" class="grade-item">
         <div class="grade-label">STG</div>
         <div class="grade-value grade-stg">
           <span class="grade-text">{{ subject.subjectTargetGrade || subject.minimumExpectedGrade || 'N/A' }}</span>
@@ -147,7 +149,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  showMegStg: {
+  showMeg: {
+    type: Boolean,
+    default: true
+  },
+  showStg: {
     type: Boolean,
     default: true
   }
@@ -172,6 +178,41 @@ const hasOptionalGrades = computed(() => {
          props.subject.behaviourGrade || 
          props.subject.subjectAttendance
 })
+
+// Display subject name (strip prefixes like "A - " / "AS - " etc)
+const displaySubjectName = computed(() => {
+  const raw = (props.subject.subjectName || '').toString().trim()
+  if (!raw) return 'Unknown Subject'
+  // Remove common leading prefixes like: "A - Physics", "AS - Chemistry", "B - Maths"
+  return raw.replace(/^\s*(?:[a-z]{1,2}\d?\s*-\s*)+/i, '').trim() || raw
+})
+
+// Deterministic per-subject accent color (so each subject is visually distinct, but stable)
+const accentColor = computed(() => {
+  const key = (props.subject.subjectName || props.subject.originalRecordId || props.subject.id || '').toString()
+  const palette = [
+    '#00e5db', // turquoise
+    '#86b4f0', // blue
+    '#72cb44', // green
+    '#ff8f00', // orange
+    '#f032e6', // pink
+    '#7f31a4', // purple
+    '#f3f553', // yellow
+    '#ff5252', // red
+    '#00c853', // emerald
+    '#00b0ff', // light blue
+    '#ff6d00', // deep orange
+    '#aa00ff'  // violet
+  ]
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = ((h << 5) - h) + key.charCodeAt(i)
+  const idx = Math.abs(h) % palette.length
+  return palette[idx]
+})
+
+const cardStyle = computed(() => ({
+  '--accent': accentColor.value
+}))
 
 const qualTypeClass = computed(() => {
   // Exam type strings often come through as "A Level - AQA", "BTEC (2016) - Pearson", etc.
@@ -238,58 +279,53 @@ const formatPercentage = (decimal) => {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transition: all 0.3s;
   border: 1px solid rgba(7, 155, 170, 0.3);
+  border-left: 8px solid var(--accent, #00e5db);
   position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Subtle left accent by qualification type */
-.subject-card.qual-a-level { border-left: 6px solid #00e5db; }
-.subject-card.qual-btec-2016 { border-left: 6px solid #86b4f0; }
-.subject-card.qual-btec-2010 { border-left: 6px solid #72cb44; }
-.subject-card.qual-ib { border-left: 6px solid #f032e6; }
-.subject-card.qual-pre-u { border-left: 6px solid #e59437; }
-.subject-card.qual-gcse { border-left: 6px solid #f3f553; }
-
-/* Make the accent read a bit more "premium" */
-.subject-card.qual-a-level::before,
-.subject-card.qual-btec-2016::before,
-.subject-card.qual-btec-2010::before,
-.subject-card.qual-ib::before,
-.subject-card.qual-pre-u::before,
-.subject-card.qual-gcse::before {
+/* Accent overlay */
+.subject-card::before {
   content: "";
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  width: 6px;
+  width: 8px;
   border-top-left-radius: 6px;
   border-bottom-left-radius: 6px;
   opacity: 0.45;
+  background: linear-gradient(180deg, var(--accent, #00e5db) 0%, rgba(0,0,0,0) 100%);
 }
-
-.subject-card.qual-a-level::before { background: linear-gradient(180deg, #00e5db 0%, rgba(0,229,219,0) 100%); }
-.subject-card.qual-btec-2016::before { background: linear-gradient(180deg, #86b4f0 0%, rgba(134,180,240,0) 100%); }
-.subject-card.qual-btec-2010::before { background: linear-gradient(180deg, #72cb44 0%, rgba(114,203,68,0) 100%); }
-.subject-card.qual-ib::before { background: linear-gradient(180deg, #f032e6 0%, rgba(240,50,230,0) 100%); }
-.subject-card.qual-pre-u::before { background: linear-gradient(180deg, #e59437 0%, rgba(229,148,55,0) 100%); }
-.subject-card.qual-gcse::before { background: linear-gradient(180deg, #f3f553 0%, rgba(243,245,83,0) 100%); }
 
 .subject-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
+.subject-title {
+  text-align: center;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.08);
+}
+
 .subject-name {
-  font-weight: 600;
+  font-weight: 800;
   color: #ffffff;
-  margin-bottom: 6px;
-  font-size: 0.95em;
+  font-size: 1.05em;
+  line-height: 1.15;
 }
 
 .subject-meta {
   font-size: 0.75em;
   color: #bdc3c7;
   margin-bottom: 8px;
+  text-align: center;
 }
 
 /* Grades */
@@ -299,6 +335,7 @@ const formatPercentage = (decimal) => {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
+  flex: 1;
 }
 
 .grade-item {
@@ -344,8 +381,10 @@ const formatPercentage = (decimal) => {
 }
 
 .grade-text {
-  font-weight: 600;
+  font-weight: 800;
   color: #ffffff;
+  font-size: 18px;
+  letter-spacing: 0.02em;
 }
 
 .grade-meg .grade-text {
@@ -354,6 +393,12 @@ const formatPercentage = (decimal) => {
 
 .grade-stg .grade-text {
   color: #79d2e6;
+}
+
+/* Make Current/Target bigger (highest-salience grades) */
+.current-grade-item .grade-text,
+.target-grade-item .grade-text {
+  font-size: 20px;
 }
 
 /* Grade input fields */

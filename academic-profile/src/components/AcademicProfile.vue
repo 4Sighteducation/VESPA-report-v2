@@ -8,8 +8,11 @@
         </span>
         
         <div class="profile-actions">
-          <button class="small-toggle" @click="showMegStg = !showMegStg" :title="showMegStg ? 'Hide MEG/STG' : 'Show MEG/STG'">
-            MEG/STG: {{ showMegStg ? 'On' : 'Off' }}
+          <button class="small-toggle" @click="showMeg = !showMeg" :title="showMeg ? 'Hide MEG' : 'Show MEG'">
+            MEG: {{ showMeg ? 'On' : 'Off' }}
+          </button>
+          <button class="small-toggle" @click="showStg = !showStg" :title="showStg ? 'Hide STG' : 'Show STG'">
+            STG: {{ showStg ? 'On' : 'Off' }}
           </button>
 
         <!-- Edit/Save button for staff -->
@@ -26,21 +29,21 @@
       <div class="profile-info">
         <!-- Student Details -->
         <div class="profile-details">
-          <div class="profile-name">{{ student.name || 'Student' }}</div>
+          <div class="profile-name">{{ displayStudentName }}</div>
           
           <div class="profile-item">
             <span class="profile-label">School:</span>
-            <span class="profile-value">{{ student.school || 'N/A' }}</span>
+            <span class="profile-value">{{ displaySchool }}</span>
           </div>
           
-          <div v-if="student.yearGroup" class="profile-item">
+          <div v-if="displayYearGroup" class="profile-item">
             <span class="profile-label">Year Group:</span>
-            <span class="profile-value">{{ student.yearGroup }}</span>
+            <span class="profile-value">{{ displayYearGroup }}</span>
           </div>
           
-          <div v-if="student.tutorGroup" class="profile-item">
+          <div v-if="displayTutorGroup" class="profile-item">
             <span class="profile-label">Tutor Group:</span>
-            <span class="profile-value">{{ student.tutorGroup }}</span>
+            <span class="profile-value">{{ displayTutorGroup }}</span>
           </div>
           
           <div v-if="student.attendance" class="profile-item">
@@ -58,7 +61,8 @@
               :subject="subject"
               :edit-mode="isEditMode"
               :is-staff="isStaff"
-              :show-meg-stg="showMegStg"
+              :show-meg="showMeg"
+              :show-stg="showStg"
               @update="handleSubjectUpdate"
             />
           </div>
@@ -127,7 +131,8 @@ const isEditMode = ref(false)
 const showInfoModal = ref(false)
 const saving = ref(false)
 const pendingChanges = ref({}) // Track changes before save
-const showMegStg = ref(false)
+const showMeg = ref(false)
+const showStg = ref(false)
 
 // Check if user is staff
 const isStaff = computed(() => {
@@ -137,7 +142,26 @@ const isStaff = computed(() => {
 })
 
 // Default: staff see MEG/STG, students start with it hidden
-showMegStg.value = isStaff.value
+showMeg.value = isStaff.value
+showStg.value = isStaff.value
+
+// Helper: coerce json-ish values into clean strings for UI (prevents [object Object])
+const coerceText = (v) => {
+  if (v === null || v === undefined) return ''
+  if (Array.isArray(v)) return v.length ? coerceText(v[0]) : ''
+  if (typeof v === 'object') {
+    for (const k of ['identifier', 'name', 'text', 'label', 'value']) {
+      if (v && v[k]) return String(v[k]).trim()
+    }
+    try { return JSON.stringify(v) } catch (e) { return '' }
+  }
+  return String(v).trim()
+}
+
+const displayStudentName = computed(() => coerceText(props.student?.name) || 'Student')
+const displaySchool = computed(() => coerceText(props.student?.school) || 'N/A')
+const displayYearGroup = computed(() => coerceText(props.student?.yearGroup))
+const displayTutorGroup = computed(() => coerceText(props.student?.tutorGroup))
 
 // Toggle edit mode
 const toggleEditMode = async () => {
@@ -319,11 +343,13 @@ const showTemporaryMessage = (message, type) => {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
+  align-items: stretch;
 }
 
 .profile-details {
   flex: 1;
   min-width: 200px;
+  min-height: 170px;
   background-color: #334285;
   border-radius: 8px;
   border: 1px solid rgba(7, 155, 170, 0.3);
@@ -364,12 +390,17 @@ const showTemporaryMessage = (message, type) => {
 .subjects-container {
   flex: 2;
   min-width: 280px;
+  min-height: 170px;
+  display: flex;
 }
 
 .subjects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 12px;
+  width: 100%;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
 }
 
 @media (max-width: 768px) {
