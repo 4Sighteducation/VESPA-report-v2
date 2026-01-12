@@ -94,6 +94,11 @@ const studentEmail = computed(() => {
 })
 
 const canEdit = computed(() => {
+  // Allow embedding contexts (e.g. Account Manager) to force editing on
+  if (config.value && config.value.forceEditable) {
+    return true
+  }
+
   // Only staff roles can edit: Tutor, Staff Admin, Head of Year, Subject Teacher
   if (typeof Knack === 'undefined') return false
   

@@ -5,8 +5,32 @@
     </div>
     
     <div class="subject-meta">
-      {{ subject.examType || 'N/A' }}
-      <span v-if="subject.examBoard"> • {{ subject.examBoard }}</span>
+      <template v-if="editMode && isStaff && hasRecordId">
+        <div class="meta-edit-grid">
+          <input
+            class="meta-input"
+            :value="subject.subjectName || ''"
+            @input="handleGradeChange('subjectName', $event.target.value)"
+            placeholder="Subject name"
+          />
+          <input
+            class="meta-input"
+            :value="subject.examType || ''"
+            @input="handleGradeChange('examType', $event.target.value)"
+            placeholder="Exam type (e.g. A Level - AQA)"
+          />
+          <input
+            class="meta-input"
+            :value="subject.examBoard || ''"
+            @input="handleGradeChange('examBoard', $event.target.value)"
+            placeholder="Exam board (optional)"
+          />
+        </div>
+      </template>
+      <template v-else>
+        {{ subject.examType || 'N/A' }}
+        <span v-if="subject.examBoard"> • {{ subject.examBoard }}</span>
+      </template>
     </div>
 
     <!-- Grades Container -->
@@ -18,7 +42,15 @@
           <span class="meg-info-button" @click="showMEGInfo = true" title="Understanding MEG">i</span>
         </div>
         <div class="grade-value grade-meg">
-          <span class="grade-text">{{ subject.minimumExpectedGrade || 'N/A' }}</span>
+          <input
+            v-if="editMode && isStaff && hasRecordId"
+            type="text"
+            class="grade-input-dynamic"
+            :value="subject.minimumExpectedGrade || ''"
+            @input="handleGradeChange('minimumExpectedGrade', $event.target.value)"
+            placeholder="N/A"
+          />
+          <span v-else class="grade-text">{{ subject.minimumExpectedGrade || 'N/A' }}</span>
         </div>
       </div>
 
@@ -26,7 +58,15 @@
       <div v-if="showStg" class="grade-item">
         <div class="grade-label">STG</div>
         <div class="grade-value grade-stg">
-          <span class="grade-text">{{ subject.subjectTargetGrade || subject.minimumExpectedGrade || 'N/A' }}</span>
+          <input
+            v-if="editMode && isStaff && hasRecordId"
+            type="text"
+            class="grade-input-dynamic"
+            :value="subject.subjectTargetGrade || ''"
+            @input="handleGradeChange('subjectTargetGrade', $event.target.value)"
+            placeholder="N/A"
+          />
+          <span v-else class="grade-text">{{ subject.subjectTargetGrade || subject.minimumExpectedGrade || 'N/A' }}</span>
         </div>
       </div>
 
@@ -326,6 +366,26 @@ const formatPercentage = (decimal) => {
   color: #bdc3c7;
   margin-bottom: 8px;
   text-align: center;
+}
+
+.meta-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.meta-input {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.12);
+  color: #ffffff;
+  border-radius: 6px;
+}
+
+.meta-input::placeholder {
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* Grades */
