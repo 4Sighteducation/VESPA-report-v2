@@ -174,22 +174,37 @@ const hasOptionalGrades = computed(() => {
 })
 
 const qualTypeClass = computed(() => {
+  // Exam type strings often come through as "A Level - AQA", "BTEC (2016) - Pearson", etc.
+  // Use fuzzy matching so styling reliably applies.
   const examType = (props.subject.examType || '').trim().toLowerCase()
-  
-  const typeMap = {
-    'a-level': 'qual-a-level',
-    'btec (2016)': 'qual-btec-2016',
-    'btec (2010)': 'qual-btec-2010',
-    'ib': 'qual-ib',
-    'pre-u': 'qual-pre-u',
-    'ual': 'qual-ual',
-    'wjec': 'qual-wjec',
-    'cache': 'qual-cache',
-    'gcse': 'qual-gcse',
-    'vocational': 'qual-vocational-generic'
+  const t = examType.replace(/\s+/g, ' ')
+
+  if (!t) return ''
+
+  // A Level
+  if (t.includes('a level') || t.includes('a-level') || t.includes('alevel')) return 'qual-a-level'
+
+  // GCSE
+  if (t.includes('gcse')) return 'qual-gcse'
+
+  // IB / Pre-U
+  if (t.includes('ib')) return 'qual-ib'
+  if (t.includes('pre-u') || t.includes('pre u')) return 'qual-pre-u'
+
+  // BTEC
+  if (t.includes('btec')) {
+    if (t.includes('2016')) return 'qual-btec-2016'
+    if (t.includes('2010')) return 'qual-btec-2010'
+    return 'qual-btec-2016'
   }
-  
-  return typeMap[examType] || ''
+
+  // Other vocational-ish
+  if (t.includes('ual')) return 'qual-ual'
+  if (t.includes('wjec')) return 'qual-wjec'
+  if (t.includes('cache')) return 'qual-cache'
+  if (t.includes('voc')) return 'qual-vocational-generic'
+
+  return ''
 })
 
 // Methods
@@ -227,12 +242,37 @@ const formatPercentage = (decimal) => {
 }
 
 /* Subtle left accent by qualification type */
-.subject-card.qual-a-level { border-left: 4px solid #00e5db; }
-.subject-card.qual-btec-2016 { border-left: 4px solid #86b4f0; }
-.subject-card.qual-btec-2010 { border-left: 4px solid #72cb44; }
-.subject-card.qual-ib { border-left: 4px solid #f032e6; }
-.subject-card.qual-pre-u { border-left: 4px solid #e59437; }
-.subject-card.qual-gcse { border-left: 4px solid #f3f553; }
+.subject-card.qual-a-level { border-left: 6px solid #00e5db; }
+.subject-card.qual-btec-2016 { border-left: 6px solid #86b4f0; }
+.subject-card.qual-btec-2010 { border-left: 6px solid #72cb44; }
+.subject-card.qual-ib { border-left: 6px solid #f032e6; }
+.subject-card.qual-pre-u { border-left: 6px solid #e59437; }
+.subject-card.qual-gcse { border-left: 6px solid #f3f553; }
+
+/* Make the accent read a bit more "premium" */
+.subject-card.qual-a-level::before,
+.subject-card.qual-btec-2016::before,
+.subject-card.qual-btec-2010::before,
+.subject-card.qual-ib::before,
+.subject-card.qual-pre-u::before,
+.subject-card.qual-gcse::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  border-top-left-radius: 6px;
+  border-bottom-left-radius: 6px;
+  opacity: 0.45;
+}
+
+.subject-card.qual-a-level::before { background: linear-gradient(180deg, #00e5db 0%, rgba(0,229,219,0) 100%); }
+.subject-card.qual-btec-2016::before { background: linear-gradient(180deg, #86b4f0 0%, rgba(134,180,240,0) 100%); }
+.subject-card.qual-btec-2010::before { background: linear-gradient(180deg, #72cb44 0%, rgba(114,203,68,0) 100%); }
+.subject-card.qual-ib::before { background: linear-gradient(180deg, #f032e6 0%, rgba(240,50,230,0) 100%); }
+.subject-card.qual-pre-u::before { background: linear-gradient(180deg, #e59437 0%, rgba(229,148,55,0) 100%); }
+.subject-card.qual-gcse::before { background: linear-gradient(180deg, #f3f553 0%, rgba(243,245,83,0) 100%); }
 
 .subject-card:hover {
   transform: translateY(-3px);
