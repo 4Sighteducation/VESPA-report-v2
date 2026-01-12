@@ -115,7 +115,17 @@ export async function updateSubjectGrade(subjectId, updates, apiUrl) {
     })
     
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      // Try to read JSON error payload for better UX
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) {
+          msg = errJson.error || errJson.message
+        }
+      } catch (e) {
+        // ignore JSON parse issues
+      }
+      throw new Error(msg)
     }
     
     const data = await response.json()

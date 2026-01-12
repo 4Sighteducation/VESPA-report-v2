@@ -10,7 +10,7 @@
     <!-- Grades Container -->
     <div class="grades-container">
       <!-- MEG -->
-      <div class="grade-item">
+      <div v-if="showMegStg" class="grade-item">
         <div class="grade-label">
           MEG
           <span class="meg-info-button" @click="showMEGInfo = true" title="Understanding MEG">i</span>
@@ -21,7 +21,7 @@
       </div>
 
       <!-- STG -->
-      <div class="grade-item">
+      <div v-if="showMegStg" class="grade-item">
         <div class="grade-label">STG</div>
         <div class="grade-value grade-stg">
           <span class="grade-text">{{ subject.subjectTargetGrade || subject.minimumExpectedGrade || 'N/A' }}</span>
@@ -146,6 +146,10 @@ const props = defineProps({
   isStaff: {
     type: Boolean,
     default: false
+  },
+  showMegStg: {
+    type: Boolean,
+    default: true
   }
 })
 
@@ -212,7 +216,7 @@ const formatPercentage = (decimal) => {
 <style scoped>
 /* Subject Card */
 .subject-card {
-  background-color: #334285;
+  background: linear-gradient(180deg, #334285 0%, #2d3b7a 100%);
   color: #ffffff;
   border-radius: 6px;
   padding: 12px;
@@ -221,6 +225,14 @@ const formatPercentage = (decimal) => {
   border: 1px solid rgba(7, 155, 170, 0.3);
   position: relative;
 }
+
+/* Subtle left accent by qualification type */
+.subject-card.qual-a-level { border-left: 4px solid #00e5db; }
+.subject-card.qual-btec-2016 { border-left: 4px solid #86b4f0; }
+.subject-card.qual-btec-2010 { border-left: 4px solid #72cb44; }
+.subject-card.qual-ib { border-left: 4px solid #f032e6; }
+.subject-card.qual-pre-u { border-left: 4px solid #e59437; }
+.subject-card.qual-gcse { border-left: 4px solid #f3f553; }
 
 .subject-card:hover {
   transform: translateY(-3px);

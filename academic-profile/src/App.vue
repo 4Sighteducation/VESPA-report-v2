@@ -60,7 +60,8 @@ const profileData = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const config = ref(props.config)
-const isVisible = ref(false) // Toggle state for show/hide - default to hidden
+// Toggle state for show/hide - default to hidden unless config says otherwise
+const isVisible = ref(!!(props.config && props.config.defaultVisible))
 
 // Computed
 const studentEmail = computed(() => {

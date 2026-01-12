@@ -7,14 +7,20 @@
           <span class="profile-info-button" @click="showInfoModal = true" title="Understanding These Grades">i</span>
         </span>
         
+        <div class="profile-actions">
+          <button class="small-toggle" @click="showMegStg = !showMegStg" :title="showMegStg ? 'Hide MEG/STG' : 'Show MEG/STG'">
+            MEG/STG: {{ showMegStg ? 'On' : 'Off' }}
+          </button>
+
         <!-- Edit/Save button for staff -->
-        <span v-if="editable && isStaff" 
+          <span v-if="editable && isStaff" 
               class="master-edit-icon"
               :class="isEditMode ? 'save-icon' : 'edit-icon'"
               @click="toggleEditMode"
               :title="isEditMode ? 'Save All Changes' : 'Edit All Grades'">
           {{ isEditMode ? '💾 Save All' : '✏️ Edit Grades' }}
-        </span>
+          </span>
+        </div>
       </h2>
 
       <div class="profile-info">
@@ -52,6 +58,7 @@
               :subject="subject"
               :edit-mode="isEditMode"
               :is-staff="isStaff"
+              :show-meg-stg="showMegStg"
               @update="handleSubjectUpdate"
             />
           </div>
@@ -120,6 +127,7 @@ const isEditMode = ref(false)
 const showInfoModal = ref(false)
 const saving = ref(false)
 const pendingChanges = ref({}) // Track changes before save
+const showMegStg = ref(false)
 
 // Check if user is staff
 const isStaff = computed(() => {
@@ -127,6 +135,9 @@ const isStaff = computed(() => {
   const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
   return !roles.some(r => r.name === 'Student' || r.toLowerCase().includes('student'))
 })
+
+// Default: staff see MEG/STG, students start with it hidden
+showMegStg.value = isStaff.value
 
 // Toggle edit mode
 const toggleEditMode = async () => {
@@ -234,6 +245,27 @@ const showTemporaryMessage = (message, type) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.profile-actions {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.small-toggle {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.small-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Info button */
