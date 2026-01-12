@@ -27,6 +27,7 @@
         <AcademicProfile
           :student="profileData.student"
           :subjects="profileData.subjects"
+          :updated-at="profileData.updatedAt"
           :editable="canEdit"
           :mode="config.mode || 'inline'"
           :data-source="profileData.dataSource"
@@ -65,6 +66,11 @@ const isVisible = ref(!!(props.config && props.config.defaultVisible))
 
 // Computed
 const studentEmail = computed(() => {
+  // Allow parent app (e.g., Account Manager) to force a specific student
+  if (config.value && config.value.forcedStudentEmail) {
+    return config.value.forcedStudentEmail
+  }
+
   // Get student email from Knack context or URL parameter
   if (typeof Knack === 'undefined') return null
   

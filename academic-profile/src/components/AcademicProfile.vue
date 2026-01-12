@@ -50,6 +50,11 @@
             <span class="profile-label">Attendance:</span>
             <span class="profile-value">{{ formatPercentage(student.attendance) }}</span>
           </div>
+
+          <div v-if="formattedUpdatedAt" class="profile-item">
+            <span class="profile-label">Last update:</span>
+            <span class="profile-value">{{ formattedUpdatedAt }}</span>
+          </div>
         </div>
 
         <!-- Subjects Grid -->
@@ -110,6 +115,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  updatedAt: {
+    type: String,
+    default: null
+  },
   editable: {
     type: Boolean,
     default: false
@@ -162,6 +171,13 @@ const displayStudentName = computed(() => coerceText(props.student?.name) || 'St
 const displaySchool = computed(() => coerceText(props.student?.school) || 'N/A')
 const displayYearGroup = computed(() => coerceText(props.student?.yearGroup))
 const displayTutorGroup = computed(() => coerceText(props.student?.tutorGroup))
+
+const formattedUpdatedAt = computed(() => {
+  if (!props.updatedAt) return ''
+  const d = new Date(props.updatedAt)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleString()
+})
 
 // Toggle edit mode
 const toggleEditMode = async () => {
