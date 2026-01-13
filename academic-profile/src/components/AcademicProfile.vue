@@ -56,16 +56,6 @@
             <span class="profile-value">{{ student.priorAttainment }}</span>
           </div>
 
-          <div v-if="student.upn" class="profile-item">
-            <span class="profile-label">UPN:</span>
-            <span class="profile-value">{{ student.upn }}</span>
-          </div>
-
-          <div v-if="student.uci" class="profile-item">
-            <span class="profile-label">UCI:</span>
-            <span class="profile-value">{{ student.uci }}</span>
-          </div>
-
           <div v-if="formattedUpdatedAt" class="profile-item">
             <span class="profile-label">Last update:</span>
             <span class="profile-value">{{ formattedUpdatedAt }}</span>

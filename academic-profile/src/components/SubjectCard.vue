@@ -390,8 +390,9 @@ const formatPercentage = (decimal) => {
 
 /* Grades */
 .grades-container {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 6px;
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -400,7 +401,6 @@ const formatPercentage = (decimal) => {
 
 .grade-item {
   text-align: center;
-  flex: 1;
   padding: 4px;
 }
 
@@ -463,7 +463,8 @@ const formatPercentage = (decimal) => {
 
 /* Grade input fields */
 .grade-input-dynamic {
-  width: 50px;
+  width: 100%;
+  max-width: 84px;
   padding: 4px;
   font-size: 0.9em;
   text-align: center;
