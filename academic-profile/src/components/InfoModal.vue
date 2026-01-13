@@ -5,8 +5,31 @@
       
       <h3>Understanding Your Grades</h3>
       
+      <!-- KS4 View (no STG; optional Predicted) -->
+      <div v-if="isKs4">
+        <h4>1) Predicted Grade:</h4>
+        <p>
+          This is your predicted grade for this subject. Schools may choose to show/hide predicted grades, and staff may update them during the year.
+        </p>
+
+        <h4>2) Current Grade:</h4>
+        <p>
+          This is the grade you're working at right now, based on your recent work, tests, and classroom performance.
+        </p>
+
+        <h4>3) Target Grade:</h4>
+        <p>
+          This is the grade your teachers believe you can realistically achieve with consistent effort.
+        </p>
+
+        <h4>4) Effort & Behaviour:</h4>
+        <p>
+          These indicators help you understand habits that support learning. Improving effort and behaviour often improves grades too.
+        </p>
+      </div>
+
       <!-- Student View -->
-      <div v-if="!isStaff">
+      <div v-else-if="!isStaff">
         <h4>1) Subject Target Grade (STG):</h4>
         <p>
           Your STG is a personalized target that considers your GCSE results AND the specific subject you're studying. 
@@ -76,6 +99,10 @@
 <script setup>
 defineProps({
   isStaff: {
+    type: Boolean,
+    default: false
+  },
+  isKs4: {
     type: Boolean,
     default: false
   }

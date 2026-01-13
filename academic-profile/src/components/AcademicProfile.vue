@@ -1,6 +1,6 @@
 <template>
   <div class="vespa-profile-display">
-    <section class="vespa-section profile-section">
+    <section class="vespa-section profile-section" :class="{ 'ks4-theme': isKs4 }">
       <h2 class="vespa-section-title">
         <span style="display: inline-flex; align-items: center;">
           Student Profile
@@ -9,18 +9,25 @@
         
         <div class="profile-actions">
           <button
-            v-if="!isStudent"
+            v-if="!isStudent && !isKs4"
             class="small-toggle"
             @click="toggleMeg"
             :title="showMeg ? 'Hide MEG' : 'Show MEG'">
             MEG: {{ showMeg ? 'On' : 'Off' }}
           </button>
           <button
-            v-if="!isStudent"
+            v-if="!isStudent && !isKs4"
             class="small-toggle"
             @click="toggleStg"
             :title="showStg ? 'Hide STG' : 'Show STG'">
             STG: {{ showStg ? 'On' : 'Off' }}
+          </button>
+          <button
+            v-if="!isStudent && isKs4"
+            class="small-toggle"
+            @click="togglePredicted"
+            :title="showPredicted ? 'Hide Predicted Grade' : 'Show Predicted Grade'">
+            Predicted: {{ showPredicted ? 'On' : 'Off' }}
           </button>
 
         <!-- Edit/Save button for staff -->
@@ -73,16 +80,29 @@
         <!-- Subjects Grid -->
         <div class="subjects-container">
           <div class="subjects-grid">
-            <SubjectCard
-              v-for="subject in subjects"
-              :key="subject.id || subject.position"
-              :subject="subject"
-              :edit-mode="isEditMode"
-              :is-staff="isStaff"
-              :show-meg="showMeg"
-              :show-stg="showStg"
-              @update="handleSubjectUpdate"
-            />
+            <template v-if="isKs4">
+              <SubjectCardKs4
+                v-for="subject in subjects"
+                :key="subject.id || subject.position"
+                :subject="subject"
+                :edit-mode="isEditMode"
+                :is-staff="isStaff"
+                :show-predicted="showPredicted"
+                @update="handleSubjectUpdate"
+              />
+            </template>
+            <template v-else>
+              <SubjectCard
+                v-for="subject in subjects"
+                :key="subject.id || subject.position"
+                :subject="subject"
+                :edit-mode="isEditMode"
+                :is-staff="isStaff"
+                :show-meg="showMeg"
+                :show-stg="showStg"
+                @update="handleSubjectUpdate"
+              />
+            </template>
           </div>
           
           <div v-if="subjects.length === 0" class="no-subjects">
@@ -102,6 +122,7 @@
     <InfoModal 
       v-if="showInfoModal" 
       :is-staff="isStaff"
+      :is-ks4="isKs4"
       @close="showInfoModal = false" 
     />
 
@@ -116,6 +137,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import SubjectCard from './SubjectCard.vue'
+import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
 import { updateSubjectGrade } from '../services/api.js'
 
@@ -161,6 +183,7 @@ const pendingChanges = ref({}) // Track changes before save
 const showMeg = ref(false)
 const showStg = ref(false)
 const userOverrodeVisibility = ref(false)
+const showPredicted = ref(false)
 
 // Check if user is staff
 const isStaff = computed(() => {
@@ -170,6 +193,13 @@ const isStaff = computed(() => {
 })
 
 const isStudent = computed(() => !isStaff.value)
+
+const isKs4 = computed(() => {
+  const raw = (props.student?.yearGroup ?? '').toString()
+  const m = raw.match(/(\d{1,2})/)
+  const n = m ? parseInt(m[1], 10) : NaN
+  return Number.isFinite(n) && n <= 11
+})
 
 const defaultMegFromSchool = computed(() => {
   const v = props.uiDefaults && Object.prototype.hasOwnProperty.call(props.uiDefaults, 'studentsShowMeg')
@@ -191,6 +221,21 @@ const defaultStgFromSchool = computed(() => {
 watch(
   [defaultMegFromSchool, defaultStgFromSchool, isStudent],
   () => {
+    // KS4: no STG; "MEG visibility" becomes "Predicted grade visibility"
+    if (isKs4.value) {
+      if (isStudent.value) {
+        showPredicted.value = defaultMegFromSchool.value
+        showMeg.value = false
+        showStg.value = false
+        return
+      }
+      if (!userOverrodeVisibility.value) {
+        showPredicted.value = defaultMegFromSchool.value
+        showMeg.value = false
+        showStg.value = false
+      }
+      return
+    }
     if (isStudent.value) {
       // Enforced for students (source of truth = school settings)
       showMeg.value = defaultMegFromSchool.value
@@ -214,6 +259,11 @@ const toggleMeg = () => {
 const toggleStg = () => {
   userOverrodeVisibility.value = true
   showStg.value = !showStg.value
+}
+
+const togglePredicted = () => {
+  userOverrodeVisibility.value = true
+  showPredicted.value = !showPredicted.value
 }
 
 // Helper: coerce json-ish values into clean strings for UI (prevents [object Object])
@@ -335,6 +385,50 @@ const showTemporaryMessage = (message, type) => {
   padding: 16px;
   border: 2px solid #079baa;
   position: relative;
+}
+
+/* KS4 theme (distinct from KS5): dark green */
+.vespa-section.ks4-theme {
+  background-color: #0f2b1a;
+  border-color: rgba(124, 255, 154, 0.55);
+}
+
+.vespa-section.ks4-theme .vespa-section-title {
+  color: #7CFF9A !important;
+  border-bottom-color: rgba(124, 255, 154, 0.45);
+}
+
+.vespa-section.ks4-theme .profile-info-button {
+  color: #7CFF9A;
+  border-color: rgba(124, 255, 154, 0.8);
+}
+
+.vespa-section.ks4-theme .profile-info-button:hover {
+  background-color: #7CFF9A;
+  color: #0f2b1a;
+}
+
+.vespa-section.ks4-theme .profile-details {
+  background-color: #123522;
+  border-color: rgba(124, 255, 154, 0.22);
+}
+
+.vespa-section.ks4-theme .profile-name,
+.vespa-section.ks4-theme .profile-label {
+  color: #7CFF9A;
+}
+
+.vespa-section.ks4-theme .small-toggle {
+  border-color: rgba(124, 255, 154, 0.3);
+}
+
+.vespa-section.ks4-theme .master-edit-icon.edit-icon {
+  color: #7CFF9A;
+  border-color: rgba(124, 255, 154, 0.85);
+}
+
+.vespa-section.ks4-theme .subjects-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
 }
 
 .vespa-section-title {
