@@ -104,7 +104,21 @@ const isBlankishGrade = (v) => {
   return u === 'N/A' || u === 'NA' || s === '-' || s === '—'
 }
 
-const displayGrade = (v) => (isBlankishGrade(v) ? '-' : String(v).trim())
+const collapseCombinedScienceGrade = (v) => {
+  if (v === null || v === undefined) return v
+  const s = String(v).trim()
+  if (!s) return s
+  // Collapse "7-7" / "7/7" / "7 7" / "B-B" style double-award grades to a single value
+  const m = s.match(/^([A-Za-z0-9+*]+)\s*[-/ ]\s*\1$/)
+  return m ? m[1] : s
+}
+
+const displayGrade = (v) => {
+  if (isBlankishGrade(v)) return '-'
+  const s = String(v).trim()
+  const isCombined = (props.subject.subjectName || '').toString().toLowerCase().includes('combined science')
+  return isCombined ? collapseCombinedScienceGrade(s) : s
+}
 
 const hasRecordId = computed(() => !!(props.subject.id || props.subject.originalRecordId))
 

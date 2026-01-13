@@ -464,6 +464,8 @@ const showTemporaryMessage = (message, type) => {
 .subjects-grid.ks4-grid {
   grid-template-columns: repeat(3, minmax(210px, 1fr));
   gap: 10px;
+  align-items: start;
+  grid-auto-rows: auto;
 }
 
 @media (max-width: 1050px) {
