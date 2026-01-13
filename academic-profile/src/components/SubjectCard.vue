@@ -82,8 +82,8 @@
             @input="handleGradeChange('currentGrade', $event.target.value)"
             placeholder="-"
           />
-          <span v-else class="grade-text" :class="subject.currentGrade ? getGradeColorClass(subject.currentGrade, stgGrade) : ''">
-            {{ subject.currentGrade ? subject.currentGrade : '-' }}
+          <span v-else class="grade-text" :class="!isBlankishGrade(subject.currentGrade) ? getGradeColorClass(subject.currentGrade, stgGrade) : ''">
+            {{ displayGrade(subject.currentGrade) }}
           </span>
         </div>
       </div>
@@ -100,8 +100,8 @@
             @input="handleGradeChange('targetGrade', $event.target.value)"
             placeholder="-"
           />
-          <span v-else class="grade-text" :class="subject.targetGrade ? getGradeColorClass(subject.targetGrade, stgGrade) : ''">
-            {{ subject.targetGrade ? subject.targetGrade : '-' }}
+          <span v-else class="grade-text" :class="!isBlankishGrade(subject.targetGrade) ? getGradeColorClass(subject.targetGrade, stgGrade) : ''">
+            {{ displayGrade(subject.targetGrade) }}
           </span>
         </div>
       </div>
@@ -201,12 +201,23 @@ const props = defineProps({
 
 const emit = defineEmits(['update'])
 
+// Helpers
+const isBlankishGrade = (v) => {
+  if (v === null || v === undefined) return true
+  const s = String(v).trim()
+  if (!s) return true
+  const u = s.toUpperCase()
+  return u === 'N/A' || u === 'NA' || s === '-' || s === '—'
+}
+
+const displayGrade = (v) => (isBlankishGrade(v) ? '-' : String(v).trim())
+
 // State
 const showMEGInfo = ref(false)
 
 // Computed
 const stgGrade = computed(() => {
-  return props.subject.subjectTargetGrade || props.subject.minimumExpectedGrade || 'N/A'
+  return displayGrade(props.subject.subjectTargetGrade || props.subject.minimumExpectedGrade)
 })
 
 const hasRecordId = computed(() => {
