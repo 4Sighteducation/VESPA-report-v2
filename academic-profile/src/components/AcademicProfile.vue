@@ -41,45 +41,47 @@
         </div>
       </h2>
 
-      <div class="profile-info">
+      <div class="profile-info" :class="{ 'ks4-layout': isKs4 }">
         <!-- Student Details -->
-        <div class="profile-details">
+        <div class="profile-details" :class="{ 'ks4-profile-strip': isKs4 }">
           <div class="profile-name">{{ displayStudentName }}</div>
-          
-          <div class="profile-item">
-            <span class="profile-label">School:</span>
-            <span class="profile-value">{{ displaySchool }}</span>
-          </div>
-          
-          <div v-if="displayYearGroup" class="profile-item">
-            <span class="profile-label">Year Group:</span>
-            <span class="profile-value">{{ displayYearGroup }}</span>
-          </div>
-          
-          <div v-if="displayTutorGroup" class="profile-item">
-            <span class="profile-label">Tutor Group:</span>
-            <span class="profile-value">{{ displayTutorGroup }}</span>
-          </div>
-          
-          <div v-if="student.attendance" class="profile-item">
-            <span class="profile-label">Attendance:</span>
-            <span class="profile-value">{{ formatPercentage(student.attendance) }}</span>
-          </div>
 
-          <div v-if="student.priorAttainment" class="profile-item">
-            <span class="profile-label">Prior attainment:</span>
-            <span class="profile-value">{{ student.priorAttainment }}</span>
-          </div>
+          <div class="profile-items">
+            <div class="profile-item">
+              <span class="profile-label">School:</span>
+              <span class="profile-value">{{ displaySchool }}</span>
+            </div>
+            
+            <div v-if="displayYearGroup" class="profile-item">
+              <span class="profile-label">Year Group:</span>
+              <span class="profile-value">{{ displayYearGroup }}</span>
+            </div>
+            
+            <div v-if="displayTutorGroup" class="profile-item">
+              <span class="profile-label">Tutor Group:</span>
+              <span class="profile-value">{{ displayTutorGroup }}</span>
+            </div>
+            
+            <div v-if="!isKs4 && student.attendance" class="profile-item">
+              <span class="profile-label">Attendance:</span>
+              <span class="profile-value">{{ formatPercentage(student.attendance) }}</span>
+            </div>
 
-          <div v-if="formattedUpdatedAt" class="profile-item">
-            <span class="profile-label">Last update:</span>
-            <span class="profile-value">{{ formattedUpdatedAt }}</span>
+            <div v-if="!isKs4 && student.priorAttainment" class="profile-item">
+              <span class="profile-label">Prior attainment:</span>
+              <span class="profile-value">{{ student.priorAttainment }}</span>
+            </div>
+
+            <div v-if="formattedUpdatedAt" class="profile-item">
+              <span class="profile-label">Last update:</span>
+              <span class="profile-value">{{ formattedUpdatedAt }}</span>
+            </div>
           </div>
         </div>
 
         <!-- Subjects Grid -->
         <div class="subjects-container">
-          <div class="subjects-grid">
+          <div class="subjects-grid" :class="{ 'ks4-grid': isKs4 }">
             <template v-if="isKs4">
               <SubjectCardKs4
                 v-for="subject in subjects"
@@ -429,6 +431,51 @@ const showTemporaryMessage = (message, type) => {
 
 .vespa-section.ks4-theme .subjects-grid {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+/* KS4 layout: compact strip on top, then a 3-column grid by default */
+.profile-info.ks4-layout {
+  flex-direction: column;
+}
+
+.profile-details.ks4-profile-strip {
+  width: 100%;
+  min-height: auto;
+  padding: 12px 14px;
+}
+
+.profile-details.ks4-profile-strip .profile-name {
+  font-size: 20px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.profile-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.profile-details.ks4-profile-strip .profile-item {
+  margin-bottom: 0;
+  padding: 4px 0;
+}
+
+.subjects-grid.ks4-grid {
+  grid-template-columns: repeat(3, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 1050px) {
+  .subjects-grid.ks4-grid {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .subjects-grid.ks4-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .vespa-section-title {

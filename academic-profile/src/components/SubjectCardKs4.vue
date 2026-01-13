@@ -155,12 +155,12 @@ const handleChange = (field, value) => {
   border: 1px solid rgba(124, 255, 154, 0.18);
   border-left: 5px solid var(--ks4-accent);
   border-radius: 10px;
-  padding: 10px 10px 10px 12px;
+  padding: 9px 10px 9px 12px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  min-height: 92px;
+  min-height: 82px;
 }
 
 .ks4-header {
