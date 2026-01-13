@@ -80,10 +80,10 @@
             class="grade-input-dynamic"
             :value="subject.currentGrade || ''"
             @input="handleGradeChange('currentGrade', $event.target.value)"
-            placeholder="N/A"
+            placeholder="-"
           />
-          <span v-else class="grade-text" :class="getGradeColorClass(subject.currentGrade, stgGrade)">
-            {{ subject.currentGrade || 'N/A' }}
+          <span v-else class="grade-text" :class="subject.currentGrade ? getGradeColorClass(subject.currentGrade, stgGrade) : ''">
+            {{ subject.currentGrade ? subject.currentGrade : '-' }}
           </span>
         </div>
       </div>
