@@ -429,9 +429,7 @@ const showTemporaryMessage = (message, type) => {
   border-color: rgba(124, 255, 154, 0.85);
 }
 
-.vespa-section.ks4-theme .subjects-grid {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-}
+/* KS4 subjects layout is controlled by `.subjects-grid.ks4-grid` below */
 
 /* KS4 layout: compact strip on top, then a 3-column grid by default */
 .profile-info.ks4-layout {
@@ -461,21 +459,21 @@ const showTemporaryMessage = (message, type) => {
   padding: 4px 0;
 }
 
-.subjects-grid.ks4-grid {
-  grid-template-columns: repeat(3, minmax(210px, 1fr));
-  gap: 10px;
+.vespa-section.ks4-theme .subjects-grid.ks4-grid {
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 8px;
   align-items: start;
   grid-auto-rows: auto;
 }
 
 @media (max-width: 1050px) {
-  .subjects-grid.ks4-grid {
-    grid-template-columns: repeat(2, minmax(200px, 1fr));
+  .vespa-section.ks4-theme .subjects-grid.ks4-grid {
+    grid-template-columns: repeat(2, minmax(190px, 1fr));
   }
 }
 
 @media (max-width: 620px) {
-  .subjects-grid.ks4-grid {
+  .vespa-section.ks4-theme .subjects-grid.ks4-grid {
     grid-template-columns: 1fr;
   }
 }

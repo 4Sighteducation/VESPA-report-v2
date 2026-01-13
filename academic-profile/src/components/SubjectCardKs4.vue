@@ -165,6 +165,8 @@ const handleChange = (field, value) => {
 
 <style scoped>
 .ks4-card {
+  position: relative;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(9, 34, 22, 0.92), rgba(11, 46, 28, 0.88));
   border: 1px solid rgba(124, 255, 154, 0.18);
   border-left: 5px solid var(--ks4-accent);
@@ -175,6 +177,20 @@ const handleChange = (field, value) => {
   flex-direction: column;
   gap: 8px;
   min-height: 82px;
+}
+
+.ks4-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(520px circle at 18% -20%, var(--ks4-accent) 0%, transparent 55%);
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.ks4-card > * {
+  position: relative;
+  z-index: 1;
 }
 
 .ks4-header {
@@ -202,6 +218,11 @@ const handleChange = (field, value) => {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.12);
   white-space: nowrap;
+}
+
+.ks4-card .ks4-qual {
+  border-color: color-mix(in srgb, var(--ks4-accent) 45%, transparent);
+  color: color-mix(in srgb, var(--ks4-accent) 65%, rgba(215, 255, 228, 0.75));
 }
 
 .ks4-grades {
