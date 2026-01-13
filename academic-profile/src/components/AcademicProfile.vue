@@ -41,9 +41,9 @@
         </div>
       </h2>
 
-      <div class="profile-info" :class="{ 'ks4-layout': isKs4 }">
+      <div class="profile-info" :class="{ 'ks4-layout': isKs4, 'ks5-layout': !isKs4 }">
         <!-- Student Details -->
-        <div class="profile-details" :class="{ 'ks4-profile-strip': isKs4 }">
+        <div class="profile-details" :class="{ 'ks4-profile-strip': isKs4, 'ks5-profile-strip': !isKs4 }">
           <div class="profile-name">{{ displayStudentName }}</div>
 
           <div class="profile-items">
@@ -436,13 +436,29 @@ const showTemporaryMessage = (message, type) => {
   flex-direction: column;
 }
 
+.profile-info.ks5-layout {
+  flex-direction: column;
+}
+
 .profile-details.ks4-profile-strip {
   width: 100%;
   min-height: auto;
   padding: 12px 14px;
 }
 
+.profile-details.ks5-profile-strip {
+  width: 100%;
+  min-height: auto;
+  padding: 12px 14px;
+}
+
 .profile-details.ks4-profile-strip .profile-name {
+  font-size: 20px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+}
+
+.profile-details.ks5-profile-strip .profile-name {
   font-size: 20px;
   margin-bottom: 8px;
   padding-bottom: 8px;
@@ -459,11 +475,23 @@ const showTemporaryMessage = (message, type) => {
   padding: 4px 0;
 }
 
+.profile-details.ks5-profile-strip .profile-item {
+  margin-bottom: 0;
+  padding: 4px 0;
+}
+
 .vespa-section.ks4-theme .subjects-grid.ks4-grid {
   grid-template-columns: repeat(3, minmax(200px, 1fr));
   gap: 8px;
   align-items: start;
   grid-auto-rows: auto;
+}
+
+/* KS5 layout: profile strip on top, subjects full width */
+.profile-info.ks5-layout .subjects-container {
+  width: 100%;
+  min-width: 0;
+  min-height: auto;
 }
 
 @media (max-width: 1050px) {
