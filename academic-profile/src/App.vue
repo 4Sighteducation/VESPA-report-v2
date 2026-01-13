@@ -28,6 +28,7 @@
           :student="profileData.student"
           :subjects="profileData.subjects"
           :updated-at="profileData.updatedAt"
+          :ui-defaults="profileData.uiDefaults"
           :editable="canEdit"
           :mode="config.mode || 'inline'"
           :data-source="profileData.dataSource"

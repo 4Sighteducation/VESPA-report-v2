@@ -8,10 +8,18 @@
         </span>
         
         <div class="profile-actions">
-          <button class="small-toggle" @click="showMeg = !showMeg" :title="showMeg ? 'Hide MEG' : 'Show MEG'">
+          <button
+            v-if="!isStudent"
+            class="small-toggle"
+            @click="toggleMeg"
+            :title="showMeg ? 'Hide MEG' : 'Show MEG'">
             MEG: {{ showMeg ? 'On' : 'Off' }}
           </button>
-          <button class="small-toggle" @click="showStg = !showStg" :title="showStg ? 'Hide STG' : 'Show STG'">
+          <button
+            v-if="!isStudent"
+            class="small-toggle"
+            @click="toggleStg"
+            :title="showStg ? 'Hide STG' : 'Show STG'">
             STG: {{ showStg ? 'On' : 'Off' }}
           </button>
 
@@ -106,7 +114,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import SubjectCard from './SubjectCard.vue'
 import InfoModal from './InfoModal.vue'
 import { updateSubjectGrade } from '../services/api.js'
@@ -135,6 +143,11 @@ const props = defineProps({
   dataSource: {
     type: String,
     default: 'unknown'
+  },
+  // School-wide defaults (primarily for STUDENTS; students do not get MEG/STG toggles)
+  uiDefaults: {
+    type: Object,
+    default: null
   }
 })
 
@@ -147,6 +160,7 @@ const saving = ref(false)
 const pendingChanges = ref({}) // Track changes before save
 const showMeg = ref(false)
 const showStg = ref(false)
+const userOverrodeVisibility = ref(false)
 
 // Check if user is staff
 const isStaff = computed(() => {
@@ -155,9 +169,52 @@ const isStaff = computed(() => {
   return !roles.some(r => r.name === 'Student' || r.toLowerCase().includes('student'))
 })
 
-// Default: staff see MEG/STG, students start with it hidden
-showMeg.value = isStaff.value
-showStg.value = isStaff.value
+const isStudent = computed(() => !isStaff.value)
+
+const defaultMegFromSchool = computed(() => {
+  const v = props.uiDefaults && Object.prototype.hasOwnProperty.call(props.uiDefaults, 'studentsShowMeg')
+    ? props.uiDefaults.studentsShowMeg
+    : undefined
+  return v === undefined || v === null ? true : !!v
+})
+
+const defaultStgFromSchool = computed(() => {
+  const v = props.uiDefaults && Object.prototype.hasOwnProperty.call(props.uiDefaults, 'studentsShowStg')
+    ? props.uiDefaults.studentsShowStg
+    : undefined
+  return v === undefined || v === null ? false : !!v
+})
+
+// Apply school defaults everywhere on first load.
+// - Students: always enforced (no toggles)
+// - Staff: used as initial state, then staff can override locally
+watch(
+  [defaultMegFromSchool, defaultStgFromSchool, isStudent],
+  () => {
+    if (isStudent.value) {
+      // Enforced for students (source of truth = school settings)
+      showMeg.value = defaultMegFromSchool.value
+      showStg.value = defaultStgFromSchool.value
+      return
+    }
+    // Staff: only set defaults if they haven't toggled yet this session
+    if (!userOverrodeVisibility.value) {
+      showMeg.value = defaultMegFromSchool.value
+      showStg.value = defaultStgFromSchool.value
+    }
+  },
+  { immediate: true }
+)
+
+const toggleMeg = () => {
+  userOverrodeVisibility.value = true
+  showMeg.value = !showMeg.value
+}
+
+const toggleStg = () => {
+  userOverrodeVisibility.value = true
+  showStg.value = !showStg.value
+}
 
 // Helper: coerce json-ish values into clean strings for UI (prevents [object Object])
 const coerceText = (v) => {
