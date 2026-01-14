@@ -96,6 +96,22 @@ const studentEmail = computed(() => {
   return user?.email || null
 })
 
+const STAFF_ROLE_IDS = ['object_5', 'object_7', 'object_18', 'object_78']
+const STAFF_ROLE_NAME_HINTS = ['tutor', 'staff', 'admin', 'head', 'teacher', 'subject']
+
+const normalizeRoleTokens = (roles) => {
+  if (!Array.isArray(roles)) return []
+  return roles.flatMap((r) => {
+    if (!r) return []
+    if (typeof r === 'string') return [r]
+    const tokens = []
+    if (r.id) tokens.push(r.id)
+    if (r.key) tokens.push(r.key)
+    if (r.name) tokens.push(r.name)
+    return tokens
+  }).map(t => String(t).trim().toLowerCase()).filter(Boolean)
+}
+
 const canEdit = computed(() => {
   // Allow embedding contexts (e.g. Account Manager) to force editing on
   if (config.value && config.value.forceEditable) {
@@ -105,13 +121,11 @@ const canEdit = computed(() => {
   if (typeof Knack === 'undefined') return false
   
   const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
+  const tokens = normalizeRoleTokens(roles)
   
-  // Staff role IDs in Knack
-  const staffRoles = ['object_5', 'object_7', 'object_18', 'object_78']
-  const isStaff = roles.some(role => staffRoles.includes(role))
-
-  // Student role (by name) should be allowed to edit Target only
-  const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+  const isStaff = tokens.some(t => STAFF_ROLE_IDS.includes(t)) ||
+    tokens.some(t => STAFF_ROLE_NAME_HINTS.some(h => t.includes(h)))
+  const isStudent = !isStaff
   
   console.log('[Academic Profile V2] User roles:', roles, 'Is staff:', isStaff, 'Is student:', isStudent)
   

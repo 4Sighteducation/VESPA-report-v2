@@ -368,11 +368,30 @@ const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
 
-// Check if user is staff
+const STAFF_ROLE_IDS = ['object_5', 'object_7', 'object_18', 'object_78']
+const STAFF_ROLE_NAME_HINTS = ['tutor', 'staff', 'admin', 'head', 'teacher', 'subject']
+
+const normalizeRoleTokens = (roles) => {
+  if (!Array.isArray(roles)) return []
+  return roles.flatMap((r) => {
+    if (!r) return []
+    if (typeof r === 'string') return [r]
+    const tokens = []
+    if (r.id) tokens.push(r.id)
+    if (r.key) tokens.push(r.key)
+    if (r.name) tokens.push(r.name)
+    return tokens
+  }).map(t => String(t).trim().toLowerCase()).filter(Boolean)
+}
+
+// Check if user is staff (by role ID or name)
 const isStaff = computed(() => {
   if (typeof Knack === 'undefined') return false
   const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
-  return !roles.some(r => r.name === 'Student' || r.toLowerCase().includes('student'))
+  const tokens = normalizeRoleTokens(roles)
+  const hasStaffId = tokens.some(t => STAFF_ROLE_IDS.includes(t))
+  const hasStaffName = tokens.some(t => STAFF_ROLE_NAME_HINTS.some(h => t.includes(h)))
+  return hasStaffId || hasStaffName
 })
 
 const isStudent = computed(() => !isStaff.value)
@@ -1018,12 +1037,23 @@ const showTemporaryMessage = (message, type) => {
 /* University Offers */
 .university-offers {
   position: relative;
-  padding: 14px;
+  padding: 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(4, 12, 36, 0.75), rgba(7, 155, 170, 0.16));
-  border: 1px solid rgba(7, 155, 170, 0.35);
+  background: linear-gradient(135deg, #071a2f 0%, #0c3a4f 100%);
+  border: 1px solid rgba(0, 229, 219, 0.55);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   overflow: hidden;
+}
+
+.university-offers::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #00e5db, #1fbf8f);
+  opacity: 0.9;
 }
 
 .university-offers::before {
@@ -1049,8 +1079,8 @@ const showTemporaryMessage = (message, type) => {
   color: #ffffff;
   padding: 6px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 219, 0.55);
-  background: linear-gradient(135deg, rgba(0, 229, 219, 0.18), rgba(0, 0, 0, 0.18));
+  border: 1px solid rgba(0, 229, 219, 0.75);
+  background: linear-gradient(135deg, rgba(0, 229, 219, 0.28), rgba(0, 0, 0, 0.25));
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
@@ -1099,8 +1129,8 @@ const showTemporaryMessage = (message, type) => {
   margin-top: 10px;
   padding: 12px;
   border-radius: 12px;
-  background: linear-gradient(145deg, rgba(8, 18, 44, 0.85), rgba(15, 36, 82, 0.7));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(145deg, #0b2340, #0c2e5c);
+  border: 1px solid rgba(0, 229, 219, 0.25);
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
@@ -1154,8 +1184,8 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offer-pill {
-  background: rgba(0, 0, 0, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(0, 229, 219, 0.35);
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
