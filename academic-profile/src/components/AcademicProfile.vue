@@ -1017,10 +1017,22 @@ const showTemporaryMessage = (message, type) => {
 
 /* University Offers */
 .university-offers {
-  padding: 12px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.16), rgba(7, 155, 170, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  position: relative;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(4, 12, 36, 0.75), rgba(7, 155, 170, 0.16));
+  border: 1px solid rgba(7, 155, 170, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  overflow: hidden;
+}
+
+.university-offers::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(420px circle at 6% -20%, rgba(0, 229, 219, 0.35), transparent 55%);
+  opacity: 0.5;
+  pointer-events: none;
 }
 
 .university-offers-header {
@@ -1031,10 +1043,15 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .university-offers-title {
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: 0.2px;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.3px;
   color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 229, 219, 0.55);
+  background: linear-gradient(135deg, rgba(0, 229, 219, 0.18), rgba(0, 0, 0, 0.18));
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
 .university-offers-actions {
@@ -1080,10 +1097,11 @@ const showTemporaryMessage = (message, type) => {
 .university-offers-top,
 .offer-item {
   margin-top: 10px;
-  padding: 10px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(8, 18, 44, 0.85), rgba(15, 36, 82, 0.7));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
 .offer-top-toggle {
@@ -1111,20 +1129,20 @@ const showTemporaryMessage = (message, type) => {
   min-width: 34px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(7, 155, 170, 0.25);
-  border: 1px solid rgba(7, 155, 170, 0.55);
+  background: rgba(0, 229, 219, 0.2);
+  border: 1px solid rgba(0, 229, 219, 0.65);
   font-weight: 900;
-  color: #7bd8d0;
+  color: #b6fff8;
 }
 
 .offer-uni {
   font-weight: 950;
-  font-size: 16px;
+  font-size: 17px;
   color: #ffffff;
 }
 
 .offer-course {
-  color: rgba(255,255,255,0.90);
+  color: rgba(255,255,255,0.95);
   font-weight: 600;
 }
 
@@ -1136,12 +1154,14 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offer-pill {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
   font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
 }
 
 .offer-link-btn {
@@ -1180,7 +1200,7 @@ const showTemporaryMessage = (message, type) => {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.85);
   font-size: 12px;
   font-weight: 700;
 }
