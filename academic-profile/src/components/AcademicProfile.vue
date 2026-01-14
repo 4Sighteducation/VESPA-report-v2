@@ -111,8 +111,8 @@
             No subjects available
           </div>
 
-          <!-- University Offers (simple v1) -->
-          <div class="university-offers">
+          <!-- University Offers (KS5 / Level 3 only) -->
+          <div v-if="!isKs4" class="university-offers">
             <div class="university-offers-header">
               <div class="university-offers-title">University Offers</div>
               <div class="university-offers-actions">
@@ -196,6 +196,14 @@
       <div class="offers-modal">
         <div class="offers-modal-header">
           <div class="offers-modal-title">University Offers (max 5)</div>
+          <a
+            class="offers-ucas-link"
+            href="https://www.ucas.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open UCAS in a new tab">
+            🔎 UCAS search
+          </a>
           <button class="offers-modal-close" @click="closeOffersEditor">✖</button>
         </div>
         <div class="offers-modal-body">
@@ -1083,6 +1091,23 @@ const showTemporaryMessage = (message, type) => {
 .offers-modal-title {
   font-weight: 900;
   letter-spacing: 0.2px;
+}
+
+.offers-ucas-link {
+  margin-left: auto;
+  margin-right: 10px;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.20);
+  background: rgba(255,255,255,0.10);
+  color: #ffffff;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.offers-ucas-link:hover {
+  background: rgba(255,255,255,0.16);
 }
 
 .offers-modal-close {
