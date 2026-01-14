@@ -93,7 +93,7 @@
         <div class="grade-label">Target</div>
         <div class="grade-value-display">
           <input 
-            v-if="editMode && isStaff && hasRecordId"
+            v-if="editMode && hasRecordId && (isStaff || allowStudentTargetEdit)"
             type="text"
             class="grade-input-dynamic"
             :value="subject.targetGrade || ''"
@@ -108,7 +108,7 @@
     </div>
 
     <!-- Optional Grades (Effort, Behaviour, Attendance) -->
-    <div v-if="hasOptionalGrades || editMode" class="optional-grades-container">
+    <div v-if="hasOptionalGrades || (editMode && isStaff)" class="optional-grades-container">
       <!-- Effort -->
       <div class="optional-grade-item">
         <span class="optional-grade-label">Eff:</span>
@@ -186,6 +186,10 @@ const props = defineProps({
     default: false
   },
   isStaff: {
+    type: Boolean,
+    default: false
+  },
+  allowStudentTargetEdit: {
     type: Boolean,
     default: false
   },

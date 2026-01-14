@@ -38,6 +38,15 @@
               :title="isEditMode ? 'Save All Changes' : 'Edit All Grades'">
           {{ isEditMode ? '💾 Save All' : '✏️ Edit Grades' }}
           </span>
+
+        <!-- Edit/Save button for students (Target only) -->
+          <span v-if="editable && isStudent"
+              class="master-edit-icon"
+              :class="isEditMode ? 'save-icon' : 'edit-icon'"
+              @click="toggleEditMode"
+              :title="isEditMode ? 'Save Target Grades' : 'Edit Target Grades'">
+          {{ isEditMode ? '💾 Save Targets' : '✏️ Edit Targets' }}
+          </span>
         </div>
       </h2>
 
@@ -89,6 +98,7 @@
                 :subject="subject"
                 :edit-mode="isEditMode"
                 :is-staff="isStaff"
+                :allow-student-target-edit="editable && isStudent"
                 :show-predicted="showPredicted"
                 @update="handleSubjectUpdate"
               />
@@ -100,6 +110,7 @@
                 :subject="subject"
                 :edit-mode="isEditMode"
                 :is-staff="isStaff"
+                :allow-student-target-edit="editable && isStudent"
                 :show-meg="showMeg"
                 :show-stg="showStg"
                 @update="handleSubjectUpdate"
@@ -124,15 +135,22 @@
                   ✏️ Edit Offers
                 </button>
                 <button
-                  v-if="offers.length > 1"
+                  v-if="offers.length > 0"
                   class="offers-toggle-btn"
-                  @click="offersExpanded = !offersExpanded">
-                  {{ offersExpanded ? 'Hide all' : `View all (${offers.length})` }}
+                  :disabled="offers.length <= 1"
+                  @click="toggleOffersExpanded">
+                  <span class="offers-chevron" :class="{ open: offersExpanded }">▾</span>
+                  {{ offersExpanded ? 'Hide offers' : `View offers (${offers.length})` }}
                 </button>
               </div>
             </div>
 
-            <div v-if="topOffer" class="university-offers-top">
+            <button
+              v-if="topOffer"
+              type="button"
+              class="university-offers-top offer-top-toggle"
+              :title="offers.length > 1 ? 'Click to expand/collapse all offers' : 'Top offer'"
+              @click="offers.length > 1 ? toggleOffersExpanded() : null">
               <div class="offer-line">
                 <span class="offer-rank">#{{ topOffer.ranking }}</span>
                 <span class="offer-uni">{{ topOffer.universityName || 'University' }}</span>
@@ -143,15 +161,29 @@
                 <span v-if="topOffer.ucasPoints !== null && topOffer.ucasPoints !== undefined && topOffer.ucasPoints !== ''" class="offer-pill">
                   UCAS: {{ topOffer.ucasPoints }}
                 </span>
+                <a
+                  v-if="safeCourseLink(topOffer.courseLink)"
+                  class="offer-link-btn"
+                  :href="safeCourseLink(topOffer.courseLink)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  @click.stop
+                >
+                  🔗 Course link
+                </a>
               </div>
-            </div>
+              <div v-if="offers.length > 1" class="offer-expand-hint">
+                <span class="offers-chevron" :class="{ open: offersExpanded }">▾</span>
+                <span>{{ offersExpanded ? 'Click to collapse' : 'Click to expand' }}</span>
+              </div>
+            </button>
 
             <div v-else class="university-offers-empty">
               <span>No offers added yet.</span>
               <button v-if="offersEditable" class="offers-add-btn" @click="openOffersEditor">➕ Add offers</button>
             </div>
 
-            <div v-if="offersExpanded && offers.length" class="university-offers-list">
+            <div v-if="offersExpanded && offers.length" class="university-offers-list" aria-label="All university offers">
               <div v-for="o in sortedOffers" :key="o._key" class="offer-item">
                 <div class="offer-line">
                   <span class="offer-rank">#{{ o.ranking }}</span>
@@ -163,6 +195,16 @@
                   <span v-if="o.ucasPoints !== null && o.ucasPoints !== undefined && o.ucasPoints !== ''" class="offer-pill">
                     UCAS: {{ o.ucasPoints }}
                   </span>
+                  <a
+                    v-if="safeCourseLink(o.courseLink)"
+                    class="offer-link-btn"
+                    :href="safeCourseLink(o.courseLink)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    @click.stop
+                  >
+                    🔗 Course link
+                  </a>
                 </div>
               </div>
             </div>
@@ -215,6 +257,7 @@
             <div class="offers-grid-head">Rank</div>
             <div class="offers-grid-head">University</div>
             <div class="offers-grid-head">Course</div>
+            <div class="offers-grid-head">Link</div>
             <div class="offers-grid-head">Offer</div>
             <div class="offers-grid-head">UCAS</div>
             <div class="offers-grid-head"></div>
@@ -231,6 +274,7 @@
               </div>
               <div><input v-model="row.universityName" class="offers-input" placeholder="e.g. Manchester" /></div>
               <div><input v-model="row.courseTitle" class="offers-input" placeholder="e.g. Computer Science" /></div>
+              <div><input v-model="row.courseLink" class="offers-input" placeholder="https://…" /></div>
               <div><input v-model="row.offer" class="offers-input" placeholder="e.g. AAB" /></div>
               <div><input v-model="row.ucasPoints" class="offers-input" placeholder="e.g. 128" /></div>
               <div>
@@ -426,6 +470,7 @@ const displayTutorGroup = computed(() => coerceText(props.student?.tutorGroup))
 const normalizeOffer = (o) => {
   const uni = coerceText(o?.universityName ?? o?.university_name)
   const course = coerceText(o?.courseTitle ?? o?.course_title)
+  const link = coerceText(o?.courseLink ?? o?.course_link)
   const offer = coerceText(o?.offer ?? o?.offerText ?? o?.offer_text)
   const ucasRaw = (o?.ucasPoints ?? o?.ucas_points)
   const rankRaw = (o?.ranking ?? o?.rank)
@@ -435,6 +480,7 @@ const normalizeOffer = (o) => {
     _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     universityName: uni,
     courseTitle: course,
+    courseLink: link,
     offer: offer,
     ucasPoints: Number.isFinite(ucasPoints) ? ucasPoints : null,
     ranking: Math.min(5, Math.max(1, Number.isFinite(ranking) ? ranking : 1))
@@ -446,7 +492,7 @@ const offers = computed(() => {
   if (!raw || !Array.isArray(raw)) return []
   return raw
     .map(normalizeOffer)
-    .filter(o => (o.universityName || o.courseTitle || o.offer || (o.ucasPoints !== null && o.ucasPoints !== undefined)))
+    .filter(o => (o.universityName || o.courseTitle || o.courseLink || o.offer || (o.ucasPoints !== null && o.ucasPoints !== undefined)))
     .slice(0, 5)
 })
 
@@ -460,6 +506,10 @@ const topOffer = computed(() => {
   return sortedOffers.value.length ? sortedOffers.value[0] : null
 })
 
+const toggleOffersExpanded = () => {
+  offersExpanded.value = !offersExpanded.value
+}
+
 const formattedUpdatedAt = computed(() => {
   if (!props.updatedAt) return ''
   const d = new Date(props.updatedAt)
@@ -472,6 +522,7 @@ const openOffersEditor = () => {
     _key: o._key || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     universityName: o.universityName || '',
     courseTitle: o.courseTitle || '',
+    courseLink: o.courseLink || '',
     offer: o.offer || '',
     ucasPoints: (o.ucasPoints === null || o.ucasPoints === undefined) ? '' : String(o.ucasPoints),
     ranking: o.ranking || 1
@@ -481,6 +532,7 @@ const openOffersEditor = () => {
       _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       universityName: '',
       courseTitle: '',
+      courseLink: '',
       offer: '',
       ucasPoints: '',
       ranking: 1
@@ -505,10 +557,22 @@ const addOfferRow = () => {
     _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     universityName: '',
     courseTitle: '',
+    courseLink: '',
     offer: '',
     ucasPoints: '',
     ranking: nextRank
   })
+}
+
+const safeCourseLink = (raw) => {
+  const s = (raw || '').toString().trim()
+  if (!s) return null
+  const low = s.toLowerCase()
+  if (low.startsWith('javascript:') || low.startsWith('data:')) return null
+  if (low.startsWith('http://') || low.startsWith('https://')) return s
+  if (low.startsWith('www.')) return `https://${s}`
+  if (s.includes('.') && !s.includes(' ')) return `https://${s}`
+  return null
 }
 
 const removeOfferRow = (idx) => {
@@ -524,11 +588,12 @@ const saveOffers = async () => {
       .map(r => ({
         universityName: (r.universityName || '').trim(),
         courseTitle: (r.courseTitle || '').trim(),
+        courseLink: (safeCourseLink(r.courseLink) || ''),
         offer: (r.offer || '').trim(),
         ucasPoints: (r.ucasPoints === null || r.ucasPoints === undefined || String(r.ucasPoints).trim() === '') ? null : parseInt(r.ucasPoints, 10),
         ranking: parseInt(r.ranking, 10)
       }))
-      .filter(r => r.universityName || r.courseTitle || r.offer || (r.ucasPoints !== null && r.ucasPoints !== undefined))
+      .filter(r => r.universityName || r.courseTitle || r.courseLink || r.offer || (r.ucasPoints !== null && r.ucasPoints !== undefined))
       .slice(0, 5)
 
     const ranks = cleaned.map(r => r.ranking).filter(Boolean)
@@ -567,6 +632,12 @@ const toggleEditMode = async () => {
 
 // Handle individual subject update
 const handleSubjectUpdate = (subjectId, field, value) => {
+  // Students can edit ONLY Target grade
+  if (isStudent.value && field !== 'targetGrade') {
+    console.warn('[Academic Profile] Student attempted to edit forbidden field:', field)
+    showTemporaryMessage('You can only edit your Target grade.', 'error')
+    return
+  }
   // Store pending changes
   if (!pendingChanges.value[subjectId]) {
     pendingChanges.value[subjectId] = {}
@@ -590,9 +661,17 @@ const saveAllChanges = async () => {
     
     // Update each subject that has changes
     for (const [subjectId, changes] of Object.entries(pendingChanges.value)) {
+      const safeChanges = isStudent.value ? { targetGrade: changes.targetGrade } : changes
+      // Skip if student has no target changes for this subject
+      if (isStudent.value && safeChanges.targetGrade === undefined) continue
       updatePromises.push(
-        updateSubjectGrade(subjectId, changes, window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl)
+        updateSubjectGrade(subjectId, safeChanges, window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl)
       )
+    }
+
+    if (updatePromises.length === 0) {
+      pendingChanges.value = {}
+      return
     }
 
     const results = await Promise.all(updatePromises)
@@ -940,8 +1019,8 @@ const showTemporaryMessage = (message, type) => {
 .university-offers {
   padding: 12px;
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.16), rgba(7, 155, 170, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .university-offers-header {
@@ -977,6 +1056,21 @@ const showTemporaryMessage = (message, type) => {
   cursor: pointer;
 }
 
+.offers-toggle-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.offers-chevron {
+  display: inline-block;
+  margin-right: 6px;
+  transition: transform 0.18s ease;
+}
+
+.offers-chevron.open {
+  transform: rotate(180deg);
+}
+
 .offers-edit-btn:hover,
 .offers-toggle-btn:hover,
 .offers-add-btn:hover {
@@ -990,6 +1084,17 @@ const showTemporaryMessage = (message, type) => {
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.offer-top-toggle {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.offer-top-toggle:focus {
+  outline: 2px solid rgba(7, 155, 170, 0.65);
+  outline-offset: 2px;
 }
 
 .offer-line {
@@ -1013,12 +1118,13 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offer-uni {
-  font-weight: 900;
+  font-weight: 950;
+  font-size: 16px;
   color: #ffffff;
 }
 
 .offer-course {
-  color: rgba(255,255,255,0.85);
+  color: rgba(255,255,255,0.90);
   font-weight: 600;
 }
 
@@ -1038,6 +1144,21 @@ const showTemporaryMessage = (message, type) => {
   font-weight: 700;
 }
 
+.offer-link-btn {
+  text-decoration: none;
+  background: rgba(7, 155, 170, 0.18);
+  border: 1px solid rgba(7, 155, 170, 0.55);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.offer-link-btn:hover {
+  background: rgba(7, 155, 170, 0.28);
+}
+
 .university-offers-empty {
   margin-top: 10px;
   display: flex;
@@ -1052,6 +1173,16 @@ const showTemporaryMessage = (message, type) => {
   margin-top: 10px;
   display: grid;
   gap: 10px;
+}
+
+.offer-expand-hint {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255,255,255,0.75);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* Offers modal */
@@ -1134,7 +1265,7 @@ const showTemporaryMessage = (message, type) => {
 .offers-grid {
   margin-top: 12px;
   display: grid;
-  grid-template-columns: 90px 1.2fr 1.4fr 160px 110px 48px;
+  grid-template-columns: 90px 1.1fr 1.2fr 1.2fr 160px 110px 48px;
   gap: 8px;
   align-items: center;
 }

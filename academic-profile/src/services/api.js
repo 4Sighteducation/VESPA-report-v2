@@ -126,11 +126,22 @@ export async function syncAcademicProfile(profileData, apiUrl) {
 export async function updateSubjectGrade(subjectId, updates, apiUrl) {
   try {
     console.log('[Academic Profile API] Updating subject:', subjectId, updates)
+
+    // Best-effort role hint (used by backend to restrict student writes to Target only)
+    let roleHeader = null
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
     
     const response = await fetch(`${apiUrl}/api/academic-profile/subject/${subjectId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        ...(roleHeader ? { 'X-User-Role': roleHeader } : {})
       },
       body: JSON.stringify(updates)
     })
@@ -174,9 +185,20 @@ export async function updateSubjectGrade(subjectId, updates, apiUrl) {
 export async function updateUniversityOffers(studentEmail, offers, apiUrl, academicYear = null) {
   try {
     const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/university-offers`
+
+    // Best-effort role hint (students + staff can edit offers, but keep parity with subject updates)
+    let roleHeader = null
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
+
     const response = await fetch(url, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(roleHeader ? { 'X-User-Role': roleHeader } : {}) },
       body: JSON.stringify({
         academicYear,
         offers

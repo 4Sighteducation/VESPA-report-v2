@@ -40,7 +40,7 @@
         <div class="ks4-pill-label">Tar</div>
         <div class="ks4-pill-value">
           <input
-            v-if="editMode && isStaff && hasRecordId"
+            v-if="editMode && hasRecordId && (isStaff || allowStudentTargetEdit)"
             class="ks4-input"
             type="text"
             :value="subject.targetGrade || ''"
@@ -91,6 +91,7 @@ const props = defineProps({
   subject: { type: Object, required: true },
   editMode: { type: Boolean, default: false },
   isStaff: { type: Boolean, default: false },
+  allowStudentTargetEdit: { type: Boolean, default: false },
   showPredicted: { type: Boolean, default: true }
 })
 
