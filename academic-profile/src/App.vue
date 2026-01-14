@@ -102,7 +102,6 @@ const canEdit = computed(() => {
     return true
   }
 
-  // Only staff roles can edit: Tutor, Staff Admin, Head of Year, Subject Teacher
   if (typeof Knack === 'undefined') return false
   
   const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
@@ -110,8 +109,15 @@ const canEdit = computed(() => {
   // Staff role IDs in Knack
   const staffRoles = ['object_5', 'object_7', 'object_18', 'object_78']
   const isStaff = roles.some(role => staffRoles.includes(role))
+
+  // Student role (by name) should be allowed to edit Target only
+  const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
   
-  console.log('[Academic Profile V2] User roles:', roles, 'Is staff:', isStaff)
+  console.log('[Academic Profile V2] User roles:', roles, 'Is staff:', isStaff, 'Is student:', isStudent)
+  
+  if (isStudent) {
+    return config.value.studentTargetEditable !== false && config.value.editable !== false
+  }
   
   return isStaff && config.value.editable !== false
 })
