@@ -1039,8 +1039,9 @@ const showTemporaryMessage = (message, type) => {
   position: relative;
   padding: 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #071a2f 0%, #0c3a4f 100%);
-  border: 1px solid rgba(0, 229, 219, 0.55);
+  /* University offers theme (main): #3E3285 */
+  background: linear-gradient(135deg, #231c58 0%, #2f2672 100%);
+  border: 1px solid rgba(62, 50, 133, 0.65);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   overflow: hidden;
 }
@@ -1052,7 +1053,7 @@ const showTemporaryMessage = (message, type) => {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #00e5db, #1fbf8f);
+  background: linear-gradient(180deg, #3E3285, #6B5DD6);
   opacity: 0.9;
 }
 
@@ -1060,7 +1061,7 @@ const showTemporaryMessage = (message, type) => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(420px circle at 6% -20%, rgba(0, 229, 219, 0.35), transparent 55%);
+  background: radial-gradient(420px circle at 6% -20%, rgba(62, 50, 133, 0.45), transparent 55%);
   opacity: 0.5;
   pointer-events: none;
 }
@@ -1079,8 +1080,8 @@ const showTemporaryMessage = (message, type) => {
   color: #ffffff;
   padding: 6px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(0, 229, 219, 0.75);
-  background: linear-gradient(135deg, rgba(0, 229, 219, 0.28), rgba(0, 0, 0, 0.25));
+  border: 1px solid rgba(62, 50, 133, 0.78);
+  background: linear-gradient(135deg, rgba(62, 50, 133, 0.35), rgba(0, 0, 0, 0.25));
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
@@ -1129,8 +1130,8 @@ const showTemporaryMessage = (message, type) => {
   margin-top: 10px;
   padding: 12px;
   border-radius: 12px;
-  background: linear-gradient(145deg, #0b2340, #0c2e5c);
-  border: 1px solid rgba(0, 229, 219, 0.25);
+  background: linear-gradient(145deg, #241f55, #2c2470);
+  border: 1px solid rgba(62, 50, 133, 0.35);
   box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
@@ -1141,7 +1142,7 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offer-top-toggle:focus {
-  outline: 2px solid rgba(7, 155, 170, 0.65);
+  outline: 2px solid rgba(62, 50, 133, 0.75);
   outline-offset: 2px;
 }
 
@@ -1159,10 +1160,10 @@ const showTemporaryMessage = (message, type) => {
   min-width: 34px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 229, 219, 0.2);
-  border: 1px solid rgba(0, 229, 219, 0.65);
+  background: rgba(62, 50, 133, 0.25);
+  border: 1px solid rgba(62, 50, 133, 0.78);
   font-weight: 900;
-  color: #b6fff8;
+  color: #efeaff;
 }
 
 .offer-uni {
@@ -1185,7 +1186,7 @@ const showTemporaryMessage = (message, type) => {
 
 .offer-pill {
   background: rgba(0, 0, 0, 0.75);
-  border: 1px solid rgba(0, 229, 219, 0.35);
+  border: 1px solid rgba(62, 50, 133, 0.55);
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
@@ -1196,8 +1197,8 @@ const showTemporaryMessage = (message, type) => {
 
 .offer-link-btn {
   text-decoration: none;
-  background: rgba(7, 155, 170, 0.18);
-  border: 1px solid rgba(7, 155, 170, 0.55);
+  background: rgba(62, 50, 133, 0.25);
+  border: 1px solid rgba(62, 50, 133, 0.7);
   border-radius: 999px;
   padding: 4px 10px;
   font-size: 12px;
@@ -1206,7 +1207,7 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offer-link-btn:hover {
-  background: rgba(7, 155, 170, 0.28);
+  background: rgba(62, 50, 133, 0.35);
 }
 
 .university-offers-empty {
