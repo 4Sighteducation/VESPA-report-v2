@@ -110,6 +110,63 @@
           <div v-if="subjects.length === 0" class="no-subjects">
             No subjects available
           </div>
+
+          <!-- University Offers (simple v1) -->
+          <div class="university-offers">
+            <div class="university-offers-header">
+              <div class="university-offers-title">University Offers</div>
+              <div class="university-offers-actions">
+                <button
+                  v-if="offersEditable"
+                  class="offers-edit-btn"
+                  @click="openOffersEditor"
+                  title="Add or edit up to 5 university offers">
+                  ✏️ Edit Offers
+                </button>
+                <button
+                  v-if="offers.length > 1"
+                  class="offers-toggle-btn"
+                  @click="offersExpanded = !offersExpanded">
+                  {{ offersExpanded ? 'Hide all' : `View all (${offers.length})` }}
+                </button>
+              </div>
+            </div>
+
+            <div v-if="topOffer" class="university-offers-top">
+              <div class="offer-line">
+                <span class="offer-rank">#{{ topOffer.ranking }}</span>
+                <span class="offer-uni">{{ topOffer.universityName || 'University' }}</span>
+                <span class="offer-course" v-if="topOffer.courseTitle">— {{ topOffer.courseTitle }}</span>
+              </div>
+              <div class="offer-meta">
+                <span v-if="topOffer.offer" class="offer-pill">Offer: {{ topOffer.offer }}</span>
+                <span v-if="topOffer.ucasPoints !== null && topOffer.ucasPoints !== undefined && topOffer.ucasPoints !== ''" class="offer-pill">
+                  UCAS: {{ topOffer.ucasPoints }}
+                </span>
+              </div>
+            </div>
+
+            <div v-else class="university-offers-empty">
+              <span>No offers added yet.</span>
+              <button v-if="offersEditable" class="offers-add-btn" @click="openOffersEditor">➕ Add offers</button>
+            </div>
+
+            <div v-if="offersExpanded && offers.length" class="university-offers-list">
+              <div v-for="o in sortedOffers" :key="o._key" class="offer-item">
+                <div class="offer-line">
+                  <span class="offer-rank">#{{ o.ranking }}</span>
+                  <span class="offer-uni">{{ o.universityName || 'University' }}</span>
+                  <span class="offer-course" v-if="o.courseTitle">— {{ o.courseTitle }}</span>
+                </div>
+                <div class="offer-meta">
+                  <span v-if="o.offer" class="offer-pill">Offer: {{ o.offer }}</span>
+                  <span v-if="o.ucasPoints !== null && o.ucasPoints !== undefined && o.ucasPoints !== ''" class="offer-pill">
+                    UCAS: {{ o.ucasPoints }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -133,6 +190,64 @@
       <div class="spinner"></div>
       <p>Saving changes...</p>
     </div>
+
+    <!-- University Offers Editor Modal -->
+    <div v-if="offersEditorOpen" class="offers-modal-overlay" @click.self="closeOffersEditor">
+      <div class="offers-modal">
+        <div class="offers-modal-header">
+          <div class="offers-modal-title">University Offers (max 5)</div>
+          <button class="offers-modal-close" @click="closeOffersEditor">✖</button>
+        </div>
+        <div class="offers-modal-body">
+          <div class="offers-help">
+            Add up to 5 offers. The profile displays your <strong>#1 ranked</strong> offer by default.
+          </div>
+
+          <div class="offers-grid">
+            <div class="offers-grid-head">Rank</div>
+            <div class="offers-grid-head">University</div>
+            <div class="offers-grid-head">Course</div>
+            <div class="offers-grid-head">Offer</div>
+            <div class="offers-grid-head">UCAS</div>
+            <div class="offers-grid-head"></div>
+
+            <template v-for="(row, idx) in offersDraft" :key="row._key">
+              <div>
+                <select v-model.number="row.ranking" class="offers-input">
+                  <option :value="1">1</option>
+                  <option :value="2">2</option>
+                  <option :value="3">3</option>
+                  <option :value="4">4</option>
+                  <option :value="5">5</option>
+                </select>
+              </div>
+              <div><input v-model="row.universityName" class="offers-input" placeholder="e.g. Manchester" /></div>
+              <div><input v-model="row.courseTitle" class="offers-input" placeholder="e.g. Computer Science" /></div>
+              <div><input v-model="row.offer" class="offers-input" placeholder="e.g. AAB" /></div>
+              <div><input v-model="row.ucasPoints" class="offers-input" placeholder="e.g. 128" /></div>
+              <div>
+                <button class="offers-remove" @click="removeOfferRow(idx)" title="Remove">🗑️</button>
+              </div>
+            </template>
+          </div>
+
+          <div class="offers-modal-actions">
+            <button
+              class="offers-secondary"
+              @click="addOfferRow"
+              :disabled="offersDraft.length >= 5">
+              ➕ Add Offer
+            </button>
+          </div>
+        </div>
+        <div class="offers-modal-footer">
+          <button class="offers-secondary" @click="closeOffersEditor">Cancel</button>
+          <button class="offers-primary" @click="saveOffers" :disabled="offersSaving">
+            {{ offersSaving ? 'Saving...' : 'Save Offers' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -141,7 +256,7 @@ import { ref, computed, watch } from 'vue'
 import SubjectCard from './SubjectCard.vue'
 import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
-import { updateSubjectGrade } from '../services/api.js'
+import { updateSubjectGrade, updateUniversityOffers } from '../services/api.js'
 
 const props = defineProps({
   student: {
@@ -156,7 +271,15 @@ const props = defineProps({
     type: String,
     default: null
   },
+  academicYear: {
+    type: String,
+    default: null
+  },
   editable: {
+    type: Boolean,
+    default: false
+  },
+  offersEditable: {
     type: Boolean,
     default: false
   },
@@ -186,6 +309,12 @@ const showMeg = ref(false)
 const showStg = ref(false)
 const userOverrodeVisibility = ref(false)
 const showPredicted = ref(false)
+
+// University Offers state
+const offersExpanded = ref(false)
+const offersEditorOpen = ref(false)
+const offersSaving = ref(false)
+const offersDraft = ref([])
 
 // Check if user is staff
 const isStaff = computed(() => {
@@ -286,12 +415,138 @@ const displaySchool = computed(() => coerceText(props.student?.school) || 'N/A')
 const displayYearGroup = computed(() => coerceText(props.student?.yearGroup))
 const displayTutorGroup = computed(() => coerceText(props.student?.tutorGroup))
 
+const normalizeOffer = (o) => {
+  const uni = coerceText(o?.universityName ?? o?.university_name)
+  const course = coerceText(o?.courseTitle ?? o?.course_title)
+  const offer = coerceText(o?.offer ?? o?.offerText ?? o?.offer_text)
+  const ucasRaw = (o?.ucasPoints ?? o?.ucas_points)
+  const rankRaw = (o?.ranking ?? o?.rank)
+  const ranking = Number.isFinite(Number(rankRaw)) ? parseInt(rankRaw, 10) : 1
+  const ucasPoints = (ucasRaw === null || ucasRaw === undefined || String(ucasRaw).trim() === '') ? null : parseInt(ucasRaw, 10)
+  return {
+    _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    universityName: uni,
+    courseTitle: course,
+    offer: offer,
+    ucasPoints: Number.isFinite(ucasPoints) ? ucasPoints : null,
+    ranking: Math.min(5, Math.max(1, Number.isFinite(ranking) ? ranking : 1))
+  }
+}
+
+const offers = computed(() => {
+  const raw = props.student?.universityOffers
+  if (!raw || !Array.isArray(raw)) return []
+  return raw
+    .map(normalizeOffer)
+    .filter(o => (o.universityName || o.courseTitle || o.offer || (o.ucasPoints !== null && o.ucasPoints !== undefined)))
+    .slice(0, 5)
+})
+
+const sortedOffers = computed(() => {
+  return [...offers.value]
+    .sort((a, b) => (a.ranking || 999) - (b.ranking || 999))
+    .map((o, idx) => ({ ...o, _key: o._key || `${idx}` }))
+})
+
+const topOffer = computed(() => {
+  return sortedOffers.value.length ? sortedOffers.value[0] : null
+})
+
 const formattedUpdatedAt = computed(() => {
   if (!props.updatedAt) return ''
   const d = new Date(props.updatedAt)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleString()
 })
+
+const openOffersEditor = () => {
+  offersDraft.value = sortedOffers.value.map(o => ({
+    _key: o._key || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    universityName: o.universityName || '',
+    courseTitle: o.courseTitle || '',
+    offer: o.offer || '',
+    ucasPoints: (o.ucasPoints === null || o.ucasPoints === undefined) ? '' : String(o.ucasPoints),
+    ranking: o.ranking || 1
+  }))
+  if (offersDraft.value.length === 0) {
+    offersDraft.value = [{
+      _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      universityName: '',
+      courseTitle: '',
+      offer: '',
+      ucasPoints: '',
+      ranking: 1
+    }]
+  }
+  offersEditorOpen.value = true
+}
+
+const closeOffersEditor = () => {
+  offersEditorOpen.value = false
+  offersDraft.value = []
+}
+
+const addOfferRow = () => {
+  if (offersDraft.value.length >= 5) return
+  const used = new Set(offersDraft.value.map(r => Number(r.ranking)))
+  let nextRank = 1
+  for (const r of [1, 2, 3, 4, 5]) {
+    if (!used.has(r)) { nextRank = r; break }
+  }
+  offersDraft.value.push({
+    _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    universityName: '',
+    courseTitle: '',
+    offer: '',
+    ucasPoints: '',
+    ranking: nextRank
+  })
+}
+
+const removeOfferRow = (idx) => {
+  offersDraft.value.splice(idx, 1)
+  if (offersDraft.value.length === 0) addOfferRow()
+}
+
+const saveOffers = async () => {
+  if (!props.offersEditable) return
+  offersSaving.value = true
+  try {
+    const cleaned = offersDraft.value
+      .map(r => ({
+        universityName: (r.universityName || '').trim(),
+        courseTitle: (r.courseTitle || '').trim(),
+        offer: (r.offer || '').trim(),
+        ucasPoints: (r.ucasPoints === null || r.ucasPoints === undefined || String(r.ucasPoints).trim() === '') ? null : parseInt(r.ucasPoints, 10),
+        ranking: parseInt(r.ranking, 10)
+      }))
+      .filter(r => r.universityName || r.courseTitle || r.offer || (r.ucasPoints !== null && r.ucasPoints !== undefined))
+      .slice(0, 5)
+
+    const ranks = cleaned.map(r => r.ranking).filter(Boolean)
+    const unique = new Set(ranks)
+    if (ranks.length !== unique.size) throw new Error('Each offer must have a unique ranking (1-5).')
+    for (const r of cleaned) {
+      if (!(r.ranking >= 1 && r.ranking <= 5)) throw new Error('Ranking must be between 1 and 5.')
+      if (r.ucasPoints !== null && !Number.isFinite(r.ucasPoints)) throw new Error('UCAS points must be a number.')
+    }
+
+    const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+    const email = props.student?.email
+    const year = props.academicYear || null
+    const resp = await updateUniversityOffers(email, cleaned, apiUrl, year)
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Failed to save offers')
+
+    closeOffersEditor()
+    emit('reload')
+    showTemporaryMessage('University offers saved.', 'success')
+  } catch (e) {
+    console.error('[Academic Profile] saveOffers error:', e)
+    showTemporaryMessage(e.message || 'Failed to save offers', 'error')
+  } finally {
+    offersSaving.value = false
+  }
+}
 
 // Toggle edit mode
 const toggleEditMode = async () => {
@@ -639,6 +894,8 @@ const showTemporaryMessage = (message, type) => {
   min-width: 280px;
   min-height: 170px;
   display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .subjects-grid {
@@ -669,6 +926,257 @@ const showTemporaryMessage = (message, type) => {
   text-align: center;
   color: #cccccc;
   font-style: italic;
+}
+
+/* University Offers */
+.university-offers {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.university-offers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.university-offers-title {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.2px;
+  color: #ffffff;
+}
+
+.university-offers-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.offers-edit-btn,
+.offers-toggle-btn,
+.offers-add-btn {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.offers-edit-btn:hover,
+.offers-toggle-btn:hover,
+.offers-add-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.university-offers-top,
+.offer-item {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.offer-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.offer-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(7, 155, 170, 0.25);
+  border: 1px solid rgba(7, 155, 170, 0.55);
+  font-weight: 900;
+  color: #7bd8d0;
+}
+
+.offer-uni {
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.offer-course {
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+}
+
+.offer-meta {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.offer-pill {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.university-offers-empty {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
+}
+
+.university-offers-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+/* Offers modal */
+.offers-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 10001;
+}
+
+.offers-modal {
+  width: 100%;
+  max-width: 980px;
+  background: #14224a;
+  border: 2px solid rgba(7, 155, 170, 0.6);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+.offers-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #2a3c7a 0%, #079baa 100%);
+  color: #fff;
+}
+
+.offers-modal-title {
+  font-weight: 900;
+  letter-spacing: 0.2px;
+}
+
+.offers-modal-close {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.offers-modal-body {
+  padding: 14px 16px;
+}
+
+.offers-help {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.92);
+}
+
+.offers-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 90px 1.2fr 1.4fr 160px 110px 48px;
+  gap: 8px;
+  align-items: center;
+}
+
+.offers-grid-head {
+  font-weight: 900;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+}
+
+.offers-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.offers-remove {
+  width: 40px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+}
+
+.offers-modal-actions {
+  margin-top: 12px;
+}
+
+.offers-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.10);
+}
+
+.offers-secondary,
+.offers-primary {
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.offers-secondary {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+
+.offers-primary {
+  background: rgba(7, 155, 170, 0.85);
+  color: #072b33;
+  border-color: rgba(7, 155, 170, 0.9);
+}
+
+.offers-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Data source indicator */

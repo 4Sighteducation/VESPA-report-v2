@@ -28,8 +28,10 @@
           :student="profileData.student"
           :subjects="profileData.subjects"
           :updated-at="profileData.updatedAt"
+          :academic-year="profileData.academicYear"
           :ui-defaults="profileData.uiDefaults"
           :editable="canEdit"
+          :offers-editable="canEditOffers"
           :mode="config.mode || 'inline'"
           :data-source="profileData.dataSource"
           @reload="loadProfile"
@@ -112,6 +114,13 @@ const canEdit = computed(() => {
   console.log('[Academic Profile V2] User roles:', roles, 'Is staff:', isStaff)
   
   return isStaff && config.value.editable !== false
+})
+
+const canEditOffers = computed(() => {
+  // Offers are intended to be editable by BOTH students and staff (unless explicitly disabled)
+  if (config.value && config.value.forceEditableOffers) return true
+  if (typeof Knack === 'undefined') return false
+  return config.value.offersEditable !== false
 })
 
 // Methods

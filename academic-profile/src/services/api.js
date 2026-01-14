@@ -164,6 +164,42 @@ export async function updateSubjectGrade(subjectId, updates, apiUrl) {
 }
 
 /**
+ * Update university offers for a student's academic profile (Supabase-backed)
+ * @param {string} studentEmail
+ * @param {Array} offers
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @returns {Promise<Object>}
+ */
+export async function updateUniversityOffers(studentEmail, offers, apiUrl, academicYear = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/university-offers`
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        academicYear,
+        offers
+      })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] updateUniversityOffers error:', error)
+    return { success: false, error: error.message || 'Failed to update university offers' }
+  }
+}
+
+/**
  * Health check for academic profile system
  * @param {string} apiUrl - Base API URL
  * @returns {Promise<Object>}
