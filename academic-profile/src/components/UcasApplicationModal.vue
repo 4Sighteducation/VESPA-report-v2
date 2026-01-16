@@ -45,7 +45,8 @@
             class="ucas-btn ucas-btn-primary"
             type="button"
             @click="saveToServer"
-            :disabled="saving || totalChars > MAX_TOTAL_CHARS || totalChars < MIN_TOTAL_CHARS || !studentEmail"
+            :disabled="!canEdit || saving || totalChars > MAX_TOTAL_CHARS || totalChars < MIN_TOTAL_CHARS || !studentEmail"
+            :title="!canEdit ? 'Read-only for staff — students can save' : 'Save UCAS application'"
           >
             <svg v-if="!saving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             <span v-if="saving" class="ucas-spinner"></span>
@@ -85,6 +86,31 @@
                   />
                 </div>
               </template>
+            </div>
+
+            <!-- UCAS Points Calculator (estimated) -->
+            <div class="ucas-tariff" v-if="subjectRows.length">
+              <div class="ucas-preview-header">
+                <h3 class="ucas-preview-title">UCAS points (estimated)</h3>
+                <span class="ucas-preview-hint">Based on the subjects shown (max 5)</span>
+              </div>
+              <div class="ucas-tariff-grid">
+                <div class="ucas-tariff-box">
+                  <div class="ucas-tariff-label">Current</div>
+                  <div class="ucas-tariff-value">{{ ucasTariff.current.toLocaleString() }}</div>
+                </div>
+                <div class="ucas-tariff-box">
+                  <div class="ucas-tariff-label">Target</div>
+                  <div class="ucas-tariff-value">{{ ucasTariff.target.toLocaleString() }}</div>
+                </div>
+                <div class="ucas-tariff-box ucas-tariff-box--required">
+                  <div class="ucas-tariff-label">Required</div>
+                  <div class="ucas-tariff-value">{{ ucasTariff.required.toLocaleString() }}</div>
+                </div>
+              </div>
+              <div v-if="ucasTariff.unknownCount > 0" class="ucas-tariff-note">
+                Some grades couldn’t be converted to points (format/qualification not recognised).
+              </div>
             </div>
           </div>
 
@@ -453,7 +479,10 @@ async function loadFromServer() {
 }
 
 async function saveToServer() {
-  if (!props.canEdit) return
+  if (!props.canEdit) {
+    showToast('Read-only for staff — students can save')
+    return
+  }
   if (!props.apiUrl || !props.studentEmail) return
   saving.value = true
   try {
@@ -471,6 +500,77 @@ async function saveToServer() {
     saving.value = false
   }
 }
+
+// ---------------------------------------------------------------------------
+// UCAS Tariff calculator (lightweight, based on `UCAS_Tariff_Calc.html`)
+// ---------------------------------------------------------------------------
+const UCAS_TARIFF = {
+  'A-Level': { grades: { 'A*': 56, 'A': 48, 'B': 40, 'C': 32, 'D': 24, 'E': 16 } },
+  'AS-Level': { grades: { 'A': 20, 'B': 16, 'C': 12, 'D': 10, 'E': 6 } },
+  'BTEC Extended Certificate (1 A-Level)': { grades: { 'D*': 56, 'D': 48, 'M': 32, 'P': 16 } },
+  'EPQ (Extended Project)': { grades: { 'A*': 28, 'A': 24, 'B': 20, 'C': 16, 'D': 12, 'E': 8 } }
+}
+
+function normalizeGrade(raw) {
+  const s = safeText(raw).trim()
+  if (!s) return ''
+  const up = s.toUpperCase()
+
+  // Common BTEC word forms → letters
+  if (up === 'DISTINCTION*' || up === 'DISTINCTION *') return 'D*'
+  if (up === 'DISTINCTION') return 'D'
+  if (up === 'MERIT') return 'M'
+  if (up === 'PASS') return 'P'
+
+  // Keep A* as-is (uppercased already) and single-letter grades
+  return up.replace(/\s+/g, '')
+}
+
+function inferQualType(subject) {
+  const t = safeText(subject?.examType).toLowerCase()
+  if (t.includes('epq') || t.includes('extended project')) return 'EPQ (Extended Project)'
+  if (t.includes('as') && t.includes('level')) return 'AS-Level'
+  if (t.includes('a level') || t.includes('a-level')) return 'A-Level'
+  if (t.includes('btec')) return 'BTEC Extended Certificate (1 A-Level)'
+  return 'A-Level'
+}
+
+function pointsFor(subject, gradeRaw) {
+  const grade = normalizeGrade(gradeRaw)
+  if (!grade) return { points: 0, unknown: 0 }
+
+  const qualType = inferQualType(subject)
+  const table = UCAS_TARIFF[qualType]?.grades || {}
+  const pts = table[grade]
+  if (typeof pts === 'number') return { points: pts, unknown: 0 }
+  return { points: 0, unknown: 1 }
+}
+
+const ucasTariff = computed(() => {
+  const list = Array.isArray(props.subjects) ? props.subjects.slice(0, 5) : []
+  let current = 0
+  let target = 0
+  let required = 0
+  let unknownCount = 0
+
+  // We align by index (same slice logic as subjectRows)
+  for (let i = 0; i < list.length; i++) {
+    const subj = list[i]
+    const rowKey = subjectRows.value[i]?.key
+    const requiredGrade = rowKey ? (currentCourseSubjectOffers.value[rowKey] || '') : ''
+
+    const a = pointsFor(subj, subj?.currentGrade)
+    const b = pointsFor(subj, subj?.targetGrade)
+    const c = pointsFor(subj, requiredGrade)
+
+    current += a.points
+    target += b.points
+    required += c.points
+    unknownCount += a.unknown + b.unknown + c.unknown
+  }
+
+  return { current, target, required, unknownCount }
+})
 
 async function submitComment() {
   if (!props.canAddComment) return
@@ -625,4 +725,14 @@ onMounted(async () => {
 .ucas-body::-webkit-scrollbar-track,.ucas-preview-box::-webkit-scrollbar-track,.ucas-textarea::-webkit-scrollbar-track{background:var(--ucas-gray-100);border-radius:4px}
 .ucas-body::-webkit-scrollbar-thumb,.ucas-preview-box::-webkit-scrollbar-thumb,.ucas-textarea::-webkit-scrollbar-thumb{background:var(--ucas-gray-300);border-radius:4px}
 .ucas-body::-webkit-scrollbar-thumb:hover,.ucas-preview-box::-webkit-scrollbar-thumb:hover,.ucas-textarea::-webkit-scrollbar-thumb:hover{background:var(--ucas-gray-400)}
+
+/* UCAS points calculator panel */
+.ucas-tariff{margin-top:16px;padding-top:12px;border-top:1px solid var(--ucas-gray-200)}
+.ucas-tariff-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media (max-width:700px){.ucas-tariff-grid{grid-template-columns:1fr}}
+.ucas-tariff-box{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
+.ucas-tariff-box--required{background:var(--ucas-warning-light);border-color:#fcd34d}
+.ucas-tariff-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ucas-gray-500);margin-bottom:4px}
+.ucas-tariff-value{font-size:20px;font-weight:800;color:var(--ucas-gray-900);line-height:1.1}
+.ucas-tariff-note{margin-top:8px;font-size:12px;color:var(--ucas-gray-500)}
 </style>
