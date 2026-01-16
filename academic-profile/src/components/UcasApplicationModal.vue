@@ -23,6 +23,25 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               Course link
             </a>
+
+            <div class="ucas-course-meta" v-if="selectedCourse">
+              <div
+                v-if="selectedCourse.offer"
+                class="ucas-meta-pill"
+                :title="`Course offer requirement (grade): ${selectedCourse.offer}`"
+              >
+                <span class="ucas-meta-label">Required grade</span>
+                <span class="ucas-meta-value">{{ selectedCourse.offer }}</span>
+              </div>
+              <div
+                v-if="selectedCourse.ucasPoints !== null && selectedCourse.ucasPoints !== undefined && selectedCourse.ucasPoints !== ''"
+                class="ucas-meta-pill"
+                :title="`Course offer requirement (UCAS points): ${selectedCourse.ucasPoints}`"
+              >
+                <span class="ucas-meta-label">Required UCAS</span>
+                <span class="ucas-meta-value">{{ selectedCourse.ucasPoints }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -95,15 +114,26 @@
                 <span class="ucas-preview-hint">Based on the subjects shown (max 5)</span>
               </div>
               <div class="ucas-tariff-grid">
-                <div class="ucas-tariff-box">
+                <div
+                  class="ucas-tariff-box"
+                  :class="ucasTariffBoxClass(ucasTariff.current, ucasTariff.required)"
+                  :title="ucasTariffTooltip('Current', 'Calculated from Current grades shown in your Academic Profile.', ucasTariff.current, ucasTariff.required)"
+                >
                   <div class="ucas-tariff-label">Current</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.current.toLocaleString() }}</div>
                 </div>
-                <div class="ucas-tariff-box">
+                <div
+                  class="ucas-tariff-box"
+                  :class="ucasTariffBoxClass(ucasTariff.target, ucasTariff.required)"
+                  :title="ucasTariffTooltip('Target', 'Calculated from Target grades shown in your Academic Profile.', ucasTariff.target, ucasTariff.required)"
+                >
                   <div class="ucas-tariff-label">Target</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.target.toLocaleString() }}</div>
                 </div>
-                <div class="ucas-tariff-box ucas-tariff-box--required">
+                <div
+                  class="ucas-tariff-box ucas-tariff-box--required"
+                  :title="ucasTariffTooltip('Required', 'Calculated from the Offer grade inputs on this page (per subject).', ucasTariff.required, ucasTariff.required)"
+                >
                   <div class="ucas-tariff-label">Required</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.required.toLocaleString() }}</div>
                 </div>
@@ -333,7 +363,9 @@ const courseOptions = computed(() => {
     ranking: o?.ranking ?? 1,
     universityName: safeText(o?.universityName).trim() || 'University',
     courseTitle: safeText(o?.courseTitle).trim(),
-    courseLink: safeText(o?.courseLink).trim()
+    courseLink: safeText(o?.courseLink).trim(),
+    offer: safeText(o?.offer).trim(),
+    ucasPoints: (o?.ucasPoints === null || o?.ucasPoints === undefined || String(o?.ucasPoints).trim() === '') ? null : Number(o?.ucasPoints)
   }))
   return normalized
     .filter((c) => c.key)
@@ -572,6 +604,28 @@ const ucasTariff = computed(() => {
   return { current, target, required, unknownCount }
 })
 
+function ucasTariffBoxClass(value, required) {
+  const v = Number(value) || 0
+  const r = Number(required) || 0
+  if (!r) return '' // no baseline
+  if (!v) return '' // empty / unknown
+  if (v >= r) return 'ucas-tariff-box--good'
+  if (v >= Math.ceil(r * 0.9)) return 'ucas-tariff-box--warn'
+  return 'ucas-tariff-box--bad'
+}
+
+function ucasTariffTooltip(title, explanation, value, required) {
+  const v = Number(value) || 0
+  const r = Number(required) || 0
+  const parts = [`${title} UCAS points`, explanation, `Total: ${v}`]
+  if (title !== 'Required' && r) {
+    parts.push(`Required: ${r}`)
+    const diff = v - r
+    parts.push(diff >= 0 ? `Above by: ${diff}` : `Below by: ${Math.abs(diff)}`)
+  }
+  return parts.join('\n')
+}
+
 async function submitComment() {
   if (!props.canAddComment) return
   const text = newComment.value.trim()
@@ -732,7 +786,19 @@ onMounted(async () => {
 @media (max-width:700px){.ucas-tariff-grid{grid-template-columns:1fr}}
 .ucas-tariff-box{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
 .ucas-tariff-box--required{background:var(--ucas-warning-light);border-color:#fcd34d}
+.ucas-tariff-box--good{background:var(--ucas-success-light);border-color:#a7f3d0}
+.ucas-tariff-box--good .ucas-tariff-value{color:var(--ucas-success)}
+.ucas-tariff-box--warn{background:var(--ucas-warning-light);border-color:#fcd34d}
+.ucas-tariff-box--warn .ucas-tariff-value{color:var(--ucas-warning)}
+.ucas-tariff-box--bad{background:var(--ucas-danger-light);border-color:#fecaca}
+.ucas-tariff-box--bad .ucas-tariff-value{color:var(--ucas-danger)}
 .ucas-tariff-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ucas-gray-500);margin-bottom:4px}
 .ucas-tariff-value{font-size:20px;font-weight:800;color:var(--ucas-gray-900);line-height:1.1}
 .ucas-tariff-note{margin-top:8px;font-size:12px;color:var(--ucas-gray-500)}
+
+/* Course meta pills (required grade + UCAS points) */
+.ucas-course-meta{display:flex;gap:8px;flex-wrap:wrap}
+.ucas-meta-pill{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:999px}
+.ucas-meta-label{font-size:11px;font-weight:700;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.05em}
+.ucas-meta-value{font-size:12px;font-weight:800;color:var(--ucas-gray-900)}
 </style>
