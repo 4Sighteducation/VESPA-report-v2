@@ -222,6 +222,129 @@ export async function updateUniversityOffers(studentEmail, offers, apiUrl, acade
 }
 
 /**
+ * Fetch UCAS Application draft (Supabase-backed)
+ * @param {string} studentEmail
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @returns {Promise<Object>}
+ */
+export async function fetchUcasApplication(studentEmail, apiUrl, academicYear = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application`
+    const qs = new URLSearchParams()
+    if (academicYear) qs.append('academic_year', academicYear)
+
+    const response = await fetch(qs.toString() ? `${url}?${qs.toString()}` : url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) return { success: true, data: null }
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] fetchUcasApplication error:', error)
+    return { success: false, error: error.message || 'Failed to fetch UCAS Application' }
+  }
+}
+
+/**
+ * Save UCAS Application draft (student-write only)
+ * @param {string} studentEmail
+ * @param {Object} payload
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @returns {Promise<Object>}
+ */
+export async function saveUcasApplication(studentEmail, payload, apiUrl, academicYear = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application`
+
+    // Best-effort role hint (backend uses it to block staff writes to student-only fields)
+    let roleHeader = null
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...(roleHeader ? { 'X-User-Role': roleHeader } : {}) },
+      body: JSON.stringify({ academicYear, ...payload })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] saveUcasApplication error:', error)
+    return { success: false, error: error.message || 'Failed to save UCAS Application' }
+  }
+}
+
+/**
+ * Add staff comment to UCAS Application
+ * @param {string} studentEmail
+ * @param {{comment: string, staffEmail?: string|null}} payload
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @returns {Promise<Object>}
+ */
+export async function addUcasApplicationComment(studentEmail, payload, apiUrl, academicYear = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application/comment`
+
+    // Best-effort role hint (backend blocks students)
+    let roleHeader = null
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(roleHeader ? { 'X-User-Role': roleHeader } : {}) },
+      body: JSON.stringify({ academicYear, ...(payload || {}) })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] addUcasApplicationComment error:', error)
+    return { success: false, error: error.message || 'Failed to add comment' }
+  }
+}
+
+/**
  * Health check for academic profile system
  * @param {string} apiUrl - Base API URL
  * @returns {Promise<Object>}

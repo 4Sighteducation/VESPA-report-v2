@@ -128,6 +128,14 @@
               <div class="university-offers-title">University Offers</div>
               <div class="university-offers-actions">
                 <button
+                  class="offers-ucasapp-btn"
+                  type="button"
+                  @click="openUcasApplication"
+                  :disabled="offers.length === 0"
+                  :title="offers.length ? 'Write your UCAS 3-question statement' : 'Add a University Offer first'">
+                  {{ isStudent ? '📝 UCAS Application' : '👀 View UCAS Application' }}
+                </button>
+                <button
                   v-if="offersEditable"
                   class="offers-edit-btn"
                   @click="openOffersEditor"
@@ -227,6 +235,22 @@
       @close="showInfoModal = false" 
     />
 
+    <!-- UCAS Application Modal -->
+    <UcasApplicationModal
+      v-if="ucasModalOpen"
+      :student-email="props.student?.email || ''"
+      :academic-year="props.academicYear || ''"
+      :subjects="props.subjects || []"
+      :offers="sortedOffers"
+      :top-offer="topOffer"
+      :api-url="window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || ''"
+      :can-edit="isStudent"
+      :comments-enabled="true"
+      :can-add-comment="isStaff"
+      :staff-email="currentUserEmail"
+      @close="ucasModalOpen = false"
+    />
+
     <!-- Saving Overlay -->
     <div v-if="saving" class="saving-overlay">
       <div class="spinner"></div>
@@ -308,6 +332,7 @@ import { ref, computed, watch } from 'vue'
 import SubjectCard from './SubjectCard.vue'
 import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
+import UcasApplicationModal from './UcasApplicationModal.vue'
 import { updateSubjectGrade, updateUniversityOffers } from '../services/api.js'
 
 const props = defineProps({
@@ -368,6 +393,12 @@ const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
 
+// UCAS Application modal state (student edits; staff read + comment)
+const ucasModalOpen = ref(false)
+const openUcasApplication = () => {
+  ucasModalOpen.value = true
+}
+
 const STAFF_ROLE_IDS = ['object_5', 'object_7', 'object_18', 'object_78']
 const STAFF_ROLE_NAME_HINTS = ['tutor', 'staff', 'admin', 'head', 'teacher', 'subject']
 
@@ -395,6 +426,15 @@ const isStaff = computed(() => {
 })
 
 const isStudent = computed(() => !isStaff.value)
+
+const currentUserEmail = computed(() => {
+  try {
+    if (typeof Knack === 'undefined' || !Knack.getUserAttributes) return ''
+    return (Knack.getUserAttributes()?.email || '').toString().trim()
+  } catch (_) {
+    return ''
+  }
+})
 
 const isKs4 = computed(() => {
   const raw = (props.student?.yearGroup ?? '').toString()
@@ -1091,6 +1131,7 @@ const showTemporaryMessage = (message, type) => {
   gap: 8px;
 }
 
+.offers-ucasapp-btn,
 .offers-edit-btn,
 .offers-toggle-btn,
 .offers-add-btn {
@@ -1102,6 +1143,16 @@ const showTemporaryMessage = (message, type) => {
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
+}
+
+.offers-ucasapp-btn {
+  background: rgba(62, 50, 133, 0.35);
+  border-color: rgba(62, 50, 133, 0.70);
+}
+
+.offers-ucasapp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .offers-toggle-btn:disabled {
@@ -1119,6 +1170,7 @@ const showTemporaryMessage = (message, type) => {
   transform: rotate(180deg);
 }
 
+.offers-ucasapp-btn:hover,
 .offers-edit-btn:hover,
 .offers-toggle-btn:hover,
 .offers-add-btn:hover {
