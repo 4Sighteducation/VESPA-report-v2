@@ -5,8 +5,8 @@
         <div class="ucas-header-left">
           <div class="ucas-title">UCAS Application</div>
           <div class="ucas-course-row">
-            <div class="ucas-course-label">Course</div>
-            <select v-model="selectedCourseKey" class="ucas-select" :disabled="courseOptions.length === 0">
+            <label class="ucas-course-label" for="course-select">Course</label>
+            <select id="course-select" v-model="selectedCourseKey" class="ucas-select" :disabled="courseOptions.length === 0">
               <option v-if="courseOptions.length === 0" value="">No offers yet</option>
               <option v-for="c in courseOptions" :key="c.key" :value="c.key">
                 #{{ c.ranking }} {{ c.universityName }} — {{ c.courseTitle || 'Course' }}
@@ -14,29 +14,32 @@
             </select>
             <a
               v-if="selectedCourse?.courseLink"
-              class="ucas-btn ucas-btn-secondary"
+              class="ucas-btn ucas-btn-outline"
               :href="selectedCourse.courseLink"
               target="_blank"
               rel="noopener noreferrer"
               title="Open course link in a new tab"
             >
-              🔗 Course link
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Course link
             </a>
           </div>
         </div>
 
         <div class="ucas-header-right">
           <a
-            class="ucas-btn ucas-btn-secondary"
+            class="ucas-btn ucas-btn-outline"
             href="https://www.ucas.com/"
             target="_blank"
             rel="noopener noreferrer"
             title="Open UCAS in a new tab"
           >
-            🔎 UCAS search
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            UCAS
           </a>
-          <button class="ucas-btn ucas-btn-secondary" type="button" @click="copyCombined" :disabled="!combinedStatement">
-            📋 Copy statement
+          <button class="ucas-btn ucas-btn-outline" type="button" @click="copyCombined" :disabled="!combinedStatement">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            Copy
           </button>
           <button
             class="ucas-btn ucas-btn-primary"
@@ -44,24 +47,31 @@
             @click="saveToServer"
             :disabled="saving || totalChars > MAX_TOTAL_CHARS || totalChars < MIN_TOTAL_CHARS || !studentEmail"
           >
-            {{ saving ? 'Saving…' : '💾 Save' }}
+            <svg v-if="!saving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span v-if="saving" class="ucas-spinner"></span>
+            {{ saving ? 'Saving…' : 'Save' }}
           </button>
-          <button class="ucas-btn ucas-btn-close" type="button" @click="emit('close')">✖</button>
+          <button class="ucas-btn-close" type="button" @click="emit('close')" aria-label="Close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       </header>
 
       <main class="ucas-body">
         <section class="ucas-top-grid">
           <div class="ucas-card">
-            <div class="ucas-card-title">Subjects + offer requirements</div>
-            <div class="ucas-card-hint">Enter the grades required by the university for this course (max 5 subjects).</div>
+            <div class="ucas-card-header">
+              <h2 class="ucas-card-title">Subjects + offer requirements</h2>
+              <p class="ucas-card-hint">Enter the grades required by the university for this course (max 5 subjects).</p>
+            </div>
 
             <div v-if="subjectRows.length === 0" class="ucas-empty">
-              No subjects found in the academic profile.
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/></svg>
+              <span>No subjects found in the academic profile.</span>
             </div>
             <div v-else class="ucas-subjects-grid">
               <div class="ucas-subjects-head">Subject</div>
-              <div class="ucas-subjects-head">Offer</div>
+              <div class="ucas-subjects-head">Offer grade</div>
               <template v-for="s in subjectRows" :key="s.key">
                 <div class="ucas-subject-name" :title="s.label">{{ s.label }}</div>
                 <div>
@@ -79,42 +89,62 @@
           </div>
 
           <div class="ucas-card">
-            <div class="ucas-card-title">Character budget</div>
+            <div class="ucas-card-header">
+              <h2 class="ucas-card-title">Character budget</h2>
+            </div>
+
             <div class="ucas-metrics">
-              <div class="ucas-metric">
-                <div class="ucas-metric-label">Total</div>
-                <div class="ucas-metric-value" :class="{ bad: totalChars >= MAX_TOTAL_CHARS }">
-                  {{ totalChars }} / {{ MAX_TOTAL_CHARS }}
+              <div class="ucas-metric" :class="{ 'ucas-metric--danger': totalChars >= MAX_TOTAL_CHARS }">
+                <div class="ucas-metric-label">Total characters</div>
+                <div class="ucas-metric-value">
+                  {{ totalChars.toLocaleString() }} <span class="ucas-metric-max">/ {{ MAX_TOTAL_CHARS.toLocaleString() }}</span>
                 </div>
-                <div class="ucas-metric-sub">Remaining: {{ remainingChars }}</div>
+                <div class="ucas-progress-bar">
+                  <div
+                    class="ucas-progress-fill"
+                    :style="{ width: Math.min(100, (totalChars / MAX_TOTAL_CHARS) * 100) + '%' }"
+                    :class="{
+                      'ucas-progress--warning': totalChars > MAX_TOTAL_CHARS * 0.85,
+                      'ucas-progress--danger': totalChars >= MAX_TOTAL_CHARS
+                    }"
+                  ></div>
+                </div>
+                <div class="ucas-metric-sub">{{ remainingChars.toLocaleString() }} remaining</div>
               </div>
-              <div class="ucas-metric">
-                <div class="ucas-metric-label">Minimum</div>
-                <div class="ucas-metric-value" :class="{ bad: totalChars > 0 && totalChars < MIN_TOTAL_CHARS }">
-                  {{ MIN_TOTAL_CHARS }} total
+              <div class="ucas-metric" :class="{ 'ucas-metric--success': totalChars >= MIN_TOTAL_CHARS }">
+                <div class="ucas-metric-label">Minimum required</div>
+                <div class="ucas-metric-value">{{ MIN_TOTAL_CHARS }} <span class="ucas-metric-max">characters</span></div>
+                <div class="ucas-metric-status">
+                  <svg v-if="totalChars >= MIN_TOTAL_CHARS" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>{{ totalChars >= MIN_TOTAL_CHARS ? 'Minimum met' : `Need ${MIN_TOTAL_CHARS - totalChars} more` }}</span>
                 </div>
-                <div class="ucas-metric-sub" v-if="totalChars < MIN_TOTAL_CHARS">Not met yet</div>
-                <div class="ucas-metric-sub" v-else>Ready</div>
               </div>
             </div>
 
             <div class="ucas-preview">
-              <div class="ucas-preview-head">
-                <div class="ucas-preview-title">Preview (combined statement)</div>
-                <div class="ucas-preview-hint">This is how it will be read as one statement.</div>
+              <div class="ucas-preview-header">
+                <h3 class="ucas-preview-title">Preview</h3>
+                <span class="ucas-preview-hint">Combined statement as it will appear</span>
               </div>
-              <div class="ucas-preview-box">{{ combinedStatement || 'Start typing below…' }}</div>
+              <div class="ucas-preview-box">{{ combinedStatement || 'Your combined statement will appear here as you type…' }}</div>
             </div>
           </div>
         </section>
 
         <section class="ucas-questions">
           <div class="ucas-q">
-            <div class="ucas-q-head">
-              <div class="ucas-q-title">1) Why do you want to study this course or subject?</div>
-              <div class="ucas-q-count">{{ answers.q1.length }} chars</div>
+            <div class="ucas-q-header">
+              <label class="ucas-q-label" for="q1">
+                <span class="ucas-q-number">1</span>
+                <span class="ucas-q-title">Why do you want to study this course or subject?</span>
+              </label>
+              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q1.length > 0 }">
+                {{ answers.q1.length.toLocaleString() }} chars
+              </span>
             </div>
             <textarea
+              id="q1"
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q1"
@@ -124,11 +154,17 @@
           </div>
 
           <div class="ucas-q">
-            <div class="ucas-q-head">
-              <div class="ucas-q-title">2) How have your qualifications and studies prepared you?</div>
-              <div class="ucas-q-count">{{ answers.q2.length }} chars</div>
+            <div class="ucas-q-header">
+              <label class="ucas-q-label" for="q2">
+                <span class="ucas-q-number">2</span>
+                <span class="ucas-q-title">How have your qualifications and studies prepared you?</span>
+              </label>
+              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q2.length > 0 }">
+                {{ answers.q2.length.toLocaleString() }} chars
+              </span>
             </div>
             <textarea
+              id="q2"
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q2"
@@ -138,11 +174,17 @@
           </div>
 
           <div class="ucas-q">
-            <div class="ucas-q-head">
-              <div class="ucas-q-title">3) What have you done outside education to prepare, and why is it useful?</div>
-              <div class="ucas-q-count">{{ answers.q3.length }} chars</div>
+            <div class="ucas-q-header">
+              <label class="ucas-q-label" for="q3">
+                <span class="ucas-q-number">3</span>
+                <span class="ucas-q-title">What have you done outside education to prepare, and why is it useful?</span>
+              </label>
+              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q3.length > 0 }">
+                {{ answers.q3.length.toLocaleString() }} chars
+              </span>
             </div>
             <textarea
+              id="q3"
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q3"
@@ -153,27 +195,35 @@
         </section>
 
         <section v-if="commentsEnabled" class="ucas-comments">
-          <div class="ucas-card-title">Tutor comments</div>
-          <div class="ucas-card-hint">Staff can add comments; students can read them.</div>
-
-          <div v-if="canAddComment" class="ucas-comment-compose">
-            <textarea v-model="newComment" class="ucas-textarea ucas-textarea-sm" placeholder="Add a comment…" />
-            <div class="ucas-comment-actions">
-              <button class="ucas-btn ucas-btn-secondary" type="button" @click="newComment = ''" :disabled="commentSaving">Clear</button>
-              <button class="ucas-btn ucas-btn-primary" type="button" @click="submitComment" :disabled="commentSaving || !newComment.trim()">
-                {{ commentSaving ? 'Posting…' : 'Post comment' }}
-              </button>
+          <div class="ucas-card">
+            <div class="ucas-card-header">
+              <h2 class="ucas-card-title">Tutor comments</h2>
+              <p class="ucas-card-hint">Staff can add comments; students can read them.</p>
             </div>
-          </div>
 
-          <div v-if="staffComments.length === 0" class="ucas-empty">No comments yet.</div>
-          <div v-else class="ucas-comment-list">
-            <div v-for="c in staffComments" :key="c.id" class="ucas-comment">
-              <div class="ucas-comment-meta">
-                <span class="ucas-comment-author">{{ c.staffEmail || 'Staff' }}</span>
-                <span class="ucas-comment-date">{{ formatDate(c.createdAt) }}</span>
+            <div v-if="canAddComment" class="ucas-comment-compose">
+              <textarea v-model="newComment" class="ucas-textarea ucas-textarea-sm" placeholder="Add a comment…" />
+              <div class="ucas-comment-actions">
+                <button class="ucas-btn ucas-btn-ghost" type="button" @click="newComment = ''" :disabled="commentSaving || !newComment">
+                  Clear
+                </button>
+                <button class="ucas-btn ucas-btn-primary" type="button" @click="submitComment" :disabled="commentSaving || !newComment.trim()">
+                  {{ commentSaving ? 'Posting…' : 'Post comment' }}
+                </button>
               </div>
-              <div class="ucas-comment-body">{{ c.comment }}</div>
+            </div>
+
+            <div v-if="staffComments.length === 0" class="ucas-empty ucas-empty--small">
+              <span>No comments yet.</span>
+            </div>
+            <div v-else class="ucas-comment-list">
+              <div v-for="c in staffComments" :key="c.id" class="ucas-comment">
+                <div class="ucas-comment-meta">
+                  <span class="ucas-comment-author">{{ c.staffEmail || 'Staff' }}</span>
+                  <span class="ucas-comment-date">{{ formatDate(c.createdAt) }}</span>
+                </div>
+                <div class="ucas-comment-body">{{ c.comment }}</div>
+              </div>
             </div>
           </div>
         </section>
@@ -181,14 +231,28 @@
 
       <footer class="ucas-footer">
         <div class="ucas-footer-left">
-          <div><strong>{{ totalChars }}</strong> / {{ MAX_TOTAL_CHARS }} (Remaining: {{ remainingChars }})</div>
-          <div v-if="totalChars > 0 && totalChars < MIN_TOTAL_CHARS" class="ucas-warn">
+          <div class="ucas-footer-stats">
+            <span class="ucas-footer-total">{{ totalChars.toLocaleString() }}</span>
+            <span class="ucas-footer-divider">/</span>
+            <span class="ucas-footer-max">{{ MAX_TOTAL_CHARS.toLocaleString() }}</span>
+            <span class="ucas-footer-remaining">({{ remainingChars.toLocaleString() }} remaining)</span>
+          </div>
+          <div v-if="totalChars > 0 && totalChars < MIN_TOTAL_CHARS" class="ucas-footer-warning">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Add {{ MIN_TOTAL_CHARS - totalChars }} more characters to reach the minimum.
           </div>
-          <div v-if="totalChars >= MAX_TOTAL_CHARS" class="ucas-warn">You’ve reached the maximum character limit.</div>
+          <div v-if="totalChars >= MAX_TOTAL_CHARS" class="ucas-footer-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Maximum character limit reached.
+          </div>
         </div>
         <div class="ucas-footer-right">
-          <span v-if="toast" class="ucas-toast">{{ toast }}</span>
+          <transition name="toast-fade">
+            <span v-if="toast" class="ucas-toast">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              {{ toast }}
+            </span>
+          </transition>
         </div>
       </footer>
     </div>
@@ -437,106 +501,128 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.ucas-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 99999;
-  display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+/* Clean UI styles based on `updatedUCASModal.html` */
+.ucas-overlay{
+  --ucas-primary:#2563eb;--ucas-primary-hover:#1d4ed8;--ucas-primary-light:#eff6ff;
+  --ucas-success:#059669;--ucas-success-light:#ecfdf5;
+  --ucas-warning:#d97706;--ucas-warning-light:#fffbeb;
+  --ucas-danger:#dc2626;--ucas-danger-light:#fef2f2;
+  --ucas-gray-50:#f9fafb;--ucas-gray-100:#f3f4f6;--ucas-gray-200:#e5e7eb;--ucas-gray-300:#d1d5db;--ucas-gray-400:#9ca3af;
+  --ucas-gray-500:#6b7280;--ucas-gray-600:#4b5563;--ucas-gray-700:#374151;--ucas-gray-800:#1f2937;--ucas-gray-900:#111827;
+  --ucas-white:#fff;
+  --ucas-shadow-sm:0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --ucas-shadow-lg:0 10px 15px -3px rgb(0 0 0 / 0.1),0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --ucas-radius:8px;--ucas-radius-lg:12px;--ucas-radius-xl:16px;
+  position:fixed;inset:0;z-index:99999;
+  background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;padding:16px;
 }
-.ucas-modal {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #1b1444 0%, #241c58 45%, #2f2672 100%);
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-}
-.ucas-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
-}
-.ucas-title { font-size: 18px; font-weight: 800; }
-.ucas-course-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; flex-wrap: wrap; }
-.ucas-course-label { font-size: 12px; opacity: 0.8; }
-.ucas-select, .ucas-input, .ucas-textarea {
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #fff;
-  border-radius: 10px;
-}
-.ucas-select { padding: 8px 10px; min-width: 340px; max-width: min(620px, 100%); }
-.ucas-btn {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(0, 0, 0, 0.16);
-  color: #fff;
-  border-radius: 999px;
-  padding: 8px 12px;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 700;
-}
-.ucas-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.ucas-btn-primary { background: rgba(62, 50, 133, 0.9); border-color: rgba(62, 50, 133, 0.9); }
-.ucas-btn-close { padding: 8px 10px; }
-.ucas-body { padding: 14px 16px 18px; overflow: auto; }
-.ucas-top-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 12px; }
-@media (max-width: 1100px) { .ucas-top-grid { grid-template-columns: 1fr; } }
-.ucas-card {
-  background: rgba(0, 0, 0, 0.14);
-  border: 1px solid rgba(62, 50, 133, 0.45);
-  border-radius: 14px;
-  padding: 12px;
-}
-.ucas-card-title { font-weight: 800; margin-bottom: 4px; }
-.ucas-card-hint { opacity: 0.78; font-size: 12px; margin-bottom: 10px; }
-.ucas-empty { opacity: 0.8; padding: 8px 0; }
-.ucas-subjects-grid { display: grid; grid-template-columns: 1fr 220px; gap: 8px 10px; align-items: center; }
-.ucas-subjects-head { font-size: 12px; opacity: 0.75; }
-.ucas-subject-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ucas-input { width: 100%; padding: 8px 10px; }
-.ucas-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-.ucas-metric { background: rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 10px; }
-.ucas-metric-label { font-size: 12px; opacity: 0.75; }
-.ucas-metric-value { font-weight: 900; font-size: 16px; margin-top: 2px; }
-.ucas-metric-value.bad { color: #ffb4b4; }
-.ucas-metric-sub { font-size: 12px; opacity: 0.75; }
-.ucas-preview-box {
-  white-space: pre-wrap;
-  background: rgba(0,0,0,0.12);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 12px;
-  padding: 10px;
-  max-height: 180px;
-  overflow: auto;
-  line-height: 1.35;
-}
-.ucas-questions { margin-top: 12px; display: grid; gap: 12px; }
-.ucas-q { background: rgba(0,0,0,0.14); border: 1px solid rgba(255,255,255,0.10); border-radius: 14px; padding: 12px; }
-.ucas-q-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.ucas-q-title { font-weight: 900; }
-.ucas-q-count { opacity: 0.75; font-size: 12px; }
-.ucas-textarea { width: 100%; min-height: 140px; padding: 10px 12px; resize: vertical; line-height: 1.4; }
-.ucas-textarea-sm { min-height: 90px; }
-.ucas-comments { margin-top: 12px; }
-.ucas-comment-compose { margin-top: 8px; }
-.ucas-comment-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
-.ucas-comment-list { display: grid; gap: 10px; margin-top: 10px; }
-.ucas-comment { background: rgba(0,0,0,0.12); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 10px; }
-.ucas-comment-meta { display: flex; gap: 10px; justify-content: space-between; opacity: 0.8; font-size: 12px; margin-bottom: 6px; }
-.ucas-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
-  padding: 10px 16px;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-.ucas-warn { color: #ffd6a6; font-size: 12px; margin-top: 4px; }
-.ucas-toast { font-size: 12px; opacity: 0.9; }
+.ucas-modal{width:100%;max-width:1400px;height:100%;max-height:calc(100vh - 32px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+
+.ucas-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--ucas-white);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
+.ucas-header-left{display:flex;flex-direction:column;gap:8px}
+.ucas-title{font-size:20px;font-weight:700;color:var(--ucas-gray-900);letter-spacing:-0.025em}
+.ucas-course-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ucas-course-label{font-size:13px;font-weight:500;color:var(--ucas-gray-500)}
+.ucas-select{appearance:none;background:var(--ucas-white);border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);padding:8px 36px 8px 12px;font-size:14px;color:var(--ucas-gray-900);min-width:320px;max-width:100%;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .15s,box-shadow .15s}
+.ucas-select:hover{border-color:var(--ucas-gray-400)}
+.ucas-select:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-header-right{display:flex;align-items:center;gap:8px}
+
+.ucas-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;font-weight:600;border-radius:var(--ucas-radius);cursor:pointer;transition:all .15s;text-decoration:none;border:none;white-space:nowrap}
+.ucas-btn:disabled{opacity:.5;cursor:not-allowed}
+.ucas-btn-primary{background:var(--ucas-primary);color:var(--ucas-white)}
+.ucas-btn-primary:hover:not(:disabled){background:var(--ucas-primary-hover)}
+.ucas-btn-outline{background:var(--ucas-white);color:var(--ucas-gray-700);border:1px solid var(--ucas-gray-300)}
+.ucas-btn-outline:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
+.ucas-btn-ghost{background:transparent;color:var(--ucas-gray-600)}
+.ucas-btn-ghost:hover:not(:disabled){background:var(--ucas-gray-100);color:var(--ucas-gray-800)}
+.ucas-btn-close{display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;background:transparent;border:none;border-radius:var(--ucas-radius);color:var(--ucas-gray-500);cursor:pointer;transition:all .15s}
+.ucas-btn-close:hover{background:var(--ucas-gray-100);color:var(--ucas-gray-700)}
+
+.ucas-body{flex:1;overflow-y:auto;padding:24px;background:var(--ucas-gray-50)}
+.ucas-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+@media (max-width:1100px){.ucas-top-grid{grid-template-columns:1fr}}
+.ucas-card{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-lg);padding:20px;box-shadow:var(--ucas-shadow-sm)}
+.ucas-card-header{margin-bottom:16px}
+.ucas-card-title{font-size:15px;font-weight:700;color:var(--ucas-gray-900);margin:0 0 4px 0}
+.ucas-card-hint{font-size:13px;color:var(--ucas-gray-500);margin:0}
+.ucas-empty{display:flex;align-items:center;gap:8px;padding:16px;background:var(--ucas-gray-50);border-radius:var(--ucas-radius);color:var(--ucas-gray-500);font-size:14px}
+.ucas-empty--small{padding:12px}
+
+.ucas-subjects-grid{display:grid;grid-template-columns:1fr 140px;gap:10px 16px;align-items:center}
+.ucas-subjects-head{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ucas-gray-500);padding-bottom:4px}
+.ucas-subject-name{font-size:14px;font-weight:600;color:var(--ucas-gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ucas-input{width:100%;padding:8px 12px;font-size:14px;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);transition:border-color .15s,box-shadow .15s}
+.ucas-input:hover:not(:disabled){border-color:var(--ucas-gray-400)}
+.ucas-input:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-input::placeholder{color:var(--ucas-gray-400)}
+.ucas-input:disabled{background:var(--ucas-gray-100);cursor:not-allowed}
+
+.ucas-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.ucas-metric{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:14px}
+.ucas-metric--success{background:var(--ucas-success-light);border-color:#a7f3d0}
+.ucas-metric--success .ucas-metric-status{color:var(--ucas-success)}
+.ucas-metric--danger{background:var(--ucas-danger-light);border-color:#fecaca}
+.ucas-metric--danger .ucas-metric-value{color:var(--ucas-danger)}
+.ucas-metric-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ucas-gray-500);margin-bottom:4px}
+.ucas-metric-value{font-size:22px;font-weight:700;color:var(--ucas-gray-900);line-height:1.2}
+.ucas-metric-max{font-size:14px;font-weight:500;color:var(--ucas-gray-400)}
+.ucas-metric-sub{font-size:12px;color:var(--ucas-gray-500);margin-top:4px}
+.ucas-metric-status{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--ucas-gray-500);margin-top:6px}
+.ucas-progress-bar{height:6px;background:var(--ucas-gray-200);border-radius:3px;margin-top:8px;overflow:hidden}
+.ucas-progress-fill{height:100%;background:var(--ucas-primary);border-radius:3px;transition:width .3s ease,background-color .3s ease}
+.ucas-progress--warning{background:var(--ucas-warning)}
+.ucas-progress--danger{background:var(--ucas-danger)}
+
+.ucas-preview-header{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.ucas-preview-title{font-size:13px;font-weight:600;color:var(--ucas-gray-700);margin:0}
+.ucas-preview-hint{font-size:12px;color:var(--ucas-gray-400)}
+.ucas-preview-box{white-space:pre-wrap;word-break:break-word;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;font-size:13px;line-height:1.5;color:var(--ucas-gray-700);max-height:160px;overflow-y:auto}
+
+.ucas-questions{display:flex;flex-direction:column;gap:16px}
+.ucas-q{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-lg);padding:20px;box-shadow:var(--ucas-shadow-sm)}
+.ucas-q-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+.ucas-q-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.ucas-q-number{display:flex;align-items:center;justify-content:center;width:24px;height:24px;background:var(--ucas-primary);color:var(--ucas-white);font-size:12px;font-weight:700;border-radius:50%;flex-shrink:0}
+.ucas-q-title{font-size:14px;font-weight:600;color:var(--ucas-gray-800);line-height:1.4}
+.ucas-q-count{font-size:12px;font-weight:500;color:var(--ucas-gray-400);white-space:nowrap;padding:2px 8px;background:var(--ucas-gray-100);border-radius:999px}
+.ucas-q-count--active{background:var(--ucas-primary-light);color:var(--ucas-primary)}
+.ucas-textarea{width:100%;min-height:140px;padding:12px 14px;font-size:14px;line-height:1.6;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s;font-family:inherit}
+.ucas-textarea:hover:not(:disabled){border-color:var(--ucas-gray-400)}
+.ucas-textarea:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-textarea::placeholder{color:var(--ucas-gray-400)}
+.ucas-textarea:disabled{background:var(--ucas-gray-100);cursor:not-allowed}
+.ucas-textarea-sm{min-height:80px}
+
+.ucas-comments{margin-top:20px}
+.ucas-comment-compose{margin-top:12px}
+.ucas-comment-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.ucas-comment-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.ucas-comment{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px 14px}
+.ucas-comment-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ucas-comment-author{font-size:13px;font-weight:600;color:var(--ucas-gray-800)}
+.ucas-comment-date{font-size:12px;color:var(--ucas-gray-400)}
+.ucas-comment-body{font-size:14px;color:var(--ucas-gray-700);line-height:1.5}
+
+.ucas-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;background:var(--ucas-white);border-top:1px solid var(--ucas-gray-200)}
+.ucas-footer-stats{display:flex;align-items:baseline;gap:4px;font-size:14px}
+.ucas-footer-total{font-weight:700;color:var(--ucas-gray-900)}
+.ucas-footer-divider{color:var(--ucas-gray-400)}
+.ucas-footer-max{color:var(--ucas-gray-500)}
+.ucas-footer-remaining{color:var(--ucas-gray-400);margin-left:4px}
+.ucas-footer-warning{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ucas-warning);margin-top:4px}
+.ucas-footer-error{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--ucas-danger);margin-top:4px}
+
+.ucas-toast{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--ucas-success-light);color:var(--ucas-success);font-size:13px;font-weight:500;border-radius:999px;border:1px solid #a7f3d0}
+.toast-fade-enter-active,.toast-fade-leave-active{transition:opacity .2s ease}
+.toast-fade-enter-from,.toast-fade-leave-to{opacity:0}
+
+.ucas-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.ucas-body::-webkit-scrollbar,.ucas-preview-box::-webkit-scrollbar,.ucas-textarea::-webkit-scrollbar{width:8px}
+.ucas-body::-webkit-scrollbar-track,.ucas-preview-box::-webkit-scrollbar-track,.ucas-textarea::-webkit-scrollbar-track{background:var(--ucas-gray-100);border-radius:4px}
+.ucas-body::-webkit-scrollbar-thumb,.ucas-preview-box::-webkit-scrollbar-thumb,.ucas-textarea::-webkit-scrollbar-thumb{background:var(--ucas-gray-300);border-radius:4px}
+.ucas-body::-webkit-scrollbar-thumb:hover,.ucas-preview-box::-webkit-scrollbar-thumb:hover,.ucas-textarea::-webkit-scrollbar-thumb:hover{background:var(--ucas-gray-400)}
 </style>
