@@ -243,7 +243,7 @@
       :subjects="props.subjects || []"
       :offers="sortedOffers"
       :top-offer="topOffer"
-      :api-url="window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || ''"
+      :api-url="academicProfileApiUrl"
       :can-edit="isStudent"
       :comments-enabled="true"
       :can-add-comment="isStaff"
@@ -426,6 +426,14 @@ const isStaff = computed(() => {
 })
 
 const isStudent = computed(() => !isStaff.value)
+
+const academicProfileApiUrl = computed(() => {
+  try {
+    return (window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || '').toString()
+  } catch (_) {
+    return ''
+  }
+})
 
 const currentUserEmail = computed(() => {
   try {
