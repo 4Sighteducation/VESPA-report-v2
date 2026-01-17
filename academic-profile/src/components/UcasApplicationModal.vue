@@ -56,6 +56,16 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             UCAS
           </a>
+          <button
+            class="ucas-btn ucas-btn-feedback"
+            type="button"
+            @click="openFeedback"
+            :disabled="!canEdit || feedbackLoading || !studentEmail || !apiUrl"
+            :title="!canEdit ? 'Available for students' : 'Get feedback to improve your statement'"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+            Get Feedback
+          </button>
           <button class="ucas-btn ucas-btn-outline" type="button" @click="copyCombined" :disabled="!combinedStatement">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             Copy
@@ -311,13 +321,51 @@
           </transition>
         </div>
       </footer>
+
+      <!-- Feedback popup (student-only; no "AI" wording) -->
+      <div v-if="feedbackOpen" class="ucas-feedback-overlay" @click.self="feedbackOpen = false">
+        <div class="ucas-feedback-modal" role="dialog" aria-modal="true" aria-label="Feedback">
+          <div class="ucas-feedback-header">
+            <div class="ucas-feedback-title">Feedback</div>
+            <button class="ucas-btn-close" type="button" @click="feedbackOpen = false" aria-label="Close feedback">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ucas-feedback-body">
+            <div v-if="feedbackLoading" class="ucas-feedback-loading">
+              <span class="ucas-spinner"></span>
+              Generating feedback…
+            </div>
+            <div v-else-if="feedbackError" class="ucas-feedback-error">
+              {{ feedbackError }}
+            </div>
+            <div v-else class="ucas-feedback-text">
+              {{ feedbackText || 'No feedback available yet.' }}
+            </div>
+          </div>
+          <div class="ucas-feedback-footer">
+            <button class="ucas-btn ucas-btn-outline" type="button" @click="openFeedback(true)" :disabled="feedbackLoading">
+              Regenerate
+            </button>
+            <button
+              class="ucas-btn ucas-btn-primary"
+              type="button"
+              @click="addFeedbackAsComment"
+              :disabled="feedbackLoading || feedbackAdding || !feedbackText"
+              :title="!feedbackText ? 'Generate feedback first' : 'Add this feedback into Tutor comments as Virtual Tutor'"
+            >
+              {{ feedbackAdding ? 'Adding…' : 'Add as a comment' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment } from '../services/api.js'
+import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment } from '../services/api.js'
 
 const MAX_TOTAL_CHARS = 4000
 const MIN_TOTAL_CHARS = 350
@@ -383,6 +431,13 @@ const requirementsByCourse = reactive({})
 const staffComments = ref([])
 const newComment = ref('')
 const commentSaving = ref(false)
+
+// Feedback (student-only)
+const feedbackOpen = ref(false)
+const feedbackLoading = ref(false)
+const feedbackAdding = ref(false)
+const feedbackText = ref('')
+const feedbackError = ref('')
 
 const subjectRows = computed(() => {
   const list = Array.isArray(props.subjects) ? props.subjects : []
@@ -536,6 +591,67 @@ async function saveToServer() {
     showToast(e?.message || 'Save failed')
   } finally {
     saving.value = false
+  }
+}
+
+async function openFeedback(regenerate = false) {
+  if (!props.canEdit) {
+    showToast('Available for students')
+    return
+  }
+  feedbackOpen.value = true
+  if (!regenerate && feedbackText.value) return
+  await generateFeedback()
+}
+
+async function generateFeedback() {
+  if (!props.apiUrl || !props.studentEmail) return
+  feedbackLoading.value = true
+  feedbackError.value = ''
+  feedbackText.value = ''
+  try {
+    const payload = {
+      answers: { q1: answers.q1, q2: answers.q2, q3: answers.q3 },
+      course: selectedCourse.value ? { ...selectedCourse.value } : null,
+      totals: { totalChars: totalChars.value, remainingChars: remainingChars.value }
+    }
+    const resp = await generateUcasFeedback(
+      props.studentEmail,
+      payload,
+      props.apiUrl,
+      props.academicYear || null,
+      { roleHint: 'student' }
+    )
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to generate feedback')
+    const text = safeText(resp?.data?.feedback || resp?.data || '')
+    feedbackText.value = text.trim()
+    if (!feedbackText.value) feedbackError.value = 'No feedback returned.'
+  } catch (e) {
+    feedbackError.value = e?.message || 'Failed to generate feedback'
+  } finally {
+    feedbackLoading.value = false
+  }
+}
+
+async function addFeedbackAsComment() {
+  if (!feedbackText.value || !props.apiUrl || !props.studentEmail) return
+  feedbackAdding.value = true
+  try {
+    const resp = await addVirtualTutorComment(
+      props.studentEmail,
+      { comment: feedbackText.value },
+      props.apiUrl,
+      props.academicYear || null,
+      { roleHint: 'student' }
+    )
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to add comment')
+    staffComments.value = Array.isArray(resp.data?.staffComments) ? resp.data.staffComments : staffComments.value
+    showToast('Added to Tutor comments')
+    feedbackOpen.value = false
+  } catch (e) {
+    showToast(e?.message || 'Failed to add comment')
+  } finally {
+    feedbackAdding.value = false
   }
 }
 
@@ -700,6 +816,16 @@ onMounted(async () => {
 .ucas-btn-primary:hover:not(:disabled){background:var(--ucas-primary-hover)}
 .ucas-btn-outline{background:var(--ucas-white);color:var(--ucas-gray-700);border:1px solid var(--ucas-gray-300)}
 .ucas-btn-outline:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
+.ucas-btn-feedback{
+  background:linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.02));
+  color:var(--ucas-primary);
+  border:1px solid rgba(37, 99, 235, 0.35);
+  box-shadow:0 1px 0 rgba(37, 99, 235, 0.08);
+}
+.ucas-btn-feedback:hover:not(:disabled){
+  background:linear-gradient(135deg, rgba(37, 99, 235, 0.18), rgba(37, 99, 235, 0.04));
+  border-color:rgba(37, 99, 235, 0.55);
+}
 .ucas-btn-ghost{background:transparent;color:var(--ucas-gray-600)}
 .ucas-btn-ghost:hover:not(:disabled){background:var(--ucas-gray-100);color:var(--ucas-gray-800)}
 .ucas-btn-close{display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;background:transparent;border:none;border-radius:var(--ucas-radius);color:var(--ucas-gray-500);cursor:pointer;transition:all .15s}
@@ -812,4 +938,15 @@ onMounted(async () => {
 .ucas-meta-pill{display:inline-flex;align-items:baseline;gap:6px;padding:6px 10px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:999px}
 .ucas-meta-label{font-size:11px;font-weight:700;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.05em}
 .ucas-meta-value{font-size:12px;font-weight:800;color:var(--ucas-gray-900)}
+
+/* Feedback popup */
+.ucas-feedback-overlay{position:absolute;inset:0;background:rgba(17,24,39,.35);display:flex;align-items:center;justify-content:center;padding:16px}
+.ucas-feedback-modal{width:min(820px, 100%);max-height:min(70vh, 680px);background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.ucas-feedback-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+.ucas-feedback-title{font-size:15px;font-weight:800;color:var(--ucas-gray-900)}
+.ucas-feedback-body{padding:14px 16px;overflow:auto;background:var(--ucas-gray-50)}
+.ucas-feedback-loading{display:flex;align-items:center;gap:10px;color:var(--ucas-gray-700);font-weight:600}
+.ucas-feedback-error{background:var(--ucas-danger-light);border:1px solid #fecaca;border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-danger);font-weight:600;white-space:pre-wrap}
+.ucas-feedback-text{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-gray-800);white-space:pre-wrap;line-height:1.55}
+.ucas-feedback-footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
 </style>

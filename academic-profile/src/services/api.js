@@ -353,6 +353,105 @@ export async function addUcasApplicationComment(studentEmail, payload, apiUrl, a
 }
 
 /**
+ * Generate UCAS feedback (student-only)
+ * NOTE: UI must not label this as "AI".
+ * @param {string} studentEmail
+ * @param {Object} payload
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @param {{roleHint?: string}|null} options
+ * @returns {Promise<Object>}
+ */
+export async function generateUcasFeedback(studentEmail, payload, apiUrl, academicYear = null, options = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application/feedback`
+
+    // Best-effort role hint (backend uses it to block staff access)
+    let roleHeader = null
+    const roleHintOverride = options && typeof options === 'object' ? options.roleHint : null
+    if (roleHintOverride) {
+      roleHeader = String(roleHintOverride).trim().toLowerCase()
+    }
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        if (!roleHeader) roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(roleHeader ? { 'X-User-Role': roleHeader } : {}) },
+      body: JSON.stringify({ academicYear, ...(payload || {}) })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] generateUcasFeedback error:', error)
+    return { success: false, error: error.message || 'Failed to generate feedback' }
+  }
+}
+
+/**
+ * Add "Virtual Tutor" feedback as a tutor comment (student-initiated)
+ * @param {string} studentEmail
+ * @param {{comment: string}} payload
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @param {{roleHint?: string}|null} options
+ * @returns {Promise<Object>}
+ */
+export async function addVirtualTutorComment(studentEmail, payload, apiUrl, academicYear = null, options = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application/virtual-tutor-comment`
+
+    // Best-effort role hint (backend expects student here)
+    let roleHeader = null
+    const roleHintOverride = options && typeof options === 'object' ? options.roleHint : null
+    if (roleHintOverride) {
+      roleHeader = String(roleHintOverride).trim().toLowerCase()
+    }
+    try {
+      if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
+        const roles = Knack.getUserRoles() || []
+        const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
+        if (!roleHeader) roleHeader = isStudent ? 'student' : 'staff'
+      }
+    } catch (_) {}
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(roleHeader ? { 'X-User-Role': roleHeader } : {}) },
+      body: JSON.stringify({ academicYear, ...(payload || {}) })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] addVirtualTutorComment error:', error)
+    return { success: false, error: error.message || 'Failed to add comment' }
+  }
+}
+
+/**
  * Health check for academic profile system
  * @param {string} apiUrl - Base API URL
  * @returns {Promise<Object>}
