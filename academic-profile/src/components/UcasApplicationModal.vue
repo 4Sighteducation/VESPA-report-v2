@@ -323,50 +323,124 @@
         </section>
 
         <section v-if="commentsEnabled" class="ucas-comments">
-          <div class="ucas-card">
-            <div class="ucas-card-header">
-              <h2 class="ucas-card-title">Tutor comments</h2>
-              <p class="ucas-card-hint">Staff can add comments; students can read them.</p>
-            </div>
-
-            <div v-if="canAddComment" class="ucas-comment-compose">
-              <textarea v-model="newComment" class="ucas-textarea ucas-textarea-sm" placeholder="Add a comment…" />
-              <div class="ucas-comment-actions">
-                <button class="ucas-btn ucas-btn-ghost" type="button" @click="newComment = ''" :disabled="commentSaving || !newComment">
-                  Clear
-                </button>
-                <button class="ucas-btn ucas-btn-primary" type="button" @click="submitComment" :disabled="commentSaving || !newComment.trim()">
-                  {{ commentSaving ? 'Posting…' : 'Post comment' }}
-                </button>
+          <div class="ucas-comments-shell">
+            <div class="ucas-comments-header">
+              <div class="ucas-comments-header-left">
+                <div class="ucas-comments-icon" aria-hidden="true">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <div class="ucas-comments-title-group">
+                  <h2 class="ucas-comments-title">Tutor feedback</h2>
+                  <p class="ucas-comments-subtitle">Comments from staff to help improve your statement</p>
+                </div>
+              </div>
+              <div class="ucas-comments-count" :title="`${(staffComments || []).length} comment(s)`">
+                <span class="ucas-comments-count-num">{{ (staffComments || []).length }}</span>
+                <span>Comments</span>
               </div>
             </div>
 
-            <div v-if="staffComments.length === 0" class="ucas-empty ucas-empty--small">
-              <span>No comments yet.</span>
-            </div>
-            <div v-else class="ucas-comment-list">
-              <div v-for="c in staffComments" :key="c.id" class="ucas-comment">
-                <div class="ucas-comment-meta">
-                  <span class="ucas-comment-author">{{ c.staffEmail || 'Staff' }}</span>
-                  <span class="ucas-comment-date">{{ formatDate(c.createdAt) }}</span>
+            <!-- Compose (staff view only) -->
+            <div v-if="canAddComment" class="ucas-comments-compose">
+              <div class="ucas-comments-compose-row">
+                <div class="ucas-comments-avatar ucas-comments-avatar--compose">
+                  {{ commentInitialsFromText(staffEmail || 'Staff') }}
                 </div>
-                <div class="ucas-comment-body">
-                  <template v-if="isCommentExpanded(c.id)">
-                    {{ c.comment }}
-                  </template>
-                  <template v-else>
-                    {{ commentPreview(c.comment) }}
-                  </template>
+                <div class="ucas-comments-compose-main">
+                  <textarea
+                    v-model="newComment"
+                    class="ucas-comments-textarea"
+                    placeholder="Write feedback for this student's personal statement…"
+                    :disabled="commentSaving"
+                  />
+                  <div class="ucas-comments-compose-footer">
+                    <div class="ucas-comments-compose-hint">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4" />
+                        <path d="M12 8h.01" />
+                      </svg>
+                      <span>Visible to the student immediately</span>
+                    </div>
+                    <div class="ucas-comments-compose-actions">
+                      <button class="ucas-btn ucas-btn-ghost" type="button" @click="newComment = ''" :disabled="commentSaving || !newComment">
+                        Cancel
+                      </button>
+                      <button class="ucas-btn ucas-btn-primary" type="button" @click="submitComment" :disabled="commentSaving || !newComment.trim()">
+                        <svg v-if="!commentSaving" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="m22 2-7 20-4-9-9-4 20-7z" />
+                          <path d="M22 2 11 13" />
+                        </svg>
+                        {{ commentSaving ? 'Posting…' : 'Post feedback' }}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  v-if="(c.comment || '').length > COMMENT_COLLAPSE_AT"
-                  class="ucas-comment-more"
-                  type="button"
-                  @click="toggleCommentExpanded(c.id)"
-                >
-                  {{ isCommentExpanded(c.id) ? 'Show less' : 'Show more' }}
-                </button>
               </div>
+
+              <div class="ucas-comments-quick">
+                <div class="ucas-comments-quick-label">Quick feedback</div>
+                <div class="ucas-comments-quick-chips">
+                  <button v-for="t in QUICK_COMMENT_CHIPS" :key="t" class="ucas-comments-chip" type="button" @click="applyQuickChip(t)" :disabled="commentSaving">
+                    {{ t }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- List -->
+            <div v-if="groupedStaffComments.length === 0" class="ucas-comments-empty">
+              <div class="ucas-comments-empty-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+              <div class="ucas-comments-empty-title">No feedback yet</div>
+              <div class="ucas-comments-empty-text">Staff comments will appear here to help improve your personal statement.</div>
+            </div>
+            <div v-else class="ucas-comments-list">
+              <template v-for="g in groupedStaffComments" :key="g.key">
+                <div class="ucas-comments-divider" :aria-label="g.label">
+                  <div class="ucas-comments-divider-line"></div>
+                  <span class="ucas-comments-divider-text">{{ g.label }}</span>
+                  <div class="ucas-comments-divider-line"></div>
+                </div>
+
+                <div v-for="c in g.items" :key="c.id" class="ucas-comments-item">
+                  <div class="ucas-comments-item-main">
+                    <div class="ucas-comments-avatar" :class="commentAvatarClass(c.staffEmail)">
+                      {{ commentInitialsFromText(c.staffEmail || 'Staff') }}
+                    </div>
+                    <div class="ucas-comments-item-content">
+                      <div class="ucas-comments-item-header">
+                        <div class="ucas-comments-item-author">
+                          <span class="ucas-comments-author">{{ c.staffEmail || 'Staff' }}</span>
+                          <span v-if="safeText(c.staffEmail).trim().toLowerCase() === 'virtual tutor'" class="ucas-comments-role">
+                            Virtual Tutor
+                          </span>
+                        </div>
+                        <span class="ucas-comments-date">{{ formatDate(c.createdAt) }}</span>
+                      </div>
+
+                      <div class="ucas-comments-body" :class="{ 'ucas-comments-body--collapsed': !isCommentExpanded(c.id) && (safeText(c.comment).length > COMMENT_COLLAPSE_AT) }">
+                        <template v-if="isCommentExpanded(c.id)">{{ c.comment }}</template>
+                        <template v-else>{{ commentPreview(c.comment) }}</template>
+                      </div>
+
+                      <button
+                        v-if="safeText(c.comment).length > COMMENT_COLLAPSE_AT"
+                        class="ucas-comments-more"
+                        type="button"
+                        @click="toggleCommentExpanded(c.id)"
+                      >
+                        {{ isCommentExpanded(c.id) ? 'Show less' : 'Show more' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </section>
@@ -470,163 +544,363 @@
 
       <!-- Teacher reference panel (students only; no reference content) -->
       <div v-if="refPanelOpen" class="ucas-feedback-overlay" @click.self="refPanelOpen = false">
-        <div class="ucas-feedback-modal" role="dialog" aria-modal="true" aria-label="Teacher reference progress">
-          <div class="ucas-feedback-header">
-            <div class="ucas-feedback-title">Teacher reference</div>
-            <button class="ucas-btn-close" type="button" @click="refPanelOpen = false" aria-label="Close">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <div class="ucas-feedback-body">
-            <div class="ref-progress">
-              <div class="ref-status">
-                <span class="ref-status-label">Status</span>
-                <span class="ref-status-pill" :class="`ref-status--${referenceStatus}`">{{ referenceStatusLabel }}</span>
+        <div class="ucas-feedback-modal ucas-ref-modal" role="dialog" aria-modal="true" aria-label="Teacher reference">
+          <div class="ucas-ref-header">
+            <div class="ucas-ref-header-left">
+              <div class="ucas-ref-icon" aria-hidden="true">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path
+                    v-if="canEdit"
+                    d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                  />
+                  <circle v-if="canEdit" cx="9" cy="7" r="4" />
+                  <path v-if="canEdit" d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path v-if="canEdit" d="M16 3.13a4 4 0 0 1 0 7.75" />
+
+                  <path
+                    v-else
+                    d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"
+                  />
+                  <polyline v-if="!canEdit" points="14 2 14 8 20 8" />
+                  <line v-if="!canEdit" x1="16" y1="13" x2="8" y2="13" />
+                  <line v-if="!canEdit" x1="16" y1="17" x2="8" y2="17" />
+                  <line v-if="!canEdit" x1="10" y1="9" x2="8" y2="9" />
+                </svg>
               </div>
-              <div class="ref-actions">
-                <button class="ucas-btn ucas-btn-outline" type="button" @click="loadReferenceStatus" :disabled="refLoading">
-                  {{ refLoading ? 'Refreshing…' : 'Refresh' }}
-                </button>
+              <div class="ucas-ref-title-group">
+                <div class="ucas-ref-title">Teacher reference</div>
+                <div class="ucas-ref-subtitle">
+                  <span v-if="canEdit">Invite teachers to contribute to your UCAS reference</span>
+                  <span v-else>View and add contributions (Sections 2 &amp; 3)</span>
+                </div>
               </div>
             </div>
+            <button class="ucas-ref-close" type="button" @click="refPanelOpen = false" aria-label="Close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
 
-            <div v-if="canEdit" class="ref-invites">
-              <div class="ref-invites-header">
-                <div class="ref-invites-title">Invited teachers</div>
-                <div class="ref-invites-meta">{{ (referenceInvites || []).length }} invited</div>
-              </div>
+          <div class="ucas-ref-statusbar">
+            <div class="ucas-ref-statusbar-left">
+              <span class="ucas-ref-status-label">Reference status</span>
+              <span class="ucas-ref-status-pill" :class="`ucas-ref-status--${referenceStatus}`">
+                <svg
+                  v-if="referenceStatus === 'completed' || referenceStatus === 'finalised'"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <svg
+                  v-else
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+                {{ referenceStatusLabel }}
+              </span>
+              <span v-if="inviteCounts.total" class="ucas-ref-status-count">{{ inviteCounts.submitted }}/{{ inviteCounts.total }} submitted</span>
+              <span v-else class="ucas-ref-status-count">No invites yet</span>
+            </div>
+            <button class="ucas-ref-refresh" type="button" @click="loadReferenceStatus" :disabled="refLoading">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M3 21v-5h5" />
+              </svg>
+              {{ refLoading ? 'Refreshing…' : 'Refresh' }}
+            </button>
+          </div>
 
-              <div v-if="referenceInvites.length === 0" class="ucas-empty ucas-empty--small">
-                <span>No invitations yet.</span>
-              </div>
-              <div v-else class="ref-invite-list">
-                <div v-for="inv in referenceInvites" :key="inv.id" class="ref-invite">
-                  <div class="ref-invite-main">
-                    <div class="ref-invite-email">{{ inv.teacherEmail }}</div>
-                    <div class="ref-invite-sub">
-                      <span v-if="inv.teacherName">{{ inv.teacherName }}</span>
-                      <span v-if="inv.subjectKey"> • {{ inv.subjectKey }}</span>
-                    </div>
+          <div class="ucas-ref-body">
+            <div v-if="canEdit" class="ucas-ref-student">
+              <div class="ucas-ref-steps">
+                <div class="ucas-ref-step">
+                  <div class="ucas-ref-step-circle" :class="{ complete: inviteCounts.total > 0 }">
+                    <svg v-if="inviteCounts.total > 0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span v-else>1</span>
                   </div>
-                  <div class="ref-invite-status" :class="inv.status === 'submitted' ? 'ref-ok' : 'ref-wait'">
-                    {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
+                  <div class="ucas-ref-step-label">Invite teachers</div>
+                </div>
+                <div class="ucas-ref-step">
+                  <div class="ucas-ref-step-circle" :class="{ active: inviteCounts.total > 0 && inviteCounts.submitted < inviteCounts.total, complete: inviteCounts.total > 0 && inviteCounts.submitted === inviteCounts.total }">
+                    <span>2</span>
+                  </div>
+                  <div class="ucas-ref-step-label" :class="{ active: inviteCounts.total > 0 && inviteCounts.submitted < inviteCounts.total }">Awaiting responses</div>
+                </div>
+                <div class="ucas-ref-step">
+                  <div class="ucas-ref-step-circle" :class="{ complete: referenceStatus === 'completed' || referenceStatus === 'finalised' }">
+                    <svg v-if="referenceStatus === 'completed' || referenceStatus === 'finalised'" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span v-else>3</span>
+                  </div>
+                  <div class="ucas-ref-step-label">Reference complete</div>
+                </div>
+              </div>
+
+              <div class="ucas-ref-section">
+                <div class="ucas-ref-section-head">
+                  <div>
+                    <div class="ucas-ref-section-title">Invited teachers</div>
+                    <div class="ucas-ref-section-subtitle">Track who has been asked to contribute</div>
+                  </div>
+                  <div class="ucas-ref-section-pill">{{ (referenceInvites || []).length }} invited</div>
+                </div>
+
+                <div v-if="referenceInvites.length === 0" class="ucas-ref-empty">
+                  <div class="ucas-ref-empty-icon" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="ucas-ref-empty-title">No invitations yet</div>
+                    <div class="ucas-ref-empty-text">Invite a teacher below to get started.</div>
+                  </div>
+                </div>
+
+                <div v-else class="ucas-ref-invite-list">
+                  <div v-for="inv in referenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
+                    <div class="ucas-ref-invite-left">
+                      <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
+                        {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
+                      </div>
+                      <div class="ucas-ref-invite-meta">
+                        <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
+                        <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
+                      </div>
+                    </div>
+                    <div class="ucas-ref-invite-status" :class="inv.status === 'submitted' ? 'ok' : 'wait'">
+                      <svg
+                        v-if="inv.status === 'submitted'"
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                        <polyline points="22 4 12 14.01 9 11.01" />
+                      </svg>
+                      <svg
+                        v-else
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div class="ref-compose">
-                <div class="ref-compose-grid">
+              <div class="ucas-ref-section ucas-ref-section--form">
+                <div class="ucas-ref-form-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <line x1="19" y1="8" x2="19" y2="14" />
+                    <line x1="22" y1="11" x2="16" y2="11" />
+                  </svg>
+                  Invite another teacher
+                </div>
+
+                <div class="ucas-ref-form-grid">
                   <div>
-                    <div class="ref-label">Teacher email</div>
-                    <input class="ucas-input" type="email" v-model="inviteEmail" placeholder="teacher@school.org" />
+                    <div class="ucas-ref-label">Teacher email</div>
+                    <input class="ucas-ref-input" type="email" v-model="inviteEmail" placeholder="teacher@school.org" />
                   </div>
                   <div>
-                    <div class="ref-label">Subject (optional)</div>
-                    <select class="ucas-select ref-select" v-model="inviteSubjectKey">
+                    <div class="ucas-ref-label">Subject (optional)</div>
+                    <select class="ucas-ref-select" v-model="inviteSubjectKey">
                       <option value="">No subject</option>
                       <option v-for="s in subjectRows" :key="s.key" :value="s.label">{{ s.label }}</option>
                     </select>
                   </div>
                 </div>
-                <div class="ref-compose-actions">
+
+                <div class="ucas-ref-form-actions">
                   <button class="ucas-btn ucas-btn-outline" type="button" @click="inviteEmail=''; inviteSubjectKey=''" :disabled="refInviteSending">
                     Clear
                   </button>
                   <button class="ucas-btn ucas-btn-primary" type="button" @click="sendInvite" :disabled="refInviteSending || !inviteEmail.trim()">
-                    {{ refInviteSending ? 'Sending…' : 'Send to teacher' }}
+                    <svg v-if="!refInviteSending" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="m22 2-7 20-4-9-9-4 20-7z" />
+                      <path d="M22 2 11 13" />
+                    </svg>
+                    {{ refInviteSending ? 'Sending…' : 'Send invitation' }}
                   </button>
                 </div>
 
-                <div v-if="lastInviteUrl" class="ref-invite-link">
-                  <div class="ref-label">Invite link (copy)</div>
-                  <div class="ref-link-row">
-                    <input class="ucas-input" type="text" :value="lastInviteUrl" readonly />
-                    <button class="ucas-btn ucas-btn-outline" type="button" @click="copyText(lastInviteUrl)">Copy</button>
+                <div v-if="lastInviteUrl" class="ucas-ref-linkcopy">
+                  <div class="ucas-ref-linkcopy-label">Or copy invite link</div>
+                  <div class="ucas-ref-linkcopy-row">
+                    <input class="ucas-ref-linkcopy-input" type="text" :value="lastInviteUrl" readonly />
+                    <button class="ucas-ref-linkcopy-btn" type="button" @click="copyText(lastInviteUrl)">Copy</button>
                   </div>
-                  <div class="hint">Email delivery is best-effort; you can always copy the link and send it manually. The link can be reopened to edit until it expires.</div>
+                  <div class="ucas-ref-linkcopy-hint">Share this link directly with your teacher if email doesn't arrive.</div>
                 </div>
               </div>
             </div>
-            <div v-else class="ref-invites">
-              <div class="ref-invites-header">
-                <div class="ref-invites-title">Reference (staff view)</div>
-                <div class="ref-invites-meta" v-if="refFull && refFull.updatedAt">Updated {{ new Date(refFull.updatedAt).toLocaleString() }}</div>
+
+            <div v-else class="ucas-ref-staff">
+              <div class="ucas-ref-staff-head">
+                <div class="ucas-ref-staff-title">Reference (staff view)</div>
+                <div class="ucas-ref-staff-meta" v-if="refFull && refFull.updatedAt">Updated {{ new Date(refFull.updatedAt).toLocaleString() }}</div>
               </div>
 
               <div v-if="refFullLoading" class="ucas-empty ucas-empty--small"><span>Loading reference…</span></div>
               <div v-else-if="!refFull" class="ucas-empty ucas-empty--small"><span>No reference data found.</span></div>
-              <div v-else class="ref-staff-view">
-                <div class="ref-section ref-section--editor">
-                  <div class="ref-section-title">Add your contribution (tutor/staff)</div>
-                  <div class="ref-editor-grid">
-                    <div class="ref-editor-block">
-                      <div class="ref-label">Section 2 — Extenuating circumstances</div>
-                      <textarea class="textarea ref-textarea" v-model="staffSection2Text" placeholder="Add factual, course-relevant context (with student permission)."></textarea>
-                      <div class="hint">{{ (staffSection2Text || '').length.toLocaleString() }} characters</div>
-                      <div class="ref-editor-actions">
-                        <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(2)" :disabled="staffSaving2 || !staffCanSave || !staffSection2Text.trim()">
-                          {{ staffSaving2 ? 'Saving…' : 'Save Section 2' }}
-                        </button>
-                      </div>
+              <div v-else class="ucas-ref-staff-body">
+                <!-- Editors -->
+                <div class="ucas-ref-contrib">
+                  <div class="ucas-ref-contrib-head">
+                    <div class="ucas-ref-contrib-title">
+                      <span class="ucas-ref-num">2</span>
+                      Extenuating circumstances
                     </div>
-                    <div class="ref-editor-block">
-                      <div class="ref-label">Section 3 — Supportive information (subject)</div>
-                      <select class="ucas-select ref-select" v-model="staffSection3SubjectKey">
+                    <span class="ucas-ref-badge">Optional</span>
+                  </div>
+                  <div class="ucas-ref-contrib-sub">Add factual, course-relevant context (with student permission).</div>
+                  <div class="ucas-ref-editor">
+                    <textarea class="ucas-ref-textarea" v-model="staffSection2Text" placeholder="Add any relevant extenuating circumstances here…" />
+                    <div class="ucas-ref-editor-footer">
+                      <span class="ucas-ref-char">{{ (staffSection2Text || '').length.toLocaleString() }} characters</span>
+                      <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(2)" :disabled="staffSaving2 || !staffCanSave || !staffSection2Text.trim()">
+                        <svg v-if="!staffSaving2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                          <polyline points="17 21 17 13 7 13 7 21" />
+                          <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        {{ staffSaving2 ? 'Saving…' : 'Save Section 2' }}
+                      </button>
+                    </div>
+                    <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
+                  </div>
+                </div>
+
+                <div class="ucas-ref-contrib">
+                  <div class="ucas-ref-contrib-head">
+                    <div class="ucas-ref-contrib-title">
+                      <span class="ucas-ref-num">3</span>
+                      Subject teacher contributions
+                    </div>
+                    <span class="ucas-ref-badge has-content">{{ (refFull.section3 || []).length }} contributions</span>
+                  </div>
+                  <div class="ucas-ref-contrib-sub">Add specific evidence of academic potential and engagement relevant to the course.</div>
+
+                  <div class="ucas-ref-editor">
+                    <div class="ucas-ref-editor-select">
+                      <select class="ucas-ref-select" v-model="staffSection3SubjectKey">
                         <option value="">No subject</option>
                         <option v-for="s in subjectRows" :key="s.key" :value="s.label">{{ s.label }}</option>
                       </select>
-                      <textarea class="textarea ref-textarea" v-model="staffSection3Text" placeholder="Add specific evidence of academic potential and engagement relevant to the course."></textarea>
-                      <div class="hint">{{ (staffSection3Text || '').length.toLocaleString() }} characters</div>
-                      <div class="ref-editor-actions">
-                        <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(3)" :disabled="staffSaving3 || !staffCanSave || !staffSection3Text.trim()">
-                          {{ staffSaving3 ? 'Saving…' : 'Save Section 3' }}
-                        </button>
+                    </div>
+                    <textarea class="ucas-ref-textarea" v-model="staffSection3Text" placeholder="Describe the student's ability, achievements, and potential in your subject…" />
+                    <div class="ucas-ref-editor-footer">
+                      <span class="ucas-ref-char">{{ (staffSection3Text || '').length.toLocaleString() }} characters</span>
+                      <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(3)" :disabled="staffSaving3 || !staffCanSave || !staffSection3Text.trim()">
+                        <svg v-if="!staffSaving3" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                          <polyline points="17 21 17 13 7 13 7 21" />
+                          <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        {{ staffSaving3 ? 'Saving…' : 'Save Section 3' }}
+                      </button>
+                    </div>
+                    <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
+                  </div>
+
+                  <div class="ucas-ref-existing" v-if="(refFull.section3 || []).length">
+                    <div class="ucas-ref-existing-title">Existing contributions</div>
+                    <div class="ucas-ref-existing-list">
+                      <div v-for="c in refFull.section3" :key="c.id" class="ucas-ref-existing-item">
+                        <div class="ucas-ref-existing-meta">
+                          <div class="ucas-ref-existing-author">
+                            <div class="ucas-ref-existing-avatar">{{ commentInitialsFromText(c.authorName || c.authorEmail) }}</div>
+                            <span class="ucas-ref-existing-name">{{ c.authorName || c.authorEmail }}</span>
+                          </div>
+                          <span class="ucas-ref-existing-subject">{{ c.subjectKey || '' }}</span>
+                        </div>
+                        <div class="ucas-ref-existing-text">{{ c.text }}</div>
                       </div>
                     </div>
                   </div>
-                  <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
                 </div>
 
-                <div class="ref-section">
-                  <div class="ref-section-title">Section 1 — Centre statement</div>
-                  <div class="ref-section-body">{{ safeText(refFull.section1Text) || 'No centre template yet.' }}</div>
+                <div class="ucas-ref-section">
+                  <div class="ucas-ref-section-head">
+                    <div>
+                      <div class="ucas-ref-section-title">Section 1 — Centre statement</div>
+                      <div class="ucas-ref-section-subtitle">Standard centre template (usually written once)</div>
+                    </div>
+                  </div>
+                  <div class="ucas-ref-section-body">{{ safeText(refFull.section1Text) || 'No centre template yet.' }}</div>
                 </div>
 
-                <div class="ref-section">
-                  <div class="ref-section-title">Section 2 — Extenuating circumstances</div>
+                <div class="ucas-ref-section">
+                  <div class="ucas-ref-section-head">
+                    <div>
+                      <div class="ucas-ref-section-title">Section 2 — Extenuating circumstances</div>
+                      <div class="ucas-ref-section-subtitle">Existing contributions</div>
+                    </div>
+                    <div class="ucas-ref-section-pill">{{ (refFull.section2 || []).length }}</div>
+                  </div>
                   <div v-if="(refFull.section2 || []).length === 0" class="ucas-empty ucas-empty--small"><span>No contributions yet.</span></div>
-                  <div v-else class="ref-contrib-list">
-                    <div v-for="c in refFull.section2" :key="c.id" class="ref-contrib">
-                      <div class="ref-contrib-meta">{{ c.authorName || c.authorEmail }} <span v-if="c.subjectKey">• {{ c.subjectKey }}</span></div>
-                      <div class="ref-contrib-text">{{ c.text }}</div>
+                  <div v-else class="ucas-ref-contrib-list">
+                    <div v-for="c in refFull.section2" :key="c.id" class="ucas-ref-contrib-item">
+                      <div class="ucas-ref-contrib-meta">{{ c.authorName || c.authorEmail }} <span v-if="c.subjectKey">• {{ c.subjectKey }}</span></div>
+                      <div class="ucas-ref-contrib-text">{{ c.text }}</div>
                     </div>
                   </div>
                 </div>
 
-                <div class="ref-section">
-                  <div class="ref-section-title">Section 3 — Subject teacher contributions</div>
-                  <div v-if="(refFull.section3 || []).length === 0" class="ucas-empty ucas-empty--small"><span>No contributions yet.</span></div>
-                  <div v-else class="ref-contrib-list">
-                    <div v-for="c in refFull.section3" :key="c.id" class="ref-contrib">
-                      <div class="ref-contrib-meta">{{ c.authorName || c.authorEmail }} <span v-if="c.subjectKey">• {{ c.subjectKey }}</span></div>
-                      <div class="ref-contrib-text">{{ c.text }}</div>
+                <div class="ucas-ref-section">
+                  <div class="ucas-ref-section-head">
+                    <div>
+                      <div class="ucas-ref-section-title">Invited teachers</div>
+                      <div class="ucas-ref-section-subtitle">Status of external invites</div>
                     </div>
+                    <div class="ucas-ref-section-pill">{{ (referenceInvites || []).length }}</div>
                   </div>
-                </div>
-
-                <div class="ref-section">
-                  <div class="ref-section-title">Invited teachers</div>
                   <div v-if="referenceInvites.length === 0" class="ucas-empty ucas-empty--small"><span>No invitations yet.</span></div>
-                  <div v-else class="ref-invite-list">
-                    <div v-for="inv in referenceInvites" :key="inv.id" class="ref-invite">
-                      <div class="ref-invite-main">
-                        <div class="ref-invite-email">{{ inv.teacherEmail }}</div>
-                        <div class="ref-invite-sub">
-                          <span v-if="inv.teacherName">{{ inv.teacherName }}</span>
-                          <span v-if="inv.subjectKey"> • {{ inv.subjectKey }}</span>
+                  <div v-else class="ucas-ref-invite-list">
+                    <div v-for="inv in referenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
+                      <div class="ucas-ref-invite-left">
+                        <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
+                          {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
+                        </div>
+                        <div class="ucas-ref-invite-meta">
+                          <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
+                          <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
                         </div>
                       </div>
-                      <div class="ref-invite-status" :class="inv.status === 'submitted' ? 'ref-ok' : 'ref-wait'">
+                      <div class="ucas-ref-invite-status" :class="inv.status === 'submitted' ? 'ok' : 'wait'">
                         {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
                       </div>
                     </div>
@@ -635,7 +909,8 @@
               </div>
             </div>
           </div>
-          <div class="ucas-feedback-footer">
+
+          <div class="ucas-ref-footer">
             <button class="ucas-btn ucas-btn-primary" type="button" @click="refPanelOpen = false">Done</button>
           </div>
         </div>
@@ -724,6 +999,14 @@ const feedbackError = ref('')
 const expandedCommentIds = ref(new Set())
 const COMMENT_COLLAPSE_AT = 450
 
+const QUICK_COMMENT_CHIPS = [
+  '📝 Add more specific examples',
+  '🔍 Strengthen your "why this course"',
+  '✂️ Trim repetition',
+  '💡 Show reflection, not just description',
+  '🎯 Link skills to the course'
+]
+
 function isCommentExpanded(id) {
   return expandedCommentIds.value.has(String(id || ''))
 }
@@ -741,6 +1024,89 @@ function commentPreview(text) {
   if (t.length <= COMMENT_COLLAPSE_AT) return t
   return t.slice(0, COMMENT_COLLAPSE_AT).trimEnd() + '…'
 }
+
+function applyQuickChip(text) {
+  const t = safeText(text).trim()
+  if (!t) return
+  const current = safeText(newComment.value)
+  const next = current ? (current.trimEnd() + '\n' + t) : t
+  newComment.value = next
+}
+
+function commentInitialsFromText(text) {
+  const raw = safeText(text).trim()
+  if (!raw) return 'ST'
+  const cleaned = raw.includes('@') ? raw.split('@')[0] : raw
+  const parts = cleaned
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+  const first = (parts[0] || '').slice(0, 1)
+  const second = (parts[1] || parts[0] || '').slice(1, 2)
+  const out = (first + second).toUpperCase()
+  return out || 'ST'
+}
+
+function commentAvatarClass(staffEmail) {
+  const s = safeText(staffEmail).trim().toLowerCase()
+  if (!s) return 'ucas-comments-avatar--blue'
+  // simple stable hash → 0..3
+  let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  const n = h % 4
+  if (n === 0) return 'ucas-comments-avatar--green'
+  if (n === 1) return 'ucas-comments-avatar--blue'
+  if (n === 2) return 'ucas-comments-avatar--purple'
+  return 'ucas-comments-avatar--orange'
+}
+
+function dateKeyFromAny(v) {
+  try {
+    const d = new Date(v)
+    if (Number.isNaN(d.getTime())) return null
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  } catch (_) {
+    return null
+  }
+}
+
+function dateLabelFromKey(key) {
+  try {
+    if (!key) return ''
+    const today = new Date()
+    const y = today.getFullYear()
+    const m = String(today.getMonth() + 1).padStart(2, '0')
+    const d = String(today.getDate()).padStart(2, '0')
+    const todayKey = `${y}-${m}-${d}`
+    const dt = new Date(todayKey + 'T00:00:00')
+    const dd = new Date(key + 'T00:00:00')
+    const diffDays = Math.round((dt.getTime() - dd.getTime()) / (1000 * 60 * 60 * 24))
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    return dd.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+  } catch (_) {
+    return key
+  }
+}
+
+const groupedStaffComments = computed(() => {
+  const list = Array.isArray(staffComments.value) ? staffComments.value : []
+  const groups = []
+  let current = null
+  for (const c of list) {
+    const key = dateKeyFromAny(c?.createdAt) || 'unknown'
+    if (!current || current.key !== key) {
+      current = { key, label: key === 'unknown' ? 'Earlier' : dateLabelFromKey(key), items: [] }
+      groups.push(current)
+    }
+    current.items.push(c)
+  }
+  return groups
+})
 
 // Teacher reference progress (student view: progress only)
 const refLoading = ref(false)
@@ -1433,16 +1799,74 @@ onMounted(async () => {
 .ucas-textarea-expanded{min-height:52vh;resize:none}
 
 .ucas-comments{margin-top:20px}
-.ucas-comment-compose{margin-top:12px}
-.ucas-comment-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
-.ucas-comment-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.ucas-comment{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px 14px}
-.ucas-comment-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
-.ucas-comment-author{font-size:13px;font-weight:600;color:var(--ucas-gray-800)}
-.ucas-comment-date{font-size:12px;color:var(--ucas-gray-400)}
-.ucas-comment-body{font-size:14px;color:var(--ucas-gray-700);line-height:1.5}
-.ucas-comment-more{margin-top:8px;background:transparent;border:none;color:var(--ucas-primary);font-weight:700;font-size:12px;cursor:pointer;padding:0;align-self:flex-start}
-.ucas-comment-more:hover{text-decoration:underline}
+.ucas-comments-shell{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-sm);overflow:hidden}
+
+.ucas-comments-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-gray-50)}
+.ucas-comments-header-left{display:flex;align-items:center;gap:12px}
+.ucas-comments-icon{width:40px;height:40px;border-radius:var(--ucas-radius);display:flex;align-items:center;justify-content:center;background:var(--ucas-primary-light);color:var(--ucas-primary);flex-shrink:0}
+.ucas-comments-title-group{min-width:0}
+.ucas-comments-title{font-size:15px;font-weight:900;color:var(--ucas-gray-900);margin:0 0 2px 0}
+.ucas-comments-subtitle{font-size:13px;color:var(--ucas-gray-500);margin:0}
+.ucas-comments-count{display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:999px;font-size:13px;font-weight:800;color:var(--ucas-gray-600);white-space:nowrap}
+.ucas-comments-count-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--ucas-primary);color:var(--ucas-white);font-size:11px;font-weight:900}
+
+.ucas-comments-compose{padding:18px 20px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+.ucas-comments-compose-row{display:flex;gap:12px}
+.ucas-comments-compose-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.ucas-comments-textarea{width:100%;min-height:110px;padding:12px 14px;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius-lg);font-size:14px;line-height:1.6;font-family:inherit;color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s;background:var(--ucas-white)}
+.ucas-comments-textarea:hover:not(:disabled){border-color:var(--ucas-gray-400)}
+.ucas-comments-textarea:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-comments-textarea:disabled{background:var(--ucas-gray-100);cursor:not-allowed}
+.ucas-comments-compose-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.ucas-comments-compose-hint{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ucas-gray-400);font-weight:700}
+.ucas-comments-compose-actions{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+
+.ucas-comments-quick{margin-top:12px;padding-top:12px;border-top:1px solid var(--ucas-gray-200);background:var(--ucas-gray-50);border-radius:var(--ucas-radius);padding:12px}
+.ucas-comments-quick-label{font-size:11px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ucas-comments-quick-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ucas-comments-chip{padding:6px 10px;background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:999px;font-size:12px;font-weight:700;color:var(--ucas-gray-700);cursor:pointer;transition:all .15s}
+.ucas-comments-chip:hover:not(:disabled){border-color:var(--ucas-primary);color:var(--ucas-primary);background:var(--ucas-primary-light)}
+.ucas-comments-chip:disabled{opacity:.6;cursor:not-allowed}
+
+.ucas-comments-list{max-height:420px;overflow:auto;background:var(--ucas-white)}
+.ucas-comments-item{padding:16px 20px;border-bottom:1px solid var(--ucas-gray-100)}
+.ucas-comments-item:last-child{border-bottom:none}
+.ucas-comments-item:hover{background:var(--ucas-gray-50)}
+.ucas-comments-item-main{display:flex;gap:12px}
+.ucas-comments-item-content{flex:1;min-width:0}
+.ucas-comments-item-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ucas-comments-item-author{display:flex;align-items:center;gap:8px;min-width:0}
+.ucas-comments-author{font-size:14px;font-weight:800;color:var(--ucas-gray-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ucas-comments-role{padding:2px 8px;background:var(--ucas-primary-light);color:var(--ucas-primary);font-size:11px;font-weight:900;border-radius:999px;white-space:nowrap}
+.ucas-comments-date{font-size:12px;color:var(--ucas-gray-400);font-weight:700;white-space:nowrap}
+.ucas-comments-body{font-size:14px;line-height:1.6;color:var(--ucas-gray-700);white-space:pre-wrap;word-break:break-word}
+.ucas-comments-body--collapsed{display:-webkit-box;line-clamp:3;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ucas-comments-more{margin-top:6px;background:transparent;border:none;color:var(--ucas-primary);font-weight:900;font-size:12px;cursor:pointer;padding:0}
+.ucas-comments-more:hover{text-decoration:underline}
+
+.ucas-comments-divider{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--ucas-gray-50)}
+.ucas-comments-divider-line{flex:1;height:1px;background:var(--ucas-gray-200)}
+.ucas-comments-divider-text{font-size:11px;font-weight:900;color:var(--ucas-gray-400);text-transform:uppercase;letter-spacing:.06em}
+
+.ucas-comments-avatar{width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--ucas-white);flex-shrink:0}
+.ucas-comments-avatar--compose{background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%)}
+.ucas-comments-avatar--green{background:linear-gradient(135deg,#10b981 0%,#059669 100%)}
+.ucas-comments-avatar--blue{background:linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)}
+.ucas-comments-avatar--purple{background:linear-gradient(135deg,#8b5cf6 0%,#7c3aed 100%)}
+.ucas-comments-avatar--orange{background:linear-gradient(135deg,#f97316 0%,#ea580c 100%)}
+
+.ucas-comments-empty{padding:40px 20px;text-align:center;background:var(--ucas-white)}
+.ucas-comments-empty-icon{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;background:var(--ucas-gray-100);display:flex;align-items:center;justify-content:center;color:var(--ucas-gray-400)}
+.ucas-comments-empty-title{font-size:15px;font-weight:900;color:var(--ucas-gray-700);margin-bottom:4px}
+.ucas-comments-empty-text{font-size:13px;color:var(--ucas-gray-500);font-weight:600}
+
+@media (max-width:700px){
+  .ucas-comments-header{padding:14px 14px}
+  .ucas-comments-compose{padding:14px 14px}
+  .ucas-comments-item{padding:14px 14px}
+  .ucas-comments-divider{padding:10px 14px}
+  .ucas-comments-list{max-height:380px}
+}
 
 .ucas-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;background:var(--ucas-white);border-top:1px solid var(--ucas-gray-200)}
 .ucas-footer-stats{display:flex;align-items:baseline;gap:4px;font-size:14px}
@@ -1558,6 +1982,117 @@ onMounted(async () => {
 .ref-editor-block{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
 .ref-textarea{min-height:160px;resize:vertical}
 .ref-editor-actions{display:flex;justify-content:flex-end;margin-top:10px}
+
+/* Redesigned Teacher reference panel (student + staff) */
+.ucas-ref-modal{max-height:min(78vh, 760px)}
+.ucas-ref-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px;color:var(--ucas-white);background:linear-gradient(135deg,var(--ucas-primary) 0%, #2b2360 100%);border-bottom:1px solid rgba(255,255,255,.14)}
+.ucas-ref-header-left{display:flex;align-items:center;gap:14px}
+.ucas-ref-icon{width:44px;height:44px;border-radius:var(--ucas-radius);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);color:var(--ucas-white)}
+.ucas-ref-title-group{min-width:0}
+.ucas-ref-title{font-size:16px;font-weight:900;line-height:1.2}
+.ucas-ref-subtitle{font-size:13px;opacity:.9}
+.ucas-ref-close{width:36px;height:36px;border-radius:var(--ucas-radius);border:none;background:rgba(255,255,255,.12);color:var(--ucas-white);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ucas-ref-close:hover{background:rgba(255,255,255,.2)}
+
+.ucas-ref-statusbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:var(--ucas-gray-50);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
+.ucas-ref-statusbar-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ucas-ref-status-label{font-size:12px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em}
+.ucas-ref-status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:900;background:var(--ucas-gray-100);color:var(--ucas-gray-700);border:1px solid var(--ucas-gray-200)}
+.ucas-ref-status--not_started{background:var(--ucas-gray-100);color:var(--ucas-gray-700)}
+.ucas-ref-status--in_progress{background:var(--ucas-warning-light);border-color:#fcd34d;color:var(--ucas-warning)}
+.ucas-ref-status--completed,.ucas-ref-status--finalised{background:var(--ucas-success-light);border-color:#a7f3d0;color:var(--ucas-success)}
+.ucas-ref-status-count{font-size:13px;color:var(--ucas-gray-500);font-weight:700}
+.ucas-ref-refresh{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--ucas-white);border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);font-size:13px;font-weight:800;color:var(--ucas-gray-700);cursor:pointer}
+.ucas-ref-refresh:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
+.ucas-ref-refresh:disabled{opacity:.6;cursor:not-allowed}
+
+.ucas-ref-body{padding:18px;background:var(--ucas-gray-50);overflow:auto;max-height:calc(min(78vh, 760px) - 160px)}
+.ucas-ref-footer{padding:14px 18px;background:var(--ucas-white);border-top:1px solid var(--ucas-gray-200);display:flex;justify-content:flex-end}
+
+.ucas-ref-steps{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;margin-bottom:18px}
+.ucas-ref-steps:before{content:"";position:absolute;left:36px;right:36px;top:20px;height:2px;background:var(--ucas-gray-200)}
+.ucas-ref-step{display:flex;flex-direction:column;align-items:center;gap:8px;position:relative;z-index:1}
+.ucas-ref-step-circle{width:40px;height:40px;border-radius:999px;background:var(--ucas-white);border:2px solid var(--ucas-gray-300);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--ucas-gray-400)}
+.ucas-ref-step-circle.active{background:var(--ucas-primary-light);border-color:var(--ucas-primary);color:var(--ucas-primary)}
+.ucas-ref-step-circle.complete{background:var(--ucas-success);border-color:var(--ucas-success);color:var(--ucas-white)}
+.ucas-ref-step-label{font-size:12px;font-weight:700;color:var(--ucas-gray-500);text-align:center;max-width:110px}
+.ucas-ref-step-label.active{color:var(--ucas-primary);font-weight:900}
+
+.ucas-ref-section{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-sm);padding:16px;margin-bottom:14px}
+.ucas-ref-section--form{background:var(--ucas-white)}
+.ucas-ref-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.ucas-ref-section-title{font-size:14px;font-weight:900;color:var(--ucas-gray-900)}
+.ucas-ref-section-subtitle{font-size:13px;color:var(--ucas-gray-500);font-weight:600;margin-top:2px}
+.ucas-ref-section-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:999px;font-size:12px;font-weight:900;color:var(--ucas-gray-700);white-space:nowrap}
+.ucas-ref-section-body{white-space:pre-wrap;line-height:1.55;color:var(--ucas-gray-800);font-size:13px}
+
+.ucas-ref-empty{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px dashed var(--ucas-gray-200);border-radius:var(--ucas-radius);background:var(--ucas-gray-50)}
+.ucas-ref-empty-icon{width:40px;height:40px;border-radius:999px;background:var(--ucas-gray-100);display:flex;align-items:center;justify-content:center;color:var(--ucas-gray-400);flex-shrink:0}
+.ucas-ref-empty-title{font-size:13px;font-weight:900;color:var(--ucas-gray-700)}
+.ucas-ref-empty-text{font-size:12px;color:var(--ucas-gray-500);font-weight:600;margin-top:2px}
+
+.ucas-ref-invite-list{display:flex;flex-direction:column;gap:10px}
+.ucas-ref-invite{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);transition:border-color .15s}
+.ucas-ref-invite.submitted{background:var(--ucas-success-light);border-color:#a7f3d0}
+.ucas-ref-invite-left{display:flex;align-items:center;gap:12px;min-width:0}
+.ucas-ref-invite-avatar{width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--ucas-white);flex-shrink:0}
+.ucas-ref-invite-meta{min-width:0}
+.ucas-ref-invite-name{font-size:13px;font-weight:900;color:var(--ucas-gray-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ucas-ref-invite-sub{font-size:12px;color:var(--ucas-gray-500);font-weight:700;margin-top:2px}
+.ucas-ref-invite-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
+.ucas-ref-invite-status.ok{background:var(--ucas-success-light);color:var(--ucas-success);border:1px solid #a7f3d0}
+.ucas-ref-invite-status.wait{background:var(--ucas-warning-light);color:var(--ucas-warning);border:1px solid #fcd34d}
+
+.ucas-ref-form-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:var(--ucas-gray-800);margin-bottom:12px}
+.ucas-ref-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:700px){.ucas-ref-form-grid{grid-template-columns:1fr}}
+.ucas-ref-label{font-size:11px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.ucas-ref-input,.ucas-ref-select{width:100%;padding:10px 12px;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);font-size:14px;transition:border-color .15s,box-shadow .15s}
+.ucas-ref-input:hover,.ucas-ref-select:hover{border-color:var(--ucas-gray-400)}
+.ucas-ref-input:focus,.ucas-ref-select:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-ref-form-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}
+
+.ucas-ref-linkcopy{margin-top:12px;padding:12px;background:var(--ucas-primary-light);border:1px solid rgba(62,50,133,.25);border-radius:var(--ucas-radius)}
+.ucas-ref-linkcopy-label{font-size:12px;font-weight:900;color:var(--ucas-primary);margin-bottom:8px}
+.ucas-ref-linkcopy-row{display:flex;gap:8px;align-items:center}
+.ucas-ref-linkcopy-input{flex:1;padding:8px 10px;border:1px solid rgba(62,50,133,.25);border-radius:var(--ucas-radius);background:var(--ucas-white);font-size:13px;color:var(--ucas-gray-700)}
+.ucas-ref-linkcopy-btn{padding:8px 12px;border:none;border-radius:var(--ucas-radius);background:var(--ucas-primary);color:var(--ucas-white);font-weight:900;font-size:13px;cursor:pointer}
+.ucas-ref-linkcopy-btn:hover{background:#2b2360}
+.ucas-ref-linkcopy-hint{font-size:11px;color:var(--ucas-primary);opacity:.85;margin-top:8px;font-weight:700}
+
+.ucas-ref-staff-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+.ucas-ref-staff-title{font-size:14px;font-weight:900;color:var(--ucas-gray-900)}
+.ucas-ref-staff-meta{font-size:12px;color:var(--ucas-gray-500);font-weight:700}
+
+.ucas-ref-contrib{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-sm);padding:16px;margin-bottom:14px}
+.ucas-ref-contrib-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.ucas-ref-contrib-title{display:flex;align-items:center;gap:8px;font-weight:900;color:var(--ucas-gray-900);font-size:14px}
+.ucas-ref-num{width:22px;height:22px;border-radius:999px;background:var(--ucas-primary);color:var(--ucas-white);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0}
+.ucas-ref-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--ucas-gray-100);color:var(--ucas-gray-700);font-weight:900;font-size:12px;border:1px solid var(--ucas-gray-200);white-space:nowrap}
+.ucas-ref-badge.has-content{background:var(--ucas-success-light);border-color:#a7f3d0;color:var(--ucas-success)}
+.ucas-ref-contrib-sub{font-size:13px;color:var(--ucas-gray-500);font-weight:600;margin-bottom:10px}
+.ucas-ref-editor{background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-lg);padding:14px}
+.ucas-ref-editor-select{margin-bottom:10px}
+.ucas-ref-textarea{width:100%;min-height:140px;padding:12px;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);font-size:14px;line-height:1.6;font-family:inherit;color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s}
+.ucas-ref-textarea:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
+.ucas-ref-editor-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap}
+.ucas-ref-char{font-size:12px;color:var(--ucas-gray-400);font-weight:700}
+
+.ucas-ref-existing{margin-top:14px}
+.ucas-ref-existing-title{font-size:12px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ucas-ref-existing-list{display:flex;flex-direction:column;gap:10px}
+.ucas-ref-existing-item{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
+.ucas-ref-existing-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.ucas-ref-existing-author{display:flex;align-items:center;gap:8px;min-width:0}
+.ucas-ref-existing-avatar{width:24px;height:24px;border-radius:999px;background:var(--ucas-primary-light);color:var(--ucas-primary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;flex-shrink:0}
+.ucas-ref-existing-name{font-size:13px;font-weight:900;color:var(--ucas-gray-800);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ucas-ref-existing-subject{font-size:12px;color:var(--ucas-gray-500);font-weight:700;white-space:nowrap}
+.ucas-ref-existing-text{font-size:14px;color:var(--ucas-gray-700);line-height:1.55}
+
+.ucas-ref-contrib-list{display:flex;flex-direction:column;gap:10px}
+.ucas-ref-contrib-item{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
+.ucas-ref-contrib-meta{font-size:12px;color:var(--ucas-gray-600);font-weight:900;margin-bottom:6px}
+.ucas-ref-contrib-text{white-space:pre-wrap;font-size:13px;color:var(--ucas-gray-800);line-height:1.5}
 
 /* Expanded writing overlay */
 .ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}
