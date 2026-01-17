@@ -288,7 +288,22 @@
                   <span class="ucas-comment-author">{{ c.staffEmail || 'Staff' }}</span>
                   <span class="ucas-comment-date">{{ formatDate(c.createdAt) }}</span>
                 </div>
-                <div class="ucas-comment-body">{{ c.comment }}</div>
+                <div class="ucas-comment-body">
+                  <template v-if="isCommentExpanded(c.id)">
+                    {{ c.comment }}
+                  </template>
+                  <template v-else>
+                    {{ commentPreview(c.comment) }}
+                  </template>
+                </div>
+                <button
+                  v-if="(c.comment || '').length > COMMENT_COLLAPSE_AT"
+                  class="ucas-comment-more"
+                  type="button"
+                  @click="toggleCommentExpanded(c.id)"
+                >
+                  {{ isCommentExpanded(c.id) ? 'Show less' : 'Show more' }}
+                </button>
               </div>
             </div>
           </div>
@@ -438,6 +453,28 @@ const feedbackLoading = ref(false)
 const feedbackAdding = ref(false)
 const feedbackText = ref('')
 const feedbackError = ref('')
+
+// Long comment UX (avoid huge blocks taking over the page)
+const expandedCommentIds = ref(new Set())
+const COMMENT_COLLAPSE_AT = 450
+
+function isCommentExpanded(id) {
+  return expandedCommentIds.value.has(String(id || ''))
+}
+
+function toggleCommentExpanded(id) {
+  const key = String(id || '')
+  const next = new Set(expandedCommentIds.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedCommentIds.value = next
+}
+
+function commentPreview(text) {
+  const t = safeText(text)
+  if (t.length <= COMMENT_COLLAPSE_AT) return t
+  return t.slice(0, COMMENT_COLLAPSE_AT).trimEnd() + '…'
+}
 
 const subjectRows = computed(() => {
   const list = Array.isArray(props.subjects) ? props.subjects : []
@@ -895,6 +932,8 @@ onMounted(async () => {
 .ucas-comment-author{font-size:13px;font-weight:600;color:var(--ucas-gray-800)}
 .ucas-comment-date{font-size:12px;color:var(--ucas-gray-400)}
 .ucas-comment-body{font-size:14px;color:var(--ucas-gray-700);line-height:1.5}
+.ucas-comment-more{margin-top:8px;background:transparent;border:none;color:var(--ucas-primary);font-weight:700;font-size:12px;cursor:pointer;padding:0;align-self:flex-start}
+.ucas-comment-more:hover{text-decoration:underline}
 
 .ucas-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 24px;background:var(--ucas-white);border-top:1px solid var(--ucas-gray-200)}
 .ucas-footer-stats{display:flex;align-items:baseline;gap:4px;font-size:14px}
