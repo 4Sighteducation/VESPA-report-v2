@@ -542,6 +542,36 @@
         </div>
       </div>
 
+      <!-- Expanded writing overlay (staff reference sections 2/3) -->
+      <div v-if="refExpandedOpen" class="ucas-expand-overlay" @click.self="closeRefExpanded">
+        <div class="ucas-expand-modal" role="dialog" aria-modal="true" aria-label="Expanded reference writing">
+          <div class="ucas-expand-header">
+            <div class="ucas-expand-title">{{ refExpandedTitle }}</div>
+            <div class="ucas-expand-meta">
+              <span class="ucas-expand-pill">{{ refExpandedChars.toLocaleString() }} characters</span>
+            </div>
+            <button class="ucas-btn-close" type="button" @click="closeRefExpanded" aria-label="Close expanded writing">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ucas-expand-body">
+            <textarea
+              ref="refExpandedTextareaEl"
+              class="ucas-textarea ucas-textarea-expanded"
+              :disabled="!staffCanSave"
+              :value="refExpandedValue"
+              @input="(e) => { refExpandedTarget === 'staff2' ? (staffSection2Text = e.target.value) : (staffSection3Text = e.target.value) }"
+            />
+          </div>
+          <div class="ucas-expand-footer">
+            <div class="ucas-expand-hint">
+              Tip: write freely here, then close to return to the reference panel.
+            </div>
+            <button class="ucas-btn ucas-btn-primary" type="button" @click="closeRefExpanded">Done</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Teacher reference panel (students only; no reference content) -->
       <div v-if="refPanelOpen" class="ucas-feedback-overlay" @click.self="refPanelOpen = false">
         <div class="ucas-feedback-modal ucas-ref-modal" role="dialog" aria-modal="true" aria-label="Teacher reference">
@@ -662,10 +692,10 @@
                     <div class="ucas-ref-section-title">Invited teachers</div>
                     <div class="ucas-ref-section-subtitle">Track who has been asked to contribute</div>
                   </div>
-                  <div class="ucas-ref-section-pill">{{ (referenceInvites || []).length }} invited</div>
+                  <div class="ucas-ref-section-pill">{{ (visibleReferenceInvites || []).length }} invited</div>
                 </div>
 
-                <div v-if="referenceInvites.length === 0" class="ucas-ref-empty">
+                <div v-if="visibleReferenceInvites.length === 0" class="ucas-ref-empty">
                   <div class="ucas-ref-empty-icon" aria-hidden="true">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
                       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -678,7 +708,7 @@
                 </div>
 
                 <div v-else class="ucas-ref-invite-list">
-                  <div v-for="inv in referenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
+                  <div v-for="inv in visibleReferenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
                     <div class="ucas-ref-invite-left">
                       <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
                         {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
@@ -687,6 +717,14 @@
                         <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
                         <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
                       </div>
+                    </div>
+                    <div class="ucas-ref-invite-actions">
+                      <button class="ucas-ref-invite-action" type="button" @click="reinvite(inv)" :disabled="refInviteSending">
+                        Reinvite
+                      </button>
+                      <button class="ucas-ref-invite-action ucas-ref-invite-action--danger" type="button" @click="hideInvite(inv)">
+                        Remove
+                      </button>
                     </div>
                     <div class="ucas-ref-invite-status" :class="inv.status === 'submitted' ? 'ok' : 'wait'">
                       <svg
@@ -716,6 +754,11 @@
                       {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
                     </div>
                   </div>
+                </div>
+
+                <div v-if="hiddenInviteIds.size" class="ucas-ref-hidden-row">
+                  <span class="hint">{{ hiddenInviteIds.size }} removed from list</span>
+                  <button class="ucas-btn ucas-btn-ghost" type="button" @click="restoreAllInvites">Restore</button>
                 </div>
               </div>
 
@@ -781,32 +824,6 @@
                 <div class="ucas-ref-contrib">
                   <div class="ucas-ref-contrib-head">
                     <div class="ucas-ref-contrib-title">
-                      <span class="ucas-ref-num">2</span>
-                      Extenuating circumstances
-                    </div>
-                    <span class="ucas-ref-badge">Optional</span>
-                  </div>
-                  <div class="ucas-ref-contrib-sub">Add factual, course-relevant context (with student permission).</div>
-                  <div class="ucas-ref-editor">
-                    <textarea class="ucas-ref-textarea" v-model="staffSection2Text" placeholder="Add any relevant extenuating circumstances here…" />
-                    <div class="ucas-ref-editor-footer">
-                      <span class="ucas-ref-char">{{ (staffSection2Text || '').length.toLocaleString() }} characters</span>
-                      <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(2)" :disabled="staffSaving2 || !staffCanSave || !staffSection2Text.trim()">
-                        <svg v-if="!staffSaving2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                          <polyline points="17 21 17 13 7 13 7 21" />
-                          <polyline points="7 3 7 8 15 8" />
-                        </svg>
-                        {{ staffSaving2 ? 'Saving…' : 'Save Section 2' }}
-                      </button>
-                    </div>
-                    <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
-                  </div>
-                </div>
-
-                <div class="ucas-ref-contrib">
-                  <div class="ucas-ref-contrib-head">
-                    <div class="ucas-ref-contrib-title">
                       <span class="ucas-ref-num">3</span>
                       Subject teacher contributions
                     </div>
@@ -824,6 +841,9 @@
                     <textarea class="ucas-ref-textarea" v-model="staffSection3Text" placeholder="Describe the student's ability, achievements, and potential in your subject…" />
                     <div class="ucas-ref-editor-footer">
                       <span class="ucas-ref-char">{{ (staffSection3Text || '').length.toLocaleString() }} characters</span>
+                      <button class="ucas-btn ucas-btn-outline" type="button" @click="openRefExpanded('staff3')" :disabled="!staffCanSave">
+                        Expand
+                      </button>
                       <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(3)" :disabled="staffSaving3 || !staffCanSave || !staffSection3Text.trim()">
                         <svg v-if="!staffSaving3" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
@@ -849,6 +869,40 @@
                         </div>
                         <div class="ucas-ref-existing-text">{{ c.text }}</div>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ucas-ref-contrib ucas-ref-contrib--accordion">
+                  <button class="ucas-ref-accordion-head" type="button" @click="staffSection2Open = !staffSection2Open">
+                    <div class="ucas-ref-contrib-title">
+                      <span class="ucas-ref-num">2</span>
+                      Extenuating circumstances
+                    </div>
+                    <div class="ucas-ref-accordion-right">
+                      <span class="ucas-ref-badge">Optional</span>
+                      <span class="ucas-ref-accordion-chevron">{{ staffSection2Open ? '▲' : '▼' }}</span>
+                    </div>
+                  </button>
+                  <div v-if="staffSection2Open" class="ucas-ref-accordion-body">
+                    <div class="ucas-ref-contrib-sub">Add factual, course-relevant context (with student permission).</div>
+                    <div class="ucas-ref-editor">
+                      <textarea class="ucas-ref-textarea" v-model="staffSection2Text" placeholder="Add any relevant extenuating circumstances here…" />
+                      <div class="ucas-ref-editor-footer">
+                        <span class="ucas-ref-char">{{ (staffSection2Text || '').length.toLocaleString() }} characters</span>
+                        <button class="ucas-btn ucas-btn-outline" type="button" @click="openRefExpanded('staff2')" :disabled="!staffCanSave">
+                          Expand
+                        </button>
+                        <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(2)" :disabled="staffSaving2 || !staffCanSave || !staffSection2Text.trim()">
+                          <svg v-if="!staffSaving2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                          </svg>
+                          {{ staffSaving2 ? 'Saving…' : 'Save Section 2' }}
+                        </button>
+                      </div>
+                      <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
                     </div>
                   </div>
                 </div>
@@ -886,11 +940,11 @@
                       <div class="ucas-ref-section-title">Invited teachers</div>
                       <div class="ucas-ref-section-subtitle">Status of external invites</div>
                     </div>
-                    <div class="ucas-ref-section-pill">{{ (referenceInvites || []).length }}</div>
+                    <div class="ucas-ref-section-pill">{{ (visibleReferenceInvites || []).length }}</div>
                   </div>
-                  <div v-if="referenceInvites.length === 0" class="ucas-empty ucas-empty--small"><span>No invitations yet.</span></div>
+                  <div v-if="visibleReferenceInvites.length === 0" class="ucas-empty ucas-empty--small"><span>No invitations yet.</span></div>
                   <div v-else class="ucas-ref-invite-list">
-                    <div v-for="inv in referenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
+                    <div v-for="inv in visibleReferenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
                       <div class="ucas-ref-invite-left">
                         <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
                           {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
@@ -900,10 +954,22 @@
                           <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
                         </div>
                       </div>
+                      <div class="ucas-ref-invite-actions">
+                        <button class="ucas-ref-invite-action" type="button" @click="reinvite(inv)" :disabled="refInviteSending">
+                          Reinvite
+                        </button>
+                        <button class="ucas-ref-invite-action ucas-ref-invite-action--danger" type="button" @click="hideInvite(inv)">
+                          Remove
+                        </button>
+                      </div>
                       <div class="ucas-ref-invite-status" :class="inv.status === 'submitted' ? 'ok' : 'wait'">
                         {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
                       </div>
                     </div>
+                  </div>
+                  <div v-if="hiddenInviteIds.size" class="ucas-ref-hidden-row">
+                    <span class="hint">{{ hiddenInviteIds.size }} removed from list</span>
+                    <button class="ucas-btn ucas-btn-ghost" type="button" @click="restoreAllInvites">Restore</button>
                   </div>
                 </div>
               </div>
@@ -1112,10 +1178,61 @@ const groupedStaffComments = computed(() => {
 const refLoading = ref(false)
 const referenceStatus = ref('not_started')
 const referenceInvites = ref([])
+const hiddenInviteIds = ref(new Set())
 const inviteEmail = ref('')
 const inviteSubjectKey = ref('')
 const refInviteSending = ref(false)
 const lastInviteUrl = ref('')
+
+const inviteStorageKey = computed(() => {
+  const email = safeText(props.studentEmail).trim().toLowerCase()
+  const year = safeText(props.academicYear).trim().toLowerCase()
+  return `ucas_ref_hidden_invites:${email || 'unknown'}:${year || 'unknown'}`
+})
+
+function loadHiddenInvites() {
+  try {
+    const raw = localStorage.getItem(inviteStorageKey.value)
+    if (!raw) {
+      hiddenInviteIds.value = new Set()
+      return
+    }
+    const arr = JSON.parse(raw)
+    hiddenInviteIds.value = new Set(Array.isArray(arr) ? arr.map((x) => String(x)) : [])
+  } catch (_) {
+    hiddenInviteIds.value = new Set()
+  }
+}
+
+function persistHiddenInvites() {
+  try {
+    localStorage.setItem(inviteStorageKey.value, JSON.stringify(Array.from(hiddenInviteIds.value)))
+  } catch (_) {}
+}
+
+function hideInvite(inv) {
+  try {
+    const id = String(inv?.id || '')
+    if (!id) return
+    const next = new Set(hiddenInviteIds.value)
+    next.add(id)
+    hiddenInviteIds.value = next
+    persistHiddenInvites()
+    showToast('Invite removed from list')
+  } catch (_) {}
+}
+
+function restoreAllInvites() {
+  hiddenInviteIds.value = new Set()
+  persistHiddenInvites()
+  showToast('Restored hidden invites')
+}
+
+const visibleReferenceInvites = computed(() => {
+  const list = Array.isArray(referenceInvites.value) ? referenceInvites.value : []
+  const hidden = hiddenInviteIds.value
+  return list.filter((i) => i && !hidden.has(String(i.id || '')))
+})
 
 const referenceStatusLabel = computed(() => {
   const s = referenceStatus.value
@@ -1126,7 +1243,7 @@ const referenceStatusLabel = computed(() => {
 })
 
 const inviteCounts = computed(() => {
-  const list = Array.isArray(referenceInvites.value) ? referenceInvites.value : []
+  const list = Array.isArray(visibleReferenceInvites.value) ? visibleReferenceInvites.value : []
   const total = list.length
   const submitted = list.filter(i => (i && i.status === 'submitted')).length
   return { total, submitted }
@@ -1145,6 +1262,38 @@ const staffSection3SubjectKey = ref('')
 const staffSection3Text = ref('')
 const staffSaving2 = ref(false)
 const staffSaving3 = ref(false)
+const staffSection2Open = ref(false)
+
+// Expanded writing for staff reference sections (2/3)
+const refExpandedOpen = ref(false)
+const refExpandedTarget = ref('staff3') // 'staff2' | 'staff3'
+const refExpandedTextareaEl = ref(null)
+
+const refExpandedTitle = computed(() => {
+  if (refExpandedTarget.value === 'staff2') return 'Section 2: Extenuating circumstances'
+  return 'Section 3: Subject teacher contribution'
+})
+
+const refExpandedValue = computed(() => {
+  return refExpandedTarget.value === 'staff2' ? safeText(staffSection2Text.value) : safeText(staffSection3Text.value)
+})
+
+const refExpandedChars = computed(() => safeText(refExpandedValue.value).length)
+
+function openRefExpanded(target) {
+  if (!staffCanSave.value) return
+  refExpandedTarget.value = target === 'staff2' ? 'staff2' : 'staff3'
+  refExpandedOpen.value = true
+  setTimeout(() => {
+    try {
+      refExpandedTextareaEl.value && refExpandedTextareaEl.value.focus && refExpandedTextareaEl.value.focus()
+    } catch (_) {}
+  }, 0)
+}
+
+function closeRefExpanded() {
+  refExpandedOpen.value = false
+}
 
 function pickStaffContribution(section, subjectKey) {
   const staffEmail = safeText(props.staffEmail).trim().toLowerCase()
@@ -1203,6 +1352,7 @@ async function loadReferenceStatus() {
   if (!props.apiUrl || !props.studentEmail) return
   refLoading.value = true
   try {
+    loadHiddenInvites()
     if (props.canEdit) {
       const resp = await fetchReferenceStatus(props.studentEmail, props.apiUrl, props.academicYear || null)
       if (!resp?.success) throw new Error(resp?.error || 'Failed to load reference status')
@@ -1280,6 +1430,14 @@ async function sendInvite() {
   } finally {
     refInviteSending.value = false
   }
+}
+
+async function reinvite(inv) {
+  if (!props.canEdit) return
+  inviteEmail.value = safeText(inv?.teacherEmail || inv?.email || '').trim()
+  inviteSubjectKey.value = safeText(inv?.subjectKey || '').trim()
+  if (!inviteEmail.value) return
+  await sendInvite()
 }
 
 function copyText(s) {
@@ -1984,7 +2142,7 @@ onMounted(async () => {
 .ref-editor-actions{display:flex;justify-content:flex-end;margin-top:10px}
 
 /* Redesigned Teacher reference panel (student + staff) */
-.ucas-ref-modal{max-height:min(78vh, 760px)}
+.ucas-ref-modal{width:min(1100px, 100%);max-height:min(86vh, 920px)}
 .ucas-ref-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 18px;color:var(--ucas-white);background:linear-gradient(135deg,var(--ucas-primary) 0%, #2b2360 100%);border-bottom:1px solid rgba(255,255,255,.14)}
 .ucas-ref-header-left{display:flex;align-items:center;gap:14px}
 .ucas-ref-icon{width:44px;height:44px;border-radius:var(--ucas-radius);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.18);color:var(--ucas-white)}
@@ -2006,7 +2164,7 @@ onMounted(async () => {
 .ucas-ref-refresh:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
 .ucas-ref-refresh:disabled{opacity:.6;cursor:not-allowed}
 
-.ucas-ref-body{padding:18px;background:var(--ucas-gray-50);overflow:auto;max-height:calc(min(78vh, 760px) - 160px)}
+.ucas-ref-body{padding:18px;background:var(--ucas-gray-50);overflow:auto;max-height:calc(min(86vh, 920px) - 170px)}
 .ucas-ref-footer{padding:14px 18px;background:var(--ucas-white);border-top:1px solid var(--ucas-gray-200);display:flex;justify-content:flex-end}
 
 .ucas-ref-steps{display:flex;align-items:center;justify-content:space-between;gap:8px;position:relative;margin-bottom:18px}
@@ -2042,6 +2200,21 @@ onMounted(async () => {
 .ucas-ref-invite-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
 .ucas-ref-invite-status.ok{background:var(--ucas-success-light);color:var(--ucas-success);border:1px solid #a7f3d0}
 .ucas-ref-invite-status.wait{background:var(--ucas-warning-light);color:var(--ucas-warning);border:1px solid #fcd34d}
+
+.ucas-ref-invite-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ucas-ref-invite-action{background:transparent;border:1px solid var(--ucas-gray-300);border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900;color:var(--ucas-gray-700);cursor:pointer}
+.ucas-ref-invite-action:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
+.ucas-ref-invite-action:disabled{opacity:.6;cursor:not-allowed}
+.ucas-ref-invite-action--danger{border-color:#fecaca;color:var(--ucas-danger);background:var(--ucas-danger-light)}
+.ucas-ref-invite-action--danger:hover{background:#fee2e2}
+.ucas-ref-hidden-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+
+.ucas-ref-contrib--accordion{padding:0}
+.ucas-ref-accordion-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:none;background:var(--ucas-gray-50);cursor:pointer;border-radius:var(--ucas-radius-xl)}
+.ucas-ref-accordion-head:hover{background:var(--ucas-gray-100)}
+.ucas-ref-accordion-right{display:flex;align-items:center;gap:8px}
+.ucas-ref-accordion-chevron{font-weight:900;color:var(--ucas-gray-500)}
+.ucas-ref-accordion-body{padding:0 16px 16px}
 
 .ucas-ref-form-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:var(--ucas-gray-800);margin-bottom:12px}
 .ucas-ref-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}

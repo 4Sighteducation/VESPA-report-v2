@@ -418,6 +418,28 @@ try {
   }
 } catch (_) {}
 
+// Fallback deep-linking: Staff Overview sets a localStorage flag before opening the report.
+// This works even if Knack strips unknown hash parameters.
+try {
+  const raw = localStorage.getItem('vespa_open_ucas')
+  if (raw) {
+    const payload = JSON.parse(raw)
+    const flagEmail = String(payload?.email || '').trim().toLowerCase()
+    const ts = Number(payload?.ts || 0)
+    const ageMs = Date.now() - ts
+    const target = String(props.student?.email || '').trim().toLowerCase()
+    if (flagEmail && target && flagEmail === target && ageMs >= 0 && ageMs < 2 * 60 * 1000) {
+      setTimeout(() => {
+        try {
+          openUcasApplication()
+        } catch (_) {}
+      }, 350)
+    }
+  }
+  // Always clear the one-shot flag
+  localStorage.removeItem('vespa_open_ucas')
+} catch (_) {}
+
 const academicProfileApiUrl = computed(() => {
   try {
     return (window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || '').toString()

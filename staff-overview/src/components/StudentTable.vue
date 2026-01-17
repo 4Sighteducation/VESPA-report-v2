@@ -507,6 +507,14 @@ function openUcas(student) {
   if (!canAccessUcas(student)) return
   const email = String(student.email || '').trim()
   if (!email) return
+  // Some Knack pages can strip unknown hash params; also set a short-lived localStorage flag
+  // so the Academic Profile widget can auto-open the UCAS modal after mount.
+  try {
+    localStorage.setItem(
+      'vespa_open_ucas',
+      JSON.stringify({ email, ts: Date.now() })
+    )
+  } catch (_) {}
   const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
   window.open(url, '_blank', 'noopener')
 }
