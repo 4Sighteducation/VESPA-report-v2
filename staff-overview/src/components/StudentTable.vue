@@ -61,6 +61,7 @@
               <span class="sort-indicator">{{ getSortIndicator('group') }}</span>
             </th>
             <th class="report-col">Report</th>
+            <th class="ucas-col" title="UCAS Application (Year 12+)">UCAS</th>
             <th @click="sortBy('vision')" class="score-cell sortable" title="Vision">
               V
               <span class="sort-indicator">{{ getSortIndicator('vision') }}</span>
@@ -97,6 +98,17 @@
             <td class="report-cell">
               <button @click="viewReport(student)" class="report-button" title="View Full Report">
                 📄
+              </button>
+            </td>
+            <td class="report-cell">
+              <button
+                class="ucas-button"
+                type="button"
+                @click="openUcas(student)"
+                :disabled="!canAccessUcas(student)"
+                :title="canAccessUcas(student) ? 'Open UCAS Application' : 'UCAS available for Year 12+ only'"
+              >
+                🎓
               </button>
             </td>
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.vision) }">
@@ -479,6 +491,26 @@ const viewReport = (student) => {
   emit('view-report', student)
 }
 
+function yearNumberFromStudent(student) {
+  const raw = (student?.yearGroup ?? student?.year ?? '').toString()
+  const m = raw.match(/(\d{1,2})/)
+  const n = m ? parseInt(m[1], 10) : NaN
+  return Number.isFinite(n) ? n : null
+}
+
+function canAccessUcas(student) {
+  const y = yearNumberFromStudent(student)
+  return !!student?.email && y !== null && y >= 12
+}
+
+function openUcas(student) {
+  if (!canAccessUcas(student)) return
+  const email = String(student.email || '').trim()
+  if (!email) return
+  const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
+  window.open(url, '_blank', 'noopener')
+}
+
 // View-only modal (for Response)
 const openViewModal = (studentName, type, text) => {
   if (!text || text.trim() === '' || text === '-') {
@@ -774,6 +806,11 @@ const handleSaveCoaching = async (newText) => {
   text-align: center;
 }
 
+.ucas-col {
+  width: 60px;
+  text-align: center;
+}
+
 .report-cell {
   text-align: center;
   padding: 8px !important;
@@ -800,6 +837,34 @@ const handleSaveCoaching = async (newText) => {
   background: #067a87;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.ucas-button {
+  padding: 8px 12px;
+  background: #3E3285;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  width: 44px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ucas-button:hover:not(:disabled) {
+  background: #2b2360;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.ucas-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .text-preview {
@@ -986,6 +1051,12 @@ const handleSaveCoaching = async (newText) => {
   
   .report-button {
     font-size: 16px;
+    width: 36px;
+    height: 32px;
+  }
+
+  .ucas-button {
+    font-size: 14px;
     width: 36px;
     height: 32px;
   }

@@ -399,6 +399,25 @@ const openUcasApplication = () => {
   ucasModalOpen.value = true
 }
 
+// Allow deep-linking to UCAS Application from staff tools (e.g. Staff Overview).
+// Example:
+//   https://...#vespa-coaching-report?email=student@...&open=ucas
+try {
+  const hash = String(window.location.hash || '')
+  const qIdx = hash.indexOf('?')
+  const qs = qIdx >= 0 ? hash.slice(qIdx + 1) : ''
+  const params = new URLSearchParams(qs)
+  const open = (params.get('open') || '').toLowerCase().trim()
+  if (open === 'ucas') {
+    // Open immediately so staff land straight on the UCAS Application modal.
+    setTimeout(() => {
+      try {
+        openUcasApplication()
+      } catch (_) {}
+    }, 250)
+  }
+} catch (_) {}
+
 const academicProfileApiUrl = computed(() => {
   try {
     return (window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || '').toString()
