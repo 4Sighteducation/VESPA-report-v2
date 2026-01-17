@@ -523,7 +523,13 @@ async function saveToServer() {
       answers: { q1: answers.q1, q2: answers.q2, q3: answers.q3 },
       requirementsByCourse: { ...requirementsByCourse }
     }
-    const resp = await saveUcasApplication(props.studentEmail, payload, props.apiUrl, props.academicYear || null)
+    const resp = await saveUcasApplication(
+      props.studentEmail,
+      payload,
+      props.apiUrl,
+      props.academicYear || null,
+      { roleHint: props.canEdit ? 'student' : 'staff' }
+    )
     if (!resp?.success) throw new Error(resp?.error || 'Save failed')
     showToast('Saved')
   } catch (e) {
@@ -632,7 +638,12 @@ async function submitComment() {
   if (!text) return
   commentSaving.value = true
   try {
-    const resp = await addUcasApplicationComment(props.studentEmail, { comment: text, staffEmail: props.staffEmail || null }, props.apiUrl, props.academicYear || null)
+    const resp = await addUcasApplicationComment(
+      props.studentEmail,
+      { comment: text, staffEmail: props.staffEmail || null, __roleHint: props.canAddComment ? 'staff' : 'student' },
+      props.apiUrl,
+      props.academicYear || null
+    )
     if (!resp?.success) throw new Error(resp?.error || 'Comment failed')
     staffComments.value = Array.isArray(resp.data?.staffComments) ? resp.data.staffComments : staffComments.value
     newComment.value = ''

@@ -264,17 +264,21 @@ export async function fetchUcasApplication(studentEmail, apiUrl, academicYear = 
  * @param {string|null} academicYear
  * @returns {Promise<Object>}
  */
-export async function saveUcasApplication(studentEmail, payload, apiUrl, academicYear = null) {
+export async function saveUcasApplication(studentEmail, payload, apiUrl, academicYear = null, options = null) {
   try {
     const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application`
 
     // Best-effort role hint (backend uses it to block staff writes to student-only fields)
     let roleHeader = null
+    const roleHintOverride = options && typeof options === 'object' ? options.roleHint : null
+    if (roleHintOverride) {
+      roleHeader = String(roleHintOverride).trim().toLowerCase()
+    }
     try {
       if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
         const roles = Knack.getUserRoles() || []
         const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
-        roleHeader = isStudent ? 'student' : 'staff'
+        if (!roleHeader) roleHeader = isStudent ? 'student' : 'staff'
       }
     } catch (_) {}
 
@@ -314,11 +318,15 @@ export async function addUcasApplicationComment(studentEmail, payload, apiUrl, a
 
     // Best-effort role hint (backend blocks students)
     let roleHeader = null
+    const roleHintOverride = payload && typeof payload === 'object' ? payload.__roleHint : null
+    if (roleHintOverride) {
+      roleHeader = String(roleHintOverride).trim().toLowerCase()
+    }
     try {
       if (typeof Knack !== 'undefined' && Knack.getUserRoles) {
         const roles = Knack.getUserRoles() || []
         const isStudent = roles.some(r => (r && r.name === 'Student') || (typeof r === 'string' && r.toLowerCase().includes('student')))
-        roleHeader = isStudent ? 'student' : 'staff'
+        if (!roleHeader) roleHeader = isStudent ? 'student' : 'staff'
       }
     } catch (_) {}
 
