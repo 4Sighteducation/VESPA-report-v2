@@ -399,34 +399,6 @@ const openUcasApplication = () => {
   ucasModalOpen.value = true
 }
 
-const STAFF_ROLE_IDS = ['object_5', 'object_7', 'object_18', 'object_78']
-const STAFF_ROLE_NAME_HINTS = ['tutor', 'staff', 'admin', 'head', 'teacher', 'subject']
-
-const normalizeRoleTokens = (roles) => {
-  if (!Array.isArray(roles)) return []
-  return roles.flatMap((r) => {
-    if (!r) return []
-    if (typeof r === 'string') return [r]
-    const tokens = []
-    if (r.id) tokens.push(r.id)
-    if (r.key) tokens.push(r.key)
-    if (r.name) tokens.push(r.name)
-    return tokens
-  }).map(t => String(t).trim().toLowerCase()).filter(Boolean)
-}
-
-// Check if user is staff (by role ID or name)
-const isStaff = computed(() => {
-  if (typeof Knack === 'undefined') return false
-  const roles = Knack.getUserRoles ? Knack.getUserRoles() : []
-  const tokens = normalizeRoleTokens(roles)
-  const hasStaffId = tokens.some(t => STAFF_ROLE_IDS.includes(t))
-  const hasStaffName = tokens.some(t => STAFF_ROLE_NAME_HINTS.some(h => t.includes(h)))
-  return hasStaffId || hasStaffName
-})
-
-const isStudent = computed(() => !isStaff.value)
-
 const academicProfileApiUrl = computed(() => {
   try {
     return (window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl || '').toString()
@@ -437,12 +409,30 @@ const academicProfileApiUrl = computed(() => {
 
 const currentUserEmail = computed(() => {
   try {
-    if (typeof Knack === 'undefined' || !Knack.getUserAttributes) return ''
-    return (Knack.getUserAttributes()?.email || '').toString().trim()
+    if (typeof Knack === 'undefined') return ''
+    if (Knack.getUserAttributes) {
+      return (Knack.getUserAttributes()?.email || '').toString().trim()
+    }
+    // Fallbacks for older/embedded Knack contexts
+    const fromSession =
+      Knack?.session?.user?.attributes?.email ||
+      Knack?.session?.user?.email ||
+      ''
+    return String(fromSession || '').trim()
   } catch (_) {
     return ''
   }
 })
+
+// In this report context, "student" means the logged-in user is viewing their own profile.
+// This is more reliable than role-name heuristics (staff often have multiple roles).
+const isStudent = computed(() => {
+  const me = (currentUserEmail.value || '').toString().trim().toLowerCase()
+  const target = (props.student?.email || '').toString().trim().toLowerCase()
+  return !!me && !!target && me === target
+})
+
+const isStaff = computed(() => !isStudent.value)
 
 const isKs4 = computed(() => {
   const raw = (props.student?.yearGroup ?? '').toString()
