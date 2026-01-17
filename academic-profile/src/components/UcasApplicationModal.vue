@@ -46,7 +46,7 @@
         </div>
 
         <div class="ucas-header-right">
-          <!-- Teacher Reference quick bar (students only; content hidden) -->
+          <!-- Teacher Reference quick bar -->
           <div v-if="canEdit" class="ucas-refbar">
             <button
               class="ucas-refbar-btn"
@@ -64,6 +64,19 @@
                 ({{ inviteCounts.submitted }}/{{ inviteCounts.total }})
               </span>
             </span>
+          </div>
+          <div v-else class="ucas-refbar">
+            <button
+              class="ucas-refbar-btn"
+              type="button"
+              @click="refPanelOpen = true"
+              :disabled="refLoading || !studentEmail || !apiUrl"
+              title="View teacher reference"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12c2.5 0 4.5-2 4.5-4.5S14.5 3 12 3 7.5 5 7.5 7.5 9.5 12 12 12Z"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              Teacher reference
+            </button>
+            <span class="ucas-refbar-pill" :class="`ucas-refbar--${referenceStatus}`">{{ referenceStatusLabel }}</span>
           </div>
 
           <a
@@ -89,6 +102,17 @@
           <button class="ucas-btn ucas-btn-outline" type="button" @click="copyCombined" :disabled="!combinedStatement">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
             Copy
+          </button>
+          <button
+            v-if="canEdit"
+            class="ucas-btn ucas-btn-outline"
+            type="button"
+            @click="markStatementComplete"
+            :disabled="statementMarking || !!statementCompletedAt || totalChars > MAX_TOTAL_CHARS || totalChars < MIN_TOTAL_CHARS || !studentEmail"
+            :title="statementCompletedAt ? 'Already marked complete' : 'Mark your personal statement complete and notify staff'"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            {{ statementCompletedAt ? 'Statement complete' : 'Mark statement complete' }}
           </button>
           <button
             class="ucas-btn ucas-btn-primary"
@@ -463,13 +487,10 @@
                 <button class="ucas-btn ucas-btn-outline" type="button" @click="loadReferenceStatus" :disabled="refLoading">
                   {{ refLoading ? 'Refreshing…' : 'Refresh' }}
                 </button>
-                <button class="ucas-btn ucas-btn-primary" type="button" @click="markComplete" :disabled="refLoading || referenceStatus === 'completed' || referenceStatus === 'finalised'">
-                  Mark complete
-                </button>
               </div>
             </div>
 
-            <div class="ref-invites">
+            <div v-if="canEdit" class="ref-invites">
               <div class="ref-invites-header">
                 <div class="ref-invites-title">Invited teachers</div>
                 <div class="ref-invites-meta">{{ (referenceInvites || []).length }} invited</div>
@@ -526,6 +547,62 @@
                 </div>
               </div>
             </div>
+            <div v-else class="ref-invites">
+              <div class="ref-invites-header">
+                <div class="ref-invites-title">Reference (staff view)</div>
+                <div class="ref-invites-meta" v-if="refFull && refFull.updatedAt">Updated {{ new Date(refFull.updatedAt).toLocaleString() }}</div>
+              </div>
+
+              <div v-if="refFullLoading" class="ucas-empty ucas-empty--small"><span>Loading reference…</span></div>
+              <div v-else-if="!refFull" class="ucas-empty ucas-empty--small"><span>No reference data found.</span></div>
+              <div v-else class="ref-staff-view">
+                <div class="ref-section">
+                  <div class="ref-section-title">Section 1 — Centre statement</div>
+                  <div class="ref-section-body">{{ safeText(refFull.section1Text) || 'No centre template yet.' }}</div>
+                </div>
+
+                <div class="ref-section">
+                  <div class="ref-section-title">Section 2 — Extenuating circumstances</div>
+                  <div v-if="(refFull.section2 || []).length === 0" class="ucas-empty ucas-empty--small"><span>No contributions yet.</span></div>
+                  <div v-else class="ref-contrib-list">
+                    <div v-for="c in refFull.section2" :key="c.id" class="ref-contrib">
+                      <div class="ref-contrib-meta">{{ c.authorName || c.authorEmail }} <span v-if="c.subjectKey">• {{ c.subjectKey }}</span></div>
+                      <div class="ref-contrib-text">{{ c.text }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ref-section">
+                  <div class="ref-section-title">Section 3 — Subject teacher contributions</div>
+                  <div v-if="(refFull.section3 || []).length === 0" class="ucas-empty ucas-empty--small"><span>No contributions yet.</span></div>
+                  <div v-else class="ref-contrib-list">
+                    <div v-for="c in refFull.section3" :key="c.id" class="ref-contrib">
+                      <div class="ref-contrib-meta">{{ c.authorName || c.authorEmail }} <span v-if="c.subjectKey">• {{ c.subjectKey }}</span></div>
+                      <div class="ref-contrib-text">{{ c.text }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ref-section">
+                  <div class="ref-section-title">Invited teachers</div>
+                  <div v-if="referenceInvites.length === 0" class="ucas-empty ucas-empty--small"><span>No invitations yet.</span></div>
+                  <div v-else class="ref-invite-list">
+                    <div v-for="inv in referenceInvites" :key="inv.id" class="ref-invite">
+                      <div class="ref-invite-main">
+                        <div class="ref-invite-email">{{ inv.teacherEmail }}</div>
+                        <div class="ref-invite-sub">
+                          <span v-if="inv.teacherName">{{ inv.teacherName }}</span>
+                          <span v-if="inv.subjectKey"> • {{ inv.subjectKey }}</span>
+                        </div>
+                      </div>
+                      <div class="ref-invite-status" :class="inv.status === 'submitted' ? 'ref-ok' : 'ref-wait'">
+                        {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="ucas-feedback-footer">
             <button class="ucas-btn ucas-btn-primary" type="button" @click="refPanelOpen = false">Done</button>
@@ -538,7 +615,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment, fetchReferenceStatus, createReferenceInvite, markReferenceComplete } from '../services/api.js'
+import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment, fetchReferenceStatus, createReferenceInvite, fetchReferenceFull, markUcasStatementComplete } from '../services/api.js'
 
 const MAX_TOTAL_CHARS = 4000
 const MIN_TOTAL_CHARS = 350
@@ -659,21 +736,42 @@ const inviteCounts = computed(() => {
 })
 
 const refPanelOpen = ref(false)
+const refFullLoading = ref(false)
+const refFull = ref(null)
 
 async function loadReferenceStatus() {
-  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
+  if (!props.apiUrl || !props.studentEmail) return
   refLoading.value = true
   try {
-    const resp = await fetchReferenceStatus(props.studentEmail, props.apiUrl, props.academicYear || null)
-    if (!resp?.success) throw new Error(resp?.error || 'Failed to load reference status')
+    if (props.canEdit) {
+      const resp = await fetchReferenceStatus(props.studentEmail, props.apiUrl, props.academicYear || null)
+      if (!resp?.success) throw new Error(resp?.error || 'Failed to load reference status')
+      referenceStatus.value = safeText(resp?.data?.status || 'not_started')
+      referenceInvites.value = Array.isArray(resp?.data?.invites) ? resp.data.invites : []
+      return
+    }
+
+    refFullLoading.value = true
+    const resp = await fetchReferenceFull(props.studentEmail, props.apiUrl, props.academicYear || null, { roleHint: 'staff' })
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to load reference')
+    refFull.value = resp?.data || null
     referenceStatus.value = safeText(resp?.data?.status || 'not_started')
     referenceInvites.value = Array.isArray(resp?.data?.invites) ? resp.data.invites : []
   } catch (e) {
-    showToast(e?.message || 'Failed to load reference status')
+    showToast(e?.message || 'Failed to load reference')
   } finally {
     refLoading.value = false
+    refFullLoading.value = false
   }
 }
+
+watch(
+  () => refPanelOpen.value,
+  async (open) => {
+    if (!open) return
+    await loadReferenceStatus()
+  }
+)
 
 async function sendInvite() {
   if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
@@ -703,21 +801,6 @@ async function sendInvite() {
     showToast(e?.message || 'Invite failed')
   } finally {
     refInviteSending.value = false
-  }
-}
-
-async function markComplete() {
-  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
-  refLoading.value = true
-  try {
-    const resp = await markReferenceComplete(props.studentEmail, props.apiUrl, props.academicYear || null)
-    if (!resp?.success) throw new Error(resp?.error || 'Failed to mark complete')
-    showToast('Marked complete')
-    await loadReferenceStatus()
-  } catch (e) {
-    showToast(e?.message || 'Failed to mark complete')
-  } finally {
-    refLoading.value = false
   }
 }
 
@@ -866,6 +949,8 @@ watch(
 )
 
 const saving = ref(false)
+const statementCompletedAt = ref('')
+const statementMarking = ref(false)
 
 async function loadFromServer() {
   if (!props.apiUrl || !props.studentEmail) return
@@ -884,6 +969,28 @@ async function loadFromServer() {
   }
   staffComments.value = Array.isArray(data.staffComments) ? data.staffComments : []
   if (data.selectedCourseKey) selectedCourseKey.value = safeText(data.selectedCourseKey)
+  statementCompletedAt.value = safeText(data.statementCompletedAt || '')
+}
+
+async function markStatementComplete() {
+  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
+  if (statementCompletedAt.value) return
+  statementMarking.value = true
+  try {
+    const resp = await markUcasStatementComplete(
+      props.studentEmail,
+      props.apiUrl,
+      props.academicYear || null,
+      { roleHint: 'student' }
+    )
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to mark statement complete')
+    statementCompletedAt.value = safeText(resp?.data?.statementCompletedAt || new Date().toISOString())
+    showToast('Statement marked complete (staff notified)')
+  } catch (e) {
+    showToast(e?.message || 'Failed to mark statement complete')
+  } finally {
+    statementMarking.value = false
+  }
 }
 
 async function saveToServer() {
@@ -1098,7 +1205,7 @@ onMounted(async () => {
   if (top) selectedCourseKey.value = courseKeyForOffer(top)
   loadLocalDraft()
   await loadFromServer()
-  await loadReferenceStatus()
+  if (props.canEdit) await loadReferenceStatus()
   if (!selectedCourseKey.value && top) selectedCourseKey.value = courseKeyForOffer(top)
 })
 </script>
@@ -1322,6 +1429,16 @@ onMounted(async () => {
 .ref-link-row{display:flex;gap:8px;align-items:center}
 .ref-link-row .ucas-input{flex:1}
 .ref-select{min-width:unset}
+
+/* Staff reference view */
+.ref-staff-view{display:flex;flex-direction:column;gap:12px}
+.ref-section{padding:12px;background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius)}
+.ref-section-title{font-size:12px;font-weight:900;color:var(--ucas-gray-800);margin-bottom:6px}
+.ref-section-body{white-space:pre-wrap;font-size:13px;color:var(--ucas-gray-700);line-height:1.4}
+.ref-contrib-list{display:flex;flex-direction:column;gap:10px}
+.ref-contrib{padding:10px 12px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius)}
+.ref-contrib-meta{font-size:12px;color:var(--ucas-gray-600);font-weight:800;margin-bottom:6px}
+.ref-contrib-text{white-space:pre-wrap;font-size:13px;color:var(--ucas-gray-800);line-height:1.45}
 
 /* Expanded writing overlay */
 .ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}

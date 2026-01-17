@@ -493,21 +493,43 @@ export async function createReferenceInvite(studentEmail, payload, apiUrl, acade
 }
 
 /**
- * Student marks reference complete
+ * Staff/tutor fetches full teacher reference (including text)
  */
-export async function markReferenceComplete(studentEmail, apiUrl, academicYear = null) {
+export async function fetchReferenceFull(studentEmail, apiUrl, academicYear = null, options = null) {
   try {
-    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/mark-complete`
+    const qs = academicYear ? `?academic_year=${encodeURIComponent(academicYear)}` : ''
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/full${qs}`
+
+    const roleHeader = (options && options.roleHint) ? String(options.roleHint).trim().toLowerCase() : 'staff'
+    const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', 'X-User-Role': roleHeader } })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
+    return data
+  } catch (error) {
+    console.error('[Academic Profile API] fetchReferenceFull error:', error)
+    return { success: false, error: error.message || 'Failed to fetch reference' }
+  }
+}
+
+/**
+ * Student marks UCAS personal statement complete (not the teacher reference).
+ * This triggers email notifications to linked staff (best-effort).
+ */
+export async function markUcasStatementComplete(studentEmail, apiUrl, academicYear = null, options = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application/mark-complete`
+
+    const roleHeader = (options && options.roleHint) ? String(options.roleHint).trim().toLowerCase() : 'student'
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-User-Role': 'student' },
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': roleHeader },
       body: JSON.stringify({ academicYear })
     })
     const data = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
     return data
   } catch (error) {
-    console.error('[Academic Profile API] markReferenceComplete error:', error)
+    console.error('[Academic Profile API] markUcasStatementComplete error:', error)
     return { success: false, error: error.message || 'Failed to mark complete' }
   }
 }
