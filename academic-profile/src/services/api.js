@@ -452,6 +452,67 @@ export async function addVirtualTutorComment(studentEmail, payload, apiUrl, acad
 }
 
 /**
+ * Fetch UCAS teacher reference status (student-safe)
+ */
+export async function fetchReferenceStatus(studentEmail, apiUrl, academicYear = null) {
+  try {
+    const qs = academicYear ? `?academic_year=${encodeURIComponent(academicYear)}` : ''
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/status${qs}`
+    const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
+    return data
+  } catch (error) {
+    console.error('[Academic Profile API] fetchReferenceStatus error:', error)
+    return { success: false, error: error.message || 'Failed to fetch reference status' }
+  }
+}
+
+/**
+ * Invite a teacher by email (student-initiated)
+ */
+export async function createReferenceInvite(studentEmail, payload, apiUrl, academicYear = null, options = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/invite`
+
+    // Force student role hint (this is a student UX flow)
+    const roleHeader = (options && options.roleHint) ? String(options.roleHint).trim().toLowerCase() : 'student'
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': roleHeader },
+      body: JSON.stringify({ academicYear, ...(payload || {}) })
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
+    return data
+  } catch (error) {
+    console.error('[Academic Profile API] createReferenceInvite error:', error)
+    return { success: false, error: error.message || 'Failed to invite teacher' }
+  }
+}
+
+/**
+ * Student marks reference complete
+ */
+export async function markReferenceComplete(studentEmail, apiUrl, academicYear = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/mark-complete`
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': 'student' },
+      body: JSON.stringify({ academicYear })
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
+    return data
+  } catch (error) {
+    console.error('[Academic Profile API] markReferenceComplete error:', error)
+    return { success: false, error: error.message || 'Failed to mark complete' }
+  }
+}
+
+/**
  * Health check for academic profile system
  * @param {string} apiUrl - Base API URL
  * @returns {Promise<Object>}

@@ -154,6 +154,88 @@
             </div>
           </div>
 
+          <!-- Teacher Reference Progress (students only; content hidden) -->
+          <div class="ucas-card" v-if="canEdit">
+            <div class="ucas-card-header">
+              <h2 class="ucas-card-title">Teacher reference progress</h2>
+              <p class="ucas-card-hint">Students can’t view the reference text, but you can track who’s been invited and who has submitted.</p>
+            </div>
+
+            <div class="ref-progress">
+              <div class="ref-status">
+                <span class="ref-status-label">Status</span>
+                <span class="ref-status-pill" :class="`ref-status--${referenceStatus}`">{{ referenceStatusLabel }}</span>
+              </div>
+
+              <div class="ref-actions">
+                <button class="ucas-btn ucas-btn-outline" type="button" @click="loadReferenceStatus" :disabled="refLoading">
+                  {{ refLoading ? 'Refreshing…' : 'Refresh' }}
+                </button>
+                <button class="ucas-btn ucas-btn-primary" type="button" @click="markComplete" :disabled="refLoading || referenceStatus === 'completed' || referenceStatus === 'finalised'">
+                  Mark complete
+                </button>
+              </div>
+            </div>
+
+            <div class="ref-invites">
+              <div class="ref-invites-header">
+                <div class="ref-invites-title">Invited teachers</div>
+                <div class="ref-invites-meta">{{ (referenceInvites || []).length }} invited</div>
+              </div>
+
+              <div v-if="referenceInvites.length === 0" class="ucas-empty ucas-empty--small">
+                <span>No invitations yet.</span>
+              </div>
+              <div v-else class="ref-invite-list">
+                <div v-for="inv in referenceInvites" :key="inv.id" class="ref-invite">
+                  <div class="ref-invite-main">
+                    <div class="ref-invite-email">{{ inv.teacherEmail }}</div>
+                    <div class="ref-invite-sub">
+                      <span v-if="inv.teacherName">{{ inv.teacherName }}</span>
+                      <span v-if="inv.subjectKey"> • {{ inv.subjectKey }}</span>
+                    </div>
+                  </div>
+                  <div class="ref-invite-status" :class="inv.status === 'submitted' ? 'ref-ok' : 'ref-wait'">
+                    {{ inv.status === 'submitted' ? 'Submitted' : 'Pending' }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="ref-compose">
+                <div class="ref-compose-grid">
+                  <div>
+                    <div class="ref-label">Teacher email</div>
+                    <input class="ucas-input" type="email" v-model="inviteEmail" placeholder="teacher@school.org" />
+                  </div>
+                  <div>
+                    <div class="ref-label">Subject (optional)</div>
+                    <select class="ucas-select ref-select" v-model="inviteSubjectKey">
+                      <option value="">No subject</option>
+                      <option v-for="s in subjectRows" :key="s.key" :value="s.label">{{ s.label }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="ref-compose-actions">
+                  <button class="ucas-btn ucas-btn-outline" type="button" @click="inviteEmail=''; inviteSubjectKey=''" :disabled="refInviteSending">
+                    Clear
+                  </button>
+                  <button class="ucas-btn ucas-btn-primary" type="button" @click="sendInvite" :disabled="refInviteSending || !inviteEmail.trim()">
+                    {{ refInviteSending ? 'Sending…' : 'Send to teacher' }}
+                  </button>
+                </div>
+
+                <div v-if="lastInviteUrl" class="ref-invite-link">
+                  <div class="ref-label">Invite link (copy)</div>
+                  <div class="ref-link-row">
+                    <input class="ucas-input" type="text" :value="lastInviteUrl" readonly />
+                    <button class="ucas-btn ucas-btn-outline" type="button" @click="copyText(lastInviteUrl)">Copy</button>
+                  </div>
+                  <div class="hint">Email delivery is best-effort; you can always copy the link and send it manually.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="ucas-card">
             <div class="ucas-card-header">
               <h2 class="ucas-card-title">Character budget</h2>
@@ -429,7 +511,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment } from '../services/api.js'
+import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment, fetchReferenceStatus, createReferenceInvite, markReferenceComplete } from '../services/api.js'
 
 const MAX_TOTAL_CHARS = 4000
 const MIN_TOTAL_CHARS = 350
@@ -523,6 +605,93 @@ function commentPreview(text) {
   const t = safeText(text)
   if (t.length <= COMMENT_COLLAPSE_AT) return t
   return t.slice(0, COMMENT_COLLAPSE_AT).trimEnd() + '…'
+}
+
+// Teacher reference progress (student view: progress only)
+const refLoading = ref(false)
+const referenceStatus = ref('not_started')
+const referenceInvites = ref([])
+const inviteEmail = ref('')
+const inviteSubjectKey = ref('')
+const refInviteSending = ref(false)
+const lastInviteUrl = ref('')
+
+const referenceStatusLabel = computed(() => {
+  const s = referenceStatus.value
+  if (s === 'finalised') return 'Finalised'
+  if (s === 'completed') return 'Completed'
+  if (s === 'in_progress') return 'In progress'
+  return 'Not started'
+})
+
+async function loadReferenceStatus() {
+  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
+  refLoading.value = true
+  try {
+    const resp = await fetchReferenceStatus(props.studentEmail, props.apiUrl, props.academicYear || null)
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to load reference status')
+    referenceStatus.value = safeText(resp?.data?.status || 'not_started')
+    referenceInvites.value = Array.isArray(resp?.data?.invites) ? resp.data.invites : []
+  } catch (e) {
+    showToast(e?.message || 'Failed to load reference status')
+  } finally {
+    refLoading.value = false
+  }
+}
+
+async function sendInvite() {
+  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
+  const email = inviteEmail.value.trim()
+  if (!email) return
+  refInviteSending.value = true
+  lastInviteUrl.value = ''
+  try {
+    const resp = await createReferenceInvite(
+      props.studentEmail,
+      {
+        teacherEmail: email,
+        subjectKey: inviteSubjectKey.value || null,
+        allowedSections: [3]
+      },
+      props.apiUrl,
+      props.academicYear || null,
+      { roleHint: 'student' }
+    )
+    if (!resp?.success) throw new Error(resp?.error || 'Invite failed')
+    lastInviteUrl.value = safeText(resp?.data?.inviteUrl || '')
+    showToast('Invite created')
+    inviteEmail.value = ''
+    inviteSubjectKey.value = ''
+    await loadReferenceStatus()
+  } catch (e) {
+    showToast(e?.message || 'Invite failed')
+  } finally {
+    refInviteSending.value = false
+  }
+}
+
+async function markComplete() {
+  if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
+  refLoading.value = true
+  try {
+    const resp = await markReferenceComplete(props.studentEmail, props.apiUrl, props.academicYear || null)
+    if (!resp?.success) throw new Error(resp?.error || 'Failed to mark complete')
+    showToast('Marked complete')
+    await loadReferenceStatus()
+  } catch (e) {
+    showToast(e?.message || 'Failed to mark complete')
+  } finally {
+    refLoading.value = false
+  }
+}
+
+function copyText(s) {
+  try {
+    navigator.clipboard.writeText(String(s || ''))
+    showToast('Copied')
+  } catch (_) {
+    showToast('Copy failed')
+  }
 }
 
 // Expanded writing (mobile friendly)
@@ -893,6 +1062,7 @@ onMounted(async () => {
   if (top) selectedCourseKey.value = courseKeyForOffer(top)
   loadLocalDraft()
   await loadFromServer()
+  await loadReferenceStatus()
   if (!selectedCourseKey.value && top) selectedCourseKey.value = courseKeyForOffer(top)
 })
 </script>
@@ -1072,6 +1242,39 @@ onMounted(async () => {
 .ucas-feedback-error{background:var(--ucas-danger-light);border:1px solid #fecaca;border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-danger);font-weight:600;white-space:pre-wrap}
 .ucas-feedback-text{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-gray-800);white-space:pre-wrap;line-height:1.55}
 .ucas-feedback-footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+
+/* Teacher reference progress card */
+.ref-progress{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.ref-status{display:flex;align-items:center;gap:10px}
+.ref-status-label{font-size:11px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em}
+.ref-status-pill{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;border:1px solid var(--ucas-gray-200);background:var(--ucas-gray-50);font-weight:900;font-size:12px;color:var(--ucas-gray-700)}
+.ref-status--not_started{background:var(--ucas-gray-50)}
+.ref-status--in_progress{background:var(--ucas-warning-light);border-color:#fcd34d;color:var(--ucas-warning)}
+.ref-status--completed{background:var(--ucas-success-light);border-color:#a7f3d0;color:var(--ucas-success)}
+.ref-status--finalised{background:var(--ucas-success-light);border-color:#a7f3d0;color:var(--ucas-success)}
+.ref-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.ref-invites{margin-top:8px}
+.ref-invites-header{display:flex;align-items:baseline;justify-content:space-between;margin:6px 0 10px}
+.ref-invites-title{font-size:13px;font-weight:900;color:var(--ucas-gray-800)}
+.ref-invites-meta{font-size:12px;color:var(--ucas-gray-500);font-weight:700}
+.ref-invite-list{display:flex;flex-direction:column;gap:8px}
+.ref-invite{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius)}
+.ref-invite-email{font-weight:900;color:var(--ucas-gray-800);font-size:13px}
+.ref-invite-sub{font-size:12px;color:var(--ucas-gray-500);font-weight:700;margin-top:2px}
+.ref-invite-status{font-size:12px;font-weight:900;padding:6px 10px;border-radius:999px;border:1px solid var(--ucas-gray-200);white-space:nowrap}
+.ref-ok{background:var(--ucas-success-light);border-color:#a7f3d0;color:var(--ucas-success)}
+.ref-wait{background:var(--ucas-warning-light);border-color:#fcd34d;color:var(--ucas-warning)}
+
+.ref-compose{margin-top:12px;padding-top:12px;border-top:1px solid var(--ucas-gray-200)}
+.ref-compose-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:10px}
+@media (max-width:900px){.ref-compose-grid{grid-template-columns:1fr}}
+.ref-label{font-size:11px;font-weight:900;color:var(--ucas-gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.ref-compose-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.ref-invite-link{margin-top:12px}
+.ref-link-row{display:flex;gap:8px;align-items:center}
+.ref-link-row .ucas-input{flex:1}
+.ref-select{min-width:unset}
 
 /* Expanded writing overlay */
 .ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}
