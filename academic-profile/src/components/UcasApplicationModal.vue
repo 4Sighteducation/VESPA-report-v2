@@ -205,9 +205,15 @@
                 <span class="ucas-q-number">1</span>
                 <span class="ucas-q-title">Why do you want to study this course or subject?</span>
               </label>
-              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q1.length > 0 }">
-                {{ answers.q1.length.toLocaleString() }} chars
-              </span>
+              <div class="ucas-q-actions">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q1')" :disabled="!canEdit" title="Expand for focused writing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                  Expand
+                </button>
+                <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q1.length > 0 }">
+                  {{ answers.q1.length.toLocaleString() }} chars
+                </span>
+              </div>
             </div>
             <textarea
               id="q1"
@@ -225,9 +231,15 @@
                 <span class="ucas-q-number">2</span>
                 <span class="ucas-q-title">How have your qualifications and studies prepared you?</span>
               </label>
-              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q2.length > 0 }">
-                {{ answers.q2.length.toLocaleString() }} chars
-              </span>
+              <div class="ucas-q-actions">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q2')" :disabled="!canEdit" title="Expand for focused writing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                  Expand
+                </button>
+                <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q2.length > 0 }">
+                  {{ answers.q2.length.toLocaleString() }} chars
+                </span>
+              </div>
             </div>
             <textarea
               id="q2"
@@ -245,9 +257,15 @@
                 <span class="ucas-q-number">3</span>
                 <span class="ucas-q-title">What have you done outside education to prepare, and why is it useful?</span>
               </label>
-              <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q3.length > 0 }">
-                {{ answers.q3.length.toLocaleString() }} chars
-              </span>
+              <div class="ucas-q-actions">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q3')" :disabled="!canEdit" title="Expand for focused writing">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                  Expand
+                </button>
+                <span class="ucas-q-count" :class="{ 'ucas-q-count--active': answers.q3.length > 0 }">
+                  {{ answers.q3.length.toLocaleString() }} chars
+                </span>
+              </div>
             </div>
             <textarea
               id="q3"
@@ -374,6 +392,37 @@
           </div>
         </div>
       </div>
+
+      <!-- Expanded writing overlay (mobile-friendly full screen) -->
+      <div v-if="expandedOpen" class="ucas-expand-overlay" @click.self="closeExpanded">
+        <div class="ucas-expand-modal" role="dialog" aria-modal="true" aria-label="Expanded writing">
+          <div class="ucas-expand-header">
+            <div class="ucas-expand-title">{{ expandedTitle }}</div>
+            <div class="ucas-expand-meta">
+              <span class="ucas-expand-pill">{{ expandedChars.toLocaleString() }} in this section</span>
+              <span class="ucas-expand-pill">{{ totalChars.toLocaleString() }}/{{ MAX_TOTAL_CHARS.toLocaleString() }} total</span>
+            </div>
+            <button class="ucas-btn-close" type="button" @click="closeExpanded" aria-label="Close expanded writing">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ucas-expand-body">
+            <textarea
+              ref="expandedTextareaEl"
+              class="ucas-textarea ucas-textarea-expanded"
+              :disabled="!canEdit"
+              :value="expandedValue"
+              @input="(e) => handleAnswerInput(expandedField, e.target.value)"
+            />
+          </div>
+          <div class="ucas-expand-footer">
+            <div class="ucas-expand-hint">
+              Tip: write freely here, then close to see the full page again.
+            </div>
+            <button class="ucas-btn ucas-btn-primary" type="button" @click="closeExpanded">Done</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -474,6 +523,36 @@ function commentPreview(text) {
   const t = safeText(text)
   if (t.length <= COMMENT_COLLAPSE_AT) return t
   return t.slice(0, COMMENT_COLLAPSE_AT).trimEnd() + '…'
+}
+
+// Expanded writing (mobile friendly)
+const expandedOpen = ref(false)
+const expandedField = ref('q1') // 'q1'|'q2'|'q3'
+const expandedTextareaEl = ref(null)
+
+const expandedTitle = computed(() => {
+  if (expandedField.value === 'q2') return 'Q2: How studies prepared you'
+  if (expandedField.value === 'q3') return 'Q3: Outside education'
+  return 'Q1: Why this course?'
+})
+
+const expandedValue = computed(() => answers[expandedField.value] || '')
+const expandedChars = computed(() => (answers[expandedField.value] || '').length)
+
+function openExpanded(field) {
+  if (!props.canEdit) return
+  expandedField.value = field
+  expandedOpen.value = true
+  // Focus textarea after render
+  setTimeout(() => {
+    try {
+      expandedTextareaEl.value && expandedTextareaEl.value.focus && expandedTextareaEl.value.focus()
+    } catch (_) {}
+  }, 0)
+}
+
+function closeExpanded() {
+  expandedOpen.value = false
 }
 
 const subjectRows = computed(() => {
@@ -914,6 +993,10 @@ onMounted(async () => {
 .ucas-q-label{display:flex;align-items:flex-start;gap:10px;cursor:pointer}
 .ucas-q-number{display:flex;align-items:center;justify-content:center;width:24px;height:24px;background:var(--ucas-primary);color:var(--ucas-white);font-size:12px;font-weight:700;border-radius:50%;flex-shrink:0}
 .ucas-q-title{font-size:14px;font-weight:600;color:var(--ucas-gray-800);line-height:1.4}
+.ucas-q-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ucas-q-expand{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--ucas-gray-300);background:var(--ucas-white);color:var(--ucas-gray-700);font-weight:700;font-size:12px;border-radius:999px;padding:4px 10px;cursor:pointer}
+.ucas-q-expand:hover:not(:disabled){background:var(--ucas-gray-50);border-color:var(--ucas-gray-400)}
+.ucas-q-expand:disabled{opacity:.5;cursor:not-allowed}
 .ucas-q-count{font-size:12px;font-weight:500;color:var(--ucas-gray-400);white-space:nowrap;padding:2px 8px;background:var(--ucas-gray-100);border-radius:999px}
 .ucas-q-count--active{background:var(--ucas-primary-light);color:var(--ucas-primary)}
 .ucas-textarea{width:100%;min-height:140px;padding:12px 14px;font-size:14px;line-height:1.6;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s;font-family:inherit}
@@ -922,6 +1005,7 @@ onMounted(async () => {
 .ucas-textarea::placeholder{color:var(--ucas-gray-400)}
 .ucas-textarea:disabled{background:var(--ucas-gray-100);cursor:not-allowed}
 .ucas-textarea-sm{min-height:80px}
+.ucas-textarea-expanded{min-height:52vh;resize:none}
 
 .ucas-comments{margin-top:20px}
 .ucas-comment-compose{margin-top:12px}
@@ -988,4 +1072,22 @@ onMounted(async () => {
 .ucas-feedback-error{background:var(--ucas-danger-light);border:1px solid #fecaca;border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-danger);font-weight:600;white-space:pre-wrap}
 .ucas-feedback-text{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;color:var(--ucas-gray-800);white-space:pre-wrap;line-height:1.55}
 .ucas-feedback-footer{display:flex;justify-content:flex-end;gap:10px;padding:12px 16px;border-top:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+
+/* Expanded writing overlay */
+.ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}
+.ucas-expand-modal{width:min(980px, 100%);height:min(86vh, 820px);background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.ucas-expand-header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+.ucas-expand-title{font-size:14px;font-weight:900;color:var(--ucas-gray-900)}
+.ucas-expand-meta{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.ucas-expand-pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:999px;font-size:12px;font-weight:800;color:var(--ucas-gray-700)}
+.ucas-expand-body{flex:1;padding:12px 16px;background:var(--ucas-gray-50)}
+.ucas-expand-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+.ucas-expand-hint{font-size:12px;color:var(--ucas-gray-500);font-weight:600}
+
+@media (max-width:700px){
+  .ucas-q-expand{padding:4px 8px}
+  .ucas-expand-overlay{padding:0}
+  .ucas-expand-modal{width:100%;height:100%;border-radius:0}
+  .ucas-textarea-expanded{min-height:62vh}
+}
 </style>
