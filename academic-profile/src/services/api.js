@@ -512,6 +512,33 @@ export async function fetchReferenceFull(studentEmail, apiUrl, academicYear = nu
 }
 
 /**
+ * Staff saves a reference contribution (Section 2 or 3)
+ * @param {string} studentEmail
+ * @param {{section: 2|3, text: string, subjectKey?: string|null, authorName?: string|null, staffEmail: string}} payload
+ * @param {string} apiUrl
+ * @param {string|null} academicYear
+ * @param {{roleHint?: string}|null} options
+ */
+export async function saveReferenceContribution(studentEmail, payload, apiUrl, academicYear = null, options = null) {
+  try {
+    const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/contribution`
+
+    const roleHeader = (options && options.roleHint) ? String(options.roleHint).trim().toLowerCase() : 'staff'
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-User-Role': roleHeader },
+      body: JSON.stringify({ academicYear, ...(payload || {}) })
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
+    return data
+  } catch (error) {
+    console.error('[Academic Profile API] saveReferenceContribution error:', error)
+    return { success: false, error: error.message || 'Failed to save contribution' }
+  }
+}
+
+/**
  * Student marks UCAS personal statement complete (not the teacher reference).
  * This triggers email notifications to linked staff (best-effort).
  */

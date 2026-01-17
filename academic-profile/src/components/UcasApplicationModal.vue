@@ -556,6 +556,37 @@
               <div v-if="refFullLoading" class="ucas-empty ucas-empty--small"><span>Loading reference…</span></div>
               <div v-else-if="!refFull" class="ucas-empty ucas-empty--small"><span>No reference data found.</span></div>
               <div v-else class="ref-staff-view">
+                <div class="ref-section ref-section--editor">
+                  <div class="ref-section-title">Add your contribution (tutor/staff)</div>
+                  <div class="ref-editor-grid">
+                    <div class="ref-editor-block">
+                      <div class="ref-label">Section 2 — Extenuating circumstances</div>
+                      <textarea class="textarea ref-textarea" v-model="staffSection2Text" placeholder="Add factual, course-relevant context (with student permission)."></textarea>
+                      <div class="hint">{{ (staffSection2Text || '').length.toLocaleString() }} characters</div>
+                      <div class="ref-editor-actions">
+                        <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(2)" :disabled="staffSaving2 || !staffCanSave || !staffSection2Text.trim()">
+                          {{ staffSaving2 ? 'Saving…' : 'Save Section 2' }}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="ref-editor-block">
+                      <div class="ref-label">Section 3 — Supportive information (subject)</div>
+                      <select class="ucas-select ref-select" v-model="staffSection3SubjectKey">
+                        <option value="">No subject</option>
+                        <option v-for="s in subjectRows" :key="s.key" :value="s.label">{{ s.label }}</option>
+                      </select>
+                      <textarea class="textarea ref-textarea" v-model="staffSection3Text" placeholder="Add specific evidence of academic potential and engagement relevant to the course."></textarea>
+                      <div class="hint">{{ (staffSection3Text || '').length.toLocaleString() }} characters</div>
+                      <div class="ref-editor-actions">
+                        <button class="ucas-btn ucas-btn-primary" type="button" @click="saveStaffContribution(3)" :disabled="staffSaving3 || !staffCanSave || !staffSection3Text.trim()">
+                          {{ staffSaving3 ? 'Saving…' : 'Save Section 3' }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-if="!staffCanSave" class="hint">Saving is unavailable because your staff email is missing in this embedded context.</div>
+                </div>
+
                 <div class="ref-section">
                   <div class="ref-section-title">Section 1 — Centre statement</div>
                   <div class="ref-section-body">{{ safeText(refFull.section1Text) || 'No centre template yet.' }}</div>
@@ -615,7 +646,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment, fetchReferenceStatus, createReferenceInvite, fetchReferenceFull, markUcasStatementComplete } from '../services/api.js'
+import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, generateUcasFeedback, addVirtualTutorComment, fetchReferenceStatus, createReferenceInvite, fetchReferenceFull, saveReferenceContribution, markUcasStatementComplete } from '../services/api.js'
 
 const MAX_TOTAL_CHARS = 4000
 const MIN_TOTAL_CHARS = 350
@@ -739,6 +770,69 @@ const refPanelOpen = ref(false)
 const refFullLoading = ref(false)
 const refFull = ref(null)
 
+const staffCanSave = computed(() => {
+  return !props.canEdit && !!safeText(props.staffEmail).trim() && !!safeText(props.apiUrl).trim() && !!safeText(props.studentEmail).trim()
+})
+
+const staffSection2Text = ref('')
+const staffSection3SubjectKey = ref('')
+const staffSection3Text = ref('')
+const staffSaving2 = ref(false)
+const staffSaving3 = ref(false)
+
+function pickStaffContribution(section, subjectKey) {
+  const staffEmail = safeText(props.staffEmail).trim().toLowerCase()
+  if (!staffEmail) return null
+  const full = refFull.value
+  if (!full) return null
+  const list = section === 2 ? (full.section2 || []) : (full.section3 || [])
+  const normSubject = safeText(subjectKey || '').trim().toLowerCase()
+  for (const c of (Array.isArray(list) ? list : [])) {
+    if (!c) continue
+    const a = safeText(c.authorEmail).trim().toLowerCase()
+    if (a !== staffEmail) continue
+    const s = safeText(c.subjectKey || '').trim().toLowerCase()
+    if (section === 3) {
+      if (s === normSubject) return c
+    } else {
+      // Section 2 is usually not subject-specific; accept the first match
+      return c
+    }
+  }
+  return null
+}
+
+async function saveStaffContribution(section) {
+  if (!staffCanSave.value) return
+  const sec = Number(section)
+  if (sec !== 2 && sec !== 3) return
+  const text = safeText(sec === 2 ? staffSection2Text.value : staffSection3Text.value)
+  const trimmed = text.trim()
+  if (!trimmed) return
+
+  if (sec === 2) staffSaving2.value = true
+  else staffSaving3.value = true
+
+  try {
+    const payload = {
+      section: sec,
+      text: trimmed,
+      subjectKey: sec === 3 ? (safeText(staffSection3SubjectKey.value).trim() || null) : null,
+      authorName: null,
+      staffEmail: safeText(props.staffEmail).trim()
+    }
+    const resp = await saveReferenceContribution(props.studentEmail, payload, props.apiUrl, props.academicYear || null, { roleHint: 'staff' })
+    if (!resp?.success) throw new Error(resp?.error || 'Save failed')
+    showToast('Saved')
+    await loadReferenceStatus()
+  } catch (e) {
+    showToast(e?.message || 'Save failed')
+  } finally {
+    if (sec === 2) staffSaving2.value = false
+    else staffSaving3.value = false
+  }
+}
+
 async function loadReferenceStatus() {
   if (!props.apiUrl || !props.studentEmail) return
   refLoading.value = true
@@ -757,6 +851,16 @@ async function loadReferenceStatus() {
     refFull.value = resp?.data || null
     referenceStatus.value = safeText(resp?.data?.status || 'not_started')
     referenceInvites.value = Array.isArray(resp?.data?.invites) ? resp.data.invites : []
+
+    // Hydrate staff editor fields from existing contributions (if any)
+    const c2 = pickStaffContribution(2, null)
+    staffSection2Text.value = safeText(c2?.text || '')
+
+    if (!safeText(staffSection3SubjectKey.value).trim() && subjectRows.value.length) {
+      staffSection3SubjectKey.value = safeText(subjectRows.value[0]?.label || '')
+    }
+    const c3 = pickStaffContribution(3, staffSection3SubjectKey.value)
+    staffSection3Text.value = safeText(c3?.text || '')
   } catch (e) {
     showToast(e?.message || 'Failed to load reference')
   } finally {
@@ -764,6 +868,14 @@ async function loadReferenceStatus() {
     refFullLoading.value = false
   }
 }
+
+watch(
+  () => staffSection3SubjectKey.value,
+  () => {
+    const c3 = pickStaffContribution(3, staffSection3SubjectKey.value)
+    staffSection3Text.value = safeText(c3?.text || '')
+  }
+)
 
 watch(
   () => refPanelOpen.value,
@@ -1439,6 +1551,13 @@ onMounted(async () => {
 .ref-contrib{padding:10px 12px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius)}
 .ref-contrib-meta{font-size:12px;color:var(--ucas-gray-600);font-weight:800;margin-bottom:6px}
 .ref-contrib-text{white-space:pre-wrap;font-size:13px;color:var(--ucas-gray-800);line-height:1.45}
+
+.ref-section--editor{background:var(--ucas-gray-50)}
+.ref-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:900px){.ref-editor-grid{grid-template-columns:1fr}}
+.ref-editor-block{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px}
+.ref-textarea{min-height:160px;resize:vertical}
+.ref-editor-actions{display:flex;justify-content:flex-end;margin-top:10px}
 
 /* Expanded writing overlay */
 .ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}
