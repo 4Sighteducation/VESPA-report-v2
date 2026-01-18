@@ -1,5 +1,5 @@
 <template>
-  <div class="vespa-profile-display">
+  <div class="vespa-profile-display" data-vespa-academic-profile="1">
     <section class="vespa-section profile-section" :class="{ 'ks4-theme': isKs4 }">
       <div class="profile-header">
         <div class="profile-header-left">
