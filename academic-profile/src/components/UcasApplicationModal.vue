@@ -118,7 +118,7 @@
             class="ucas-btn ucas-btn-primary"
             type="button"
             @click="saveToServer"
-            :disabled="!canEdit || saving || totalChars > MAX_TOTAL_CHARS || totalChars < MIN_TOTAL_CHARS || !studentEmail"
+            :disabled="!canEdit || saving || !studentEmail"
             :title="!canEdit ? 'Read-only for staff — students can save' : 'Save UCAS application'"
           >
             <svg v-if="!saving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -1550,30 +1550,11 @@ const combinedStatement = computed(() => {
   return [a, b, c].filter(Boolean).join('\n\n')
 })
 
-function enforceMaxTotalChars() {
-  let extra = totalChars.value - MAX_TOTAL_CHARS
-  if (extra <= 0) return
-  for (const field of ['q3', 'q2', 'q1']) {
-    if (extra <= 0) break
-    const cur = safeText(answers[field])
-    if (!cur) continue
-    if (cur.length <= extra) {
-      answers[field] = ''
-      extra -= cur.length
-    } else {
-      answers[field] = cur.slice(0, cur.length - extra)
-      extra = 0
-    }
-  }
-}
-
 function handleAnswerInput(field, nextValue) {
   if (!props.canEdit) return
-  const next = safeText(nextValue)
-  const currentLen = answers[field].length
-  const otherTotal = totalChars.value - currentLen
-  const allowed = Math.max(0, MAX_TOTAL_CHARS - otherTotal)
-  answers[field] = next.slice(0, allowed)
+  // Allow typing beyond the combined limit; we block "mark complete" (and clearly flag over-limit)
+  // but still allow saving drafts over the limit.
+  answers[field] = safeText(nextValue)
 }
 
 function copyCombined() {
@@ -1608,7 +1589,6 @@ function loadLocalDraft() {
       answers.q1 = safeText(parsed.answers.q1)
       answers.q2 = safeText(parsed.answers.q2)
       answers.q3 = safeText(parsed.answers.q3)
-      enforceMaxTotalChars()
     }
     if (parsed?.requirementsByCourse && typeof parsed.requirementsByCourse === 'object') {
       for (const [k, v] of Object.entries(parsed.requirementsByCourse)) {
@@ -1652,7 +1632,6 @@ async function loadFromServer() {
     answers.q1 = safeText(data.answers.q1)
     answers.q2 = safeText(data.answers.q2)
     answers.q3 = safeText(data.answers.q3)
-    enforceMaxTotalChars()
   }
   if (data.requirementsByCourse && typeof data.requirementsByCourse === 'object') {
     for (const [k, v] of Object.entries(data.requirementsByCourse)) {
@@ -1699,14 +1678,6 @@ async function saveToServer() {
     return
   }
   if (!props.apiUrl || !props.studentEmail) return
-  if (totalChars.value > MAX_TOTAL_CHARS) {
-    showToast(`Over the ${MAX_TOTAL_CHARS} character limit — please shorten before saving`)
-    return
-  }
-  if (totalChars.value < MIN_TOTAL_CHARS) {
-    showToast(`Need at least ${MIN_TOTAL_CHARS} characters before saving`)
-    return
-  }
   saving.value = true
   try {
     const payload = {
