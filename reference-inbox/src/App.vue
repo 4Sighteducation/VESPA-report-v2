@@ -74,12 +74,7 @@
                   </td>
                   <td>{{ inv.academicYear || '—' }}</td>
                   <td>
-                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                      <span>{{ inv.subjectKey || 'General' }}</span>
-                      <span v-if="inv.inviteCount > 1" class="pill" style="padding:6px 8px;font-size:11px;">
-                        {{ inv.inviteCount }} invites collapsed
-                      </span>
-                    </div>
+                    <div>{{ inv.subjectKey || 'General' }}</div>
                   </td>
                   <td>
                     <span class="status">
@@ -179,16 +174,31 @@
           <div v-else-if="statementError" class="alert alert-danger">{{ statementError }}</div>
           <template v-else>
             <div class="statementBlock">
-              <div class="label">Why do you want to study this course or subject?</div>
-              <div class="statementText">{{ statementAnswers.q1 || '—' }}</div>
+              <div class="labelRow">
+                <div class="label">Why do you want to study this course or subject?</div>
+                <button class="btn btn-outline btn-xs" type="button" @click="toggleStatementExpand('q1')">
+                  {{ statementExpanded.q1 ? 'Collapse' : 'Expand' }}
+                </button>
+              </div>
+              <div class="statementText" :class="{ expanded: statementExpanded.q1 }">{{ statementAnswers.q1 || '—' }}</div>
             </div>
             <div class="statementBlock">
-              <div class="label">How have your qualifications and studies helped you to prepare for this course or subject?</div>
-              <div class="statementText">{{ statementAnswers.q2 || '—' }}</div>
+              <div class="labelRow">
+                <div class="label">How have your qualifications and studies helped you to prepare for this course or subject?</div>
+                <button class="btn btn-outline btn-xs" type="button" @click="toggleStatementExpand('q2')">
+                  {{ statementExpanded.q2 ? 'Collapse' : 'Expand' }}
+                </button>
+              </div>
+              <div class="statementText" :class="{ expanded: statementExpanded.q2 }">{{ statementAnswers.q2 || '—' }}</div>
             </div>
             <div class="statementBlock">
-              <div class="label">What else have you done to prepare outside of education, and why are these experiences useful?</div>
-              <div class="statementText">{{ statementAnswers.q3 || '—' }}</div>
+              <div class="labelRow">
+                <div class="label">What else have you done to prepare outside of education, and why are these experiences useful?</div>
+                <button class="btn btn-outline btn-xs" type="button" @click="toggleStatementExpand('q3')">
+                  {{ statementExpanded.q3 ? 'Collapse' : 'Expand' }}
+                </button>
+              </div>
+              <div class="statementText" :class="{ expanded: statementExpanded.q3 }">{{ statementAnswers.q3 || '—' }}</div>
             </div>
           </template>
         </div>
@@ -226,6 +236,7 @@ const statementLoading = ref(false)
 const statementError = ref('')
 const statementMeta = ref(null)
 const statementAnswers = reactive({ q1: '', q2: '', q3: '' })
+const statementExpanded = reactive({ q1: false, q2: false, q3: false })
 
 const section2Placeholder =
   'If you are aware of anything that materially affected attainment/trajectory, note it here (with student permission). Keep it factual.'
@@ -420,6 +431,14 @@ function closeStatement() {
   statementAnswers.q1 = ''
   statementAnswers.q2 = ''
   statementAnswers.q3 = ''
+  statementExpanded.q1 = false
+  statementExpanded.q2 = false
+  statementExpanded.q3 = false
+}
+
+function toggleStatementExpand(key) {
+  if (!key || !(key in statementExpanded)) return
+  statementExpanded[key] = !statementExpanded[key]
 }
 
 async function openStatement(inv) {
@@ -434,6 +453,9 @@ async function openStatement(inv) {
   statementAnswers.q1 = ''
   statementAnswers.q2 = ''
   statementAnswers.q3 = ''
+  statementExpanded.q1 = false
+  statementExpanded.q2 = false
+  statementExpanded.q3 = false
 
   try {
     const url = `${apiBase}/api/reference/invite/${encodeURIComponent(token)}/student-statement?inviteId=${encodeURIComponent(inviteId)}`

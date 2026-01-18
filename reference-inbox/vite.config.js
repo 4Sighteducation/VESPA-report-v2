@@ -8,9 +8,9 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        entryFileNames: 'reference-inbox1b.js',
-        chunkFileNames: 'reference-inbox1b-[hash].js',
-        assetFileNames: 'reference-inbox1b-[name][extname]'
+        entryFileNames: 'reference-inbox1c.js',
+        chunkFileNames: 'reference-inbox1c-[hash].js',
+        assetFileNames: 'reference-inbox1c-[name][extname]'
       }
     }
   }

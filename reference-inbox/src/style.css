@@ -76,6 +76,7 @@ body{
 .btn-danger{background:rgba(180,35,24,.08);border:1px solid rgba(180,35,24,.25);color:var(--danger)}
 .btn-danger:hover{background:rgba(180,35,24,.12)}
 .btn:disabled{opacity:.6;cursor:not-allowed}
+.btn-xs{padding:6px 10px;border-radius:10px;font-size:12px}
 .tableWrap{margin-top:12px;border:1px solid var(--border);border-radius:14px;overflow:auto;background:#fff}
 table{width:100%;border-collapse:collapse;min-width:900px}
 th,td{padding:12px 12px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -138,6 +139,14 @@ tr:hover td{background:rgba(62,50,133,.03)}
   padding:14px;
   overflow:auto;
 }
+.labelRow{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  margin:0 0 6px;
+}
+.labelRow .label{margin:0}
 .statementBlock{margin-bottom:14px}
 .statementText{
   white-space: pre-wrap;
@@ -146,5 +155,10 @@ tr:hover td{background:rgba(62,50,133,.03)}
   padding:12px;
   background:#fff;
   line-height:1.55;
+  max-height: 220px;
+  overflow:auto;
+}
+.statementText.expanded{
+  max-height: none;
 }
 
