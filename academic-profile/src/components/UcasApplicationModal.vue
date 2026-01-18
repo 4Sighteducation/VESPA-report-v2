@@ -1231,7 +1231,25 @@ function restoreAllInvites() {
 const visibleReferenceInvites = computed(() => {
   const list = Array.isArray(referenceInvites.value) ? referenceInvites.value : []
   const hidden = hiddenInviteIds.value
-  return list.filter((i) => i && !hidden.has(String(i.id || '')))
+  const visible = list.filter((i) => i && !hidden.has(String(i.id || '')))
+
+  // Collapse duplicates (same teacher + subject) to avoid invite lists growing endlessly.
+  // Keep the most recent invite by createdAt/expiresAt/id ordering.
+  const byKey = new Map()
+  for (const inv of visible) {
+    const teacher = safeText(inv?.teacherEmail || inv?.email).trim().toLowerCase()
+    const subj = safeText(inv?.subjectKey).trim().toLowerCase()
+    const key = `${teacher}__${subj}`
+    const cur = byKey.get(key)
+    if (!cur) {
+      byKey.set(key, inv)
+      continue
+    }
+    const curTs = Date.parse(cur?.createdAt || cur?.expiresAt || '') || 0
+    const invTs = Date.parse(inv?.createdAt || inv?.expiresAt || '') || 0
+    if (invTs > curTs) byKey.set(key, inv)
+  }
+  return Array.from(byKey.values())
 })
 
 const referenceStatusLabel = computed(() => {
@@ -1420,7 +1438,8 @@ async function sendInvite() {
       { roleHint: 'student' }
     )
     if (!resp?.success) throw new Error(resp?.error || 'Invite failed')
-    lastInviteUrl.value = safeText(resp?.data?.inviteUrl || '')
+    // Prefer the inbox link if available (reduces multiple-invite spam).
+    lastInviteUrl.value = safeText(resp?.data?.inboxUrl || resp?.data?.inviteUrl || '')
     showToast('Invite created')
     inviteEmail.value = ''
     inviteSubjectKey.value = ''
