@@ -212,7 +212,9 @@ import { computed, onMounted, reactive, ref } from 'vue'
 
 const params = new URLSearchParams(window.location.search || '')
 const token = (params.get('token') || '').trim()
-const apiBase = (params.get('api') || 'https://vespa-dashboard-9a1f84ee5341.herokuapp.com').trim().replace(/\/$/, '')
+// Default to same-origin to avoid CORS issues when served on custom domain (references.vespa.academy).
+// Allow override via ?api= for testing.
+const apiBase = (params.get('api') || window.location.origin).trim().replace(/\/$/, '')
 
 const loading = ref(true)
 const loaded = ref(false)
