@@ -28,6 +28,16 @@
         </div>
 
         <template v-else>
+          <div v-if="inboxUrl" class="alert" style="margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:950;">Tip</div>
+              <div class="hint" style="margin:0;">If you have multiple requests, use your inbox to manage them all in one place.</div>
+            </div>
+            <button class="btn btn-outline" type="button" @click="openInbox">
+              Open inbox
+            </button>
+          </div>
+
           <div class="grid">
             <div>
               <div class="label">Your name (optional)</div>
@@ -92,6 +102,7 @@ const studentName = ref('')
 const academicYear = ref('')
 const subjectKey = ref('')
 const allowedSections = ref([3])
+const inboxUrl = ref('')
 
 const authorName = ref('')
 const section = ref(3)
@@ -127,6 +138,7 @@ async function fetchInvite() {
     studentName.value = d.studentName || ''
     academicYear.value = d.academicYear || ''
     subjectKey.value = d.subjectKey || ''
+    inboxUrl.value = d.inboxUrl || ''
     allowedSections.value = Array.isArray(d.allowedSections) && d.allowedSections.length ? d.allowedSections : [3]
     if (!allowedSections.value.includes(section.value)) section.value = allowedSections.value[0]
   } catch (e) {
@@ -134,6 +146,13 @@ async function fetchInvite() {
   } finally {
     loading.value = false
   }
+}
+
+function openInbox() {
+  try {
+    if (!inboxUrl.value) return
+    window.location.href = inboxUrl.value
+  } catch (_) {}
 }
 
 async function submit() {
