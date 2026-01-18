@@ -1,16 +1,51 @@
 <template>
   <div class="vespa-profile-display">
     <section class="vespa-section profile-section" :class="{ 'ks4-theme': isKs4 }">
-      <h2 class="vespa-section-title">
-        <span style="display: inline-flex; align-items: center;">
-          Student Profile
-          <span class="profile-info-button" @click="showInfoModal = true" title="Understanding These Grades">i</span>
-        </span>
-        
+      <div class="profile-header">
+        <div class="profile-header-left">
+          <div class="profile-avatar" aria-hidden="true">{{ studentInitials }}</div>
+          <div class="profile-header-text">
+            <div class="profile-title-row">
+              <div class="profile-title">Student Profile</div>
+              <button class="profile-info-button" type="button" @click="showInfoModal = true" title="Understanding These Grades">
+                i
+              </button>
+            </div>
+            <div class="profile-student-name">{{ displayStudentName }}</div>
+            <div class="profile-meta">
+              <div class="profile-meta-item">
+                <span class="profile-meta-label">School</span>
+                <span class="profile-meta-value">{{ displaySchool }}</span>
+              </div>
+              <div v-if="displayYearGroup" class="profile-meta-item">
+                <span class="profile-meta-label">Year</span>
+                <span class="profile-meta-value">{{ displayYearGroup }}</span>
+              </div>
+              <div v-if="displayTutorGroup" class="profile-meta-item">
+                <span class="profile-meta-label">Tutor</span>
+                <span class="profile-meta-value">{{ displayTutorGroup }}</span>
+              </div>
+              <div v-if="!isKs4 && student.priorAttainment" class="profile-meta-item">
+                <span class="profile-meta-label">Prior</span>
+                <span class="profile-meta-value">{{ student.priorAttainment }}</span>
+              </div>
+              <div v-if="!isKs4 && student.attendance" class="profile-meta-item">
+                <span class="profile-meta-label">Attendance</span>
+                <span class="profile-meta-value">{{ formatPercentage(student.attendance) }}</span>
+              </div>
+              <div v-if="formattedUpdatedAt" class="profile-meta-item">
+                <span class="profile-meta-label">Updated</span>
+                <span class="profile-meta-value">{{ formattedUpdatedAt }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="profile-actions">
           <button
             v-if="!isStudent && !isKs4"
             class="small-toggle"
+            type="button"
             @click="toggleMeg"
             :title="showMeg ? 'Hide MEG' : 'Show MEG'">
             MEG: {{ showMeg ? 'On' : 'Off' }}
@@ -18,6 +53,7 @@
           <button
             v-if="!isStudent && !isKs4"
             class="small-toggle"
+            type="button"
             @click="toggleStg"
             :title="showStg ? 'Hide STG' : 'Show STG'">
             STG: {{ showStg ? 'On' : 'Off' }}
@@ -25,69 +61,31 @@
           <button
             v-if="!isStudent && isKs4"
             class="small-toggle"
+            type="button"
             @click="togglePredicted"
             :title="showPredicted ? 'Hide Predicted Grade' : 'Show Predicted Grade'">
             Predicted: {{ showPredicted ? 'On' : 'Off' }}
           </button>
 
-        <!-- Edit/Save button for staff -->
-          <span v-if="editable && isStaff" 
-              class="master-edit-icon"
-              :class="isEditMode ? 'save-icon' : 'edit-icon'"
-              @click="toggleEditMode"
-              :title="isEditMode ? 'Save All Changes' : 'Edit All Grades'">
-          {{ isEditMode ? '💾 Save All' : '✏️ Edit Grades' }}
+          <span v-if="editable && isStaff"
+                class="master-edit-icon"
+                :class="isEditMode ? 'save-icon' : 'edit-icon'"
+                @click="toggleEditMode"
+                :title="isEditMode ? 'Save All Changes' : 'Edit All Grades'">
+            {{ isEditMode ? '💾 Save All' : '✏️ Edit Grades' }}
           </span>
 
-        <!-- Edit/Save button for students (Target only) -->
           <span v-if="editable && isStudent"
-              class="master-edit-icon"
-              :class="isEditMode ? 'save-icon' : 'edit-icon'"
-              @click="toggleEditMode"
-              :title="isEditMode ? 'Save Target Grades' : 'Edit Target Grades'">
-          {{ isEditMode ? '💾 Save Targets' : '✏️ Edit Targets' }}
+                class="master-edit-icon"
+                :class="isEditMode ? 'save-icon' : 'edit-icon'"
+                @click="toggleEditMode"
+                :title="isEditMode ? 'Save Target Grades' : 'Edit Target Grades'">
+            {{ isEditMode ? '💾 Save Targets' : '✏️ Edit Targets' }}
           </span>
         </div>
-      </h2>
+      </div>
 
       <div class="profile-info" :class="{ 'ks4-layout': isKs4, 'ks5-layout': !isKs4 }">
-        <!-- Student Details -->
-        <div class="profile-details" :class="{ 'ks4-profile-strip': isKs4, 'ks5-profile-strip': !isKs4 }">
-          <div class="profile-name">{{ displayStudentName }}</div>
-
-          <div class="profile-items">
-            <div class="profile-item">
-              <span class="profile-label">School:</span>
-              <span class="profile-value">{{ displaySchool }}</span>
-            </div>
-            
-            <div v-if="displayYearGroup" class="profile-item">
-              <span class="profile-label">Year Group:</span>
-              <span class="profile-value">{{ displayYearGroup }}</span>
-            </div>
-            
-            <div v-if="displayTutorGroup" class="profile-item">
-              <span class="profile-label">Tutor Group:</span>
-              <span class="profile-value">{{ displayTutorGroup }}</span>
-            </div>
-            
-            <div v-if="!isKs4 && student.attendance" class="profile-item">
-              <span class="profile-label">Attendance:</span>
-              <span class="profile-value">{{ formatPercentage(student.attendance) }}</span>
-            </div>
-
-            <div v-if="!isKs4 && student.priorAttainment" class="profile-item">
-              <span class="profile-label">Prior attainment:</span>
-              <span class="profile-value">{{ student.priorAttainment }}</span>
-            </div>
-
-            <div v-if="formattedUpdatedAt" class="profile-item">
-              <span class="profile-label">Last update:</span>
-              <span class="profile-value">{{ formattedUpdatedAt }}</span>
-            </div>
-          </div>
-        </div>
-
         <!-- Subjects Grid -->
         <div class="subjects-container">
           <div class="subjects-grid" :class="{ 'ks4-grid': isKs4 }">
@@ -125,7 +123,17 @@
           <!-- University Offers (KS5 / Level 3 only) -->
           <div v-if="!isKs4" class="university-offers">
             <div class="university-offers-header">
-              <div class="university-offers-title">University Offers</div>
+              <div class="offers-header-left">
+                <div class="offers-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                  </svg>
+                </div>
+                <div class="offers-title-group">
+                  <div class="university-offers-title">University Offers</div>
+                  <div class="offers-count">{{ offers.length }} {{ offers.length === 1 ? 'university' : 'universities' }} saved</div>
+                </div>
+              </div>
               <div class="university-offers-actions">
                 <button
                   class="offers-ucasapp-btn"
@@ -565,6 +573,16 @@ const displaySchool = computed(() => coerceText(props.student?.school) || 'N/A')
 const displayYearGroup = computed(() => coerceText(props.student?.yearGroup))
 const displayTutorGroup = computed(() => coerceText(props.student?.tutorGroup))
 
+const studentInitials = computed(() => {
+  const name = (displayStudentName.value || '').trim()
+  if (!name) return '—'
+  const parts = name.split(/\s+/).filter(Boolean)
+  const first = parts[0]?.[0] || ''
+  const last = (parts.length > 1 ? parts[parts.length - 1]?.[0] : parts[0]?.[1]) || ''
+  const initials = `${first}${last}`.toUpperCase()
+  return initials || '—'
+})
+
 const normalizeOffer = (o) => {
   const uni = coerceText(o?.universityName ?? o?.university_name)
   const course = coerceText(o?.courseTitle ?? o?.course_title)
@@ -821,23 +839,33 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .vespa-section {
-  background-color: #2a3c7a;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  /* Palette (from redesign prototype) */
+  --brand-darkest: #0f1629;
+  --brand-dark: #1a2342;
+  --brand-mid: #242f4e;
+  --brand-light: #2d3a5c;
+  --accent: #4ecdc4;
+  --accent-light: #7ee8e2;
+  --accent-glow: rgba(78, 205, 196, 0.15);
+  --purple: #8b7ec8;
+  --purple-light: #a99fda;
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.75);
+  --text-muted: rgba(255, 255, 255, 0.5);
+
+  background: linear-gradient(145deg, var(--brand-dark) 0%, var(--brand-mid) 100%);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
   padding: 16px;
-  border: 2px solid #079baa;
+  border: 1px solid rgba(78, 205, 196, 0.16);
   position: relative;
+  overflow: hidden;
 }
 
 /* KS4 theme (distinct from KS5): dark green */
 .vespa-section.ks4-theme {
   background-color: #0f2b1a;
   border-color: rgba(124, 255, 154, 0.55);
-}
-
-.vespa-section.ks4-theme .vespa-section-title {
-  color: #7CFF9A !important;
-  border-bottom-color: rgba(124, 255, 154, 0.45);
 }
 
 .vespa-section.ks4-theme .profile-info-button {
@@ -850,16 +878,6 @@ const showTemporaryMessage = (message, type) => {
   color: #0f2b1a;
 }
 
-.vespa-section.ks4-theme .profile-details {
-  background-color: #123522;
-  border-color: rgba(124, 255, 154, 0.22);
-}
-
-.vespa-section.ks4-theme .profile-name,
-.vespa-section.ks4-theme .profile-label {
-  color: #7CFF9A;
-}
-
 .vespa-section.ks4-theme .small-toggle {
   border-color: rgba(124, 255, 154, 0.3);
 }
@@ -867,6 +885,135 @@ const showTemporaryMessage = (message, type) => {
 .vespa-section.ks4-theme .master-edit-icon.edit-icon {
   color: #7CFF9A;
   border-color: rgba(124, 255, 154, 0.85);
+}
+
+/* Header (new redesign) */
+.profile-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 18px 14px;
+  margin: -16px -16px 14px;
+  background: linear-gradient(135deg, var(--brand-mid) 0%, var(--brand-light) 100%);
+  border-bottom: 1px solid rgba(78, 205, 196, 0.12);
+  position: relative;
+}
+
+.profile-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--purple), var(--accent));
+  opacity: 0.85;
+}
+
+.vespa-section.ks4-theme .profile-header {
+  background: linear-gradient(135deg, rgba(18, 53, 34, 0.92) 0%, rgba(15, 43, 26, 0.92) 100%);
+  border-bottom-color: rgba(124, 255, 154, 0.22);
+}
+
+.vespa-section.ks4-theme .profile-header::before {
+  background: linear-gradient(90deg, rgba(124, 255, 154, 0.95), rgba(78, 205, 196, 0.60), rgba(124, 255, 154, 0.95));
+}
+
+.profile-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.profile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--brand-darkest);
+  background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  flex: 0 0 auto;
+}
+
+.vespa-section.ks4-theme .profile-avatar {
+  background: linear-gradient(135deg, rgba(124, 255, 154, 0.95) 0%, rgba(78, 205, 196, 0.85) 100%);
+}
+
+.profile-header-text {
+  min-width: 0;
+}
+
+.profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-title {
+  font-weight: 950;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.vespa-section.ks4-theme .profile-title {
+  color: rgba(124, 255, 154, 0.85);
+}
+
+.profile-student-name {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-top: 10px;
+}
+
+.profile-meta-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.profile-meta-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-meta-value {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+@media (max-width: 780px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .profile-actions {
+    justify-content: flex-start;
+  }
 }
 
 /* KS4 subjects layout is controlled by `.subjects-grid.ks4-grid` below */
@@ -946,22 +1093,11 @@ const showTemporaryMessage = (message, type) => {
   }
 }
 
-.vespa-section-title {
-  color: #00e5db !important;
-  font-size: 22px;
-  font-weight: 600;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #079baa;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .profile-actions {
   display: inline-flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .small-toggle {
@@ -981,10 +1117,10 @@ const showTemporaryMessage = (message, type) => {
 
 /* Info button */
 .profile-info-button {
-  font-size: 16px;
-  color: #00e5db;
+  font-size: 14px;
+  color: var(--accent);
   cursor: pointer;
-  border: 1px solid #00e5db;
+  border: 1px solid rgba(78, 205, 196, 0.95);
   border-radius: 50%;
   width: 22px;
   height: 22px;
@@ -992,13 +1128,13 @@ const showTemporaryMessage = (message, type) => {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  margin-left: 10px;
   transition: all 0.3s;
+  background: rgba(0, 0, 0, 0.20);
 }
 
 .profile-info-button:hover {
-  background-color: #00e5db;
-  color: #23356f;
+  background-color: rgba(78, 205, 196, 0.92);
+  color: var(--brand-darkest);
 }
 
 /* Edit button */
@@ -1118,10 +1254,16 @@ const showTemporaryMessage = (message, type) => {
   position: relative;
   padding: 16px;
   border-radius: 12px;
-  /* University offers theme (main): #3E3285 */
-  background: linear-gradient(135deg, #231c58 0%, #2f2672 100%);
-  border: 1px solid rgba(62, 50, 133, 0.65);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+  /* Contrast palette (from redesign prototype) */
+  --offers-primary: #f093a0;
+  --offers-secondary: #e8788a;
+  --offers-dark: #2a1f35;
+  --offers-mid: #352a42;
+  --offers-glow: rgba(240, 147, 160, 0.12);
+
+  background: linear-gradient(145deg, var(--offers-dark) 0%, var(--offers-mid) 100%);
+  border: 1px solid rgba(240, 147, 160, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 0 40px var(--offers-glow);
   overflow: hidden;
 }
 
@@ -1132,7 +1274,7 @@ const showTemporaryMessage = (message, type) => {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #3E3285, #6B5DD6);
+  background: linear-gradient(180deg, var(--offers-primary), var(--offers-secondary));
   opacity: 0.9;
 }
 
@@ -1140,7 +1282,7 @@ const showTemporaryMessage = (message, type) => {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(420px circle at 6% -20%, rgba(62, 50, 133, 0.45), transparent 55%);
+  background: radial-gradient(420px circle at 6% -20%, rgba(240, 147, 160, 0.35), transparent 55%);
   opacity: 0.5;
   pointer-events: none;
 }
@@ -1152,16 +1294,43 @@ const showTemporaryMessage = (message, type) => {
   gap: 10px;
 }
 
+.offers-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.offers-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2a1f35;
+  background: linear-gradient(135deg, var(--offers-primary) 0%, var(--offers-secondary) 100%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+  flex: 0 0 auto;
+}
+
+.offers-title-group {
+  min-width: 0;
+}
+
 .university-offers-title {
   font-weight: 900;
   font-size: 16px;
   letter-spacing: 0.3px;
   color: #ffffff;
-  padding: 6px 10px;
-  border-radius: 10px;
-  border: 1px solid rgba(62, 50, 133, 0.78);
-  background: linear-gradient(135deg, rgba(62, 50, 133, 0.35), rgba(0, 0, 0, 0.25));
-  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  line-height: 1.2;
+}
+
+.offers-count {
+  margin-top: 2px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.78);
+  font-weight: 700;
 }
 
 .university-offers-actions {

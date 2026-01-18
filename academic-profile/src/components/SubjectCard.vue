@@ -152,6 +152,17 @@
       </div>
     </div>
 
+    <!-- Progress to target (best-effort; only shown when grades are comparable) -->
+    <div v-if="progressInfo" class="progress-indicator">
+      <div class="progress-label">
+        <span>Progress to Target</span>
+        <span :class="progressInfo.statusClass">{{ progressInfo.label }}</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :class="progressInfo.statusClass" :style="{ width: progressInfo.percent + '%' }"></div>
+      </div>
+    </div>
+
     <!-- MEG Info Modal -->
     <div v-if="showMEGInfo" class="meg-info-overlay" @click="showMEGInfo = false">
       <div class="meg-info-modal" @click.stop>
@@ -215,6 +226,45 @@ const isBlankishGrade = (v) => {
 }
 
 const displayGrade = (v) => (isBlankishGrade(v) ? '-' : String(v).trim())
+
+// Progress-to-target (A-level letters + GCSE numbers only)
+function parseComparableGrade(v) {
+  const s = displayGrade(v).toUpperCase()
+  if (!s || s === '-') return null
+
+  // A-level
+  const aLevelOrder = ['A*', 'A', 'B', 'C', 'D', 'E', 'U']
+  const idx = aLevelOrder.indexOf(s)
+  if (idx !== -1) return { scheme: 'alevel', idx }
+
+  // GCSE / numeric
+  const num = parseFloat(s)
+  if (!Number.isNaN(num)) return { scheme: 'num', num }
+
+  return null
+}
+
+const progressInfo = computed(() => {
+  const cur = parseComparableGrade(props.subject.currentGrade)
+  const tgt = parseComparableGrade(props.subject.targetGrade)
+  if (!cur || !tgt) return null
+  if (cur.scheme !== tgt.scheme) return null
+
+  let belowBy = 0
+  if (cur.scheme === 'alevel') {
+    // Lower idx is better (A* = 0)
+    belowBy = Math.max(0, cur.idx - tgt.idx)
+  } else if (cur.scheme === 'num') {
+    belowBy = Math.max(0, tgt.num - cur.num)
+  }
+
+  const onTrack = belowBy <= 0
+  const label = onTrack ? 'On target' : `${belowBy} grade${belowBy === 1 ? '' : 's'} below`
+  const statusClass = onTrack ? 'on-track' : 'below'
+  const percent = onTrack ? 100 : (belowBy === 1 ? 70 : belowBy === 2 ? 40 : belowBy === 3 ? 25 : 15)
+
+  return { label, statusClass, percent }
+})
 
 // State
 const showMEGInfo = ref(false)
@@ -327,14 +377,14 @@ const formatPercentage = (decimal) => {
 <style scoped>
 /* Subject Card */
 .subject-card {
-  background: linear-gradient(180deg, #334285 0%, #2d3b7a 100%);
-  color: #ffffff;
-  border-radius: 6px;
-  padding: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s;
-  border: 1px solid rgba(7, 155, 170, 0.3);
-  border-left: 8px solid var(--accent, #00e5db);
+  background: linear-gradient(145deg, rgba(36, 47, 78, 0.96) 0%, rgba(45, 58, 92, 0.96) 100%);
+  color: var(--text-primary, #ffffff);
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  border: 1px solid rgba(78, 205, 196, 0.12);
+  border-left: 6px solid var(--accent, #4ecdc4);
   position: relative;
   height: 100%;
   display: flex;
@@ -348,25 +398,26 @@ const formatPercentage = (decimal) => {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 8px;
-  border-top-left-radius: 6px;
-  border-bottom-left-radius: 6px;
-  opacity: 0.45;
+  width: 6px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  opacity: 0.55;
   background: linear-gradient(180deg, var(--accent, #00e5db) 0%, rgba(0,0,0,0) 100%);
 }
 
 .subject-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  border-color: rgba(78, 205, 196, 0.22);
 }
 
 .subject-title {
   text-align: center;
   margin-bottom: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.08);
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(0, 0, 0, 0.14);
 }
 
 .subject-name {
@@ -378,7 +429,7 @@ const formatPercentage = (decimal) => {
 
 .subject-meta {
   font-size: 0.75em;
-  color: #bdc3c7;
+  color: rgba(255,255,255,0.75);
   margin-bottom: 8px;
   text-align: center;
 }
@@ -406,27 +457,33 @@ const formatPercentage = (decimal) => {
 /* Grades */
 .grades-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
   flex: 1;
 }
 
 .grade-item {
   text-align: center;
-  padding: 4px;
+  padding: 10px 8px;
+  background: rgba(0,0,0,0.16);
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
 .grade-label {
   font-size: 0.7em;
-  color: #bdc3c7;
+  color: rgba(255,255,255,0.70);
   margin-bottom: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
 }
 
 .meg-info-button {
@@ -458,7 +515,7 @@ const formatPercentage = (decimal) => {
 .grade-text {
   font-weight: 800;
   color: #ffffff;
-  font-size: 18px;
+  font-size: 22px;
   letter-spacing: 0.02em;
 }
 
@@ -473,7 +530,7 @@ const formatPercentage = (decimal) => {
 /* Make Current/Target bigger (highest-salience grades) */
 .current-grade-item .grade-text,
 .target-grade-item .grade-text {
-  font-size: 20px;
+  font-size: 28px;
 }
 
 /* Grade input fields */
@@ -498,22 +555,30 @@ const formatPercentage = (decimal) => {
 /* Optional grades */
 .optional-grades-container {
   display: flex;
-  justify-content: space-around;
-  margin-top: 8px;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  font-size: 0.75em;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  font-size: 0.78em;
 }
 
 .optional-grade-item {
-  text-align: center;
-  color: #e0e0e0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(255,255,255,0.9);
 }
 
 .optional-grade-label {
   font-weight: 600;
-  color: #00e5db;
-  margin-right: 3px;
+  color: var(--accent, #4ecdc4);
+  margin-right: 0;
 }
 
 .optional-grade-input {
@@ -538,6 +603,42 @@ const formatPercentage = (decimal) => {
 .grade-one-below { color: #FF9800 !important; }
 .grade-two-below { color: #F44336 !important; }
 .grade-far-below { color: #C62828 !important; }
+
+/* Progress indicator */
+.progress-indicator {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+.progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  margin-bottom: 8px;
+  color: rgba(255,255,255,0.80);
+}
+.progress-label .on-track { color: rgba(78, 205, 196, 0.95); font-weight: 900; }
+.progress-label .below { color: rgba(232, 127, 127, 0.95); font-weight: 900; }
+.progress-bar {
+  height: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.progress-fill.on-track {
+  background: linear-gradient(90deg, rgba(78, 205, 196, 0.95), rgba(126, 232, 226, 0.85));
+  box-shadow: 0 0 10px rgba(78, 205, 196, 0.35);
+}
+.progress-fill.below {
+  background: linear-gradient(90deg, rgba(232, 127, 127, 0.95), rgba(244, 168, 168, 0.85));
+  box-shadow: 0 0 10px rgba(232, 127, 127, 0.30);
+}
 
 /* Qualification-specific borders */
 .qual-a-level { border-left: 5px solid #FF6347; }

@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutor Comments Section - Redesigned</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f3f4f6;
+      min-height: 100vh;
+      padding: 32px;
+      color: #111827;
+    }
+
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #059669;
+      --success-light: #ecfdf5;
+      --warning: #d97706;
+      --warning-light: #fffbeb;
+      --danger: #dc2626;
+      --danger-light: #fef2f2;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --white: #ffffff;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .page-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .page-heading {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 24px;
+    }
+
+    /* Comments Container */
+    .comments-section {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Header */
+    .comments-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--gray-50);
+    }
+
+    .comments-header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .comments-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      background: var(--primary-light);
+      border-radius: var(--radius);
+      color: var(--primary);
+    }
+
+    .comments-title-group h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    .comments-title-group p {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    .comments-count {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-600);
+    }
+
+    .comments-count .count-num {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Compose Area */
+    .compose-area {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-200);
+      background: var(--white);
+    }
+
+    .compose-wrapper {
+      display: flex;
+      gap: 12px;
+    }
+
+    .compose-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .compose-input-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .compose-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 14px 16px;
+      border: 1px solid var(--gray-300);
+      border-radius: var(--radius-lg);
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      color: var(--gray-900);
+      resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .compose-textarea:hover {
+      border-color: var(--gray-400);
+    }
+
+    .compose-textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    .compose-textarea::placeholder {
+      color: var(--gray-400);
+    }
+
+    .compose-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .compose-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .compose-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--gray-600);
+    }
+
+    .btn-ghost:hover {
+      background: var(--gray-100);
+      color: var(--gray-800);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      background: var(--gray-300);
+      cursor: not-allowed;
+    }
+
+    /* Comments List */
+    .comments-list {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .comment-item {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-100);
+      transition: background 0.15s;
+    }
+
+    .comment-item:last-child {
+      border-bottom: none;
+    }
+
+    .comment-item:hover {
+      background: var(--gray-50);
+    }
+
+    .comment-main {
+      display: flex;
+      gap: 12px;
+    }
+
+    .comment-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .comment-avatar.green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: var(--white);
+    }
+
+    .comment-avatar.blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: var(--white);
+    }
+
+    .comment-avatar.purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: var(--white);
+    }
+
+    .comment-avatar.orange {
+      background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+      color: var(--white);
+    }
+
+    .comment-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .comment-author-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .comment-author {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .comment-role {
+      padding: 2px 8px;
+      background: var(--primary-light);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 999px;
+    }
+
+    .comment-date {
+      font-size: 12px;
+      color: var(--gray-400);
+    }
+
+    .comment-body {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--gray-700);
+      margin-bottom: 10px;
+    }
+
+    .comment-body.collapsed {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .comment-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .comment-action {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-400);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 0;
+      transition: color 0.15s;
+    }
+
+    .comment-action:hover {
+      color: var(--primary);
+    }
+
+    .comment-action.liked {
+      color: var(--danger);
+    }
+
+    .show-more-btn {
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 4px;
+    }
+
+    .show-more-btn:hover {
+      text-decoration: underline;
+    }
+
+    /* Threaded Reply */
+    .comment-reply {
+      margin-top: 16px;
+      margin-left: 48px;
+      padding: 16px;
+      background: var(--gray-50);
+      border-radius: var(--radius);
+      border-left: 3px solid var(--primary-light);
+    }
+
+    .comment-reply .comment-main {
+      gap: 10px;
+    }
+
+    .comment-reply .comment-avatar {
+      width: 28px;
+      height: 28px;
+      font-size: 11px;
+    }
+
+    .comment-reply .comment-author {
+      font-size: 13px;
+    }
+
+    .comment-reply .comment-body {
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+
+    /* Empty State */
+    .empty-state {
+      padding: 48px 24px;
+      text-align: center;
+    }
+
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      background: var(--gray-100);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gray-400);
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 4px;
+    }
+
+    .empty-text {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    /* New Comment Indicator */
+    .new-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      background: var(--success-light);
+      color: var(--success);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 999px;
+      margin-left: 8px;
+    }
+
+    /* Timestamp Grouping */
+    .date-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      background: var(--gray-50);
+    }
+
+    .date-divider-line {
+      flex: 1;
+      height: 1px;
+      background: var(--gray-200);
+    }
+
+    .date-divider-text {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Scrollbar */
+    .comments-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .comments-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .comments-list::-webkit-scrollbar-thumb {
+      background: var(--gray-300);
+      border-radius: 3px;
+    }
+
+    .comments-list::-webkit-scrollbar-thumb:hover {
+      background: var(--gray-400);
+    }
+
+    /* Quick Feedback Templates */
+    .quick-feedback {
+      padding: 12px 24px;
+      background: var(--gray-50);
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .quick-feedback-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .quick-feedback-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .quick-chip {
+      padding: 6px 12px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--gray-600);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .quick-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-title">Component Preview</div>
+    <h1 class="page-heading">Tutor Comments Section – Redesigned</h1>
+
+    <div class="comments-section">
+      <!-- Header -->
+      <div class="comments-header">
+        <div class="comments-header-left">
+          <div class="comments-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="comments-title-group">
+            <h2>Tutor Feedback</h2>
+            <p>Comments from your teachers to help improve your statement</p>
+          </div>
+        </div>
+        <div class="comments-count">
+          <span class="count-num">3</span>
+          <span>Comments</span>
+        </div>
+      </div>
+
+      <!-- Compose Area (Staff View) -->
+      <div class="compose-area">
+        <div class="compose-wrapper">
+          <div class="compose-avatar">MG</div>
+          <div class="compose-input-wrapper">
+            <textarea class="compose-textarea" placeholder="Write feedback for this student's personal statement..."></textarea>
+            <div class="compose-footer">
+              <div class="compose-hint">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <span>Students will be notified when you post</span>
+              </div>
+              <div class="compose-actions">
+                <button class="btn btn-ghost">Cancel</button>
+                <button class="btn btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m22 2-7 20-4-9-9-4 20-7z"/><path d="M22 2 11 13"/></svg>
+                  Post Feedback
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Feedback Templates -->
+      <div class="quick-feedback">
+        <div class="quick-feedback-label">Quick feedback</div>
+        <div class="quick-feedback-chips">
+          <button class="quick-chip">📝 Add more specific examples</button>
+          <button class="quick-chip">🔍 Strengthen your "why this course"</button>
+          <button class="quick-chip">✂️ Trim repetition</button>
+          <button class="quick-chip">💡 Show reflection, not just description</button>
+          <button class="quick-chip">🎯 Link skills to the course</button>
+        </div>
+      </div>
+
+      <!-- Date Divider -->
+      <div class="date-divider">
+        <div class="date-divider-line"></div>
+        <span class="date-divider-text">Today</span>
+        <div class="date-divider-line"></div>
+      </div>
+
+      <!-- Comments List -->
+      <div class="comments-list">
+        <!-- Comment 1 - Recent/New -->
+        <div class="comment-item">
+          <div class="comment-main">
+            <div class="comment-avatar green">SJ</div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <div class="comment-author-info">
+                  <span class="comment-author">Mrs S. Johnson</span>
+                  <span class="comment-role">Head of Sixth Form</span>
+                  <span class="new-indicator">New</span>
+                </div>
+                <span class="comment-date">2 hours ago</span>
+              </div>
+              <div class="comment-body">
+                <strong>Good start – some key areas to develop:</strong><br><br>
+                You've got solid experiences to draw on, but there's repetition here (the hospital volunteering and elderly care sections appear twice). Make sure you're not duplicating content across your answers.<br><br>
+                <strong>Strengthen with specifics:</strong> Which patients or moments at the hospital stood out? One concrete example beats a general statement.
+              </div>
+              <div class="comment-actions">
+                <button class="comment-action">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                  Helpful
+                </button>
+                <button class="comment-action">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Reply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date Divider -->
+        <div class="date-divider">
+          <div class="date-divider-line"></div>
+          <span class="date-divider-text">Yesterday</span>
+          <div class="date-divider-line"></div>
+        </div>
+
+        <!-- Comment 2 -->
+        <div class="comment-item">
+          <div class="comment-main">
+            <div class="comment-avatar blue">PT</div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <div class="comment-author-info">
+                  <span class="comment-author">Dr P. Thompson</span>
+                  <span class="comment-role">Chemistry Teacher</span>
+                </div>
+                <span class="comment-date">Yesterday at 4:32 PM</span>
+              </div>
+              <div class="comment-body">
+                Your chemistry paragraph is strong – I like how you've linked organic chemistry to pharmacology. Consider adding something about the practical skills you've developed in labs (titrations, spectroscopy) as this shows hands-on experience that medical schools value.
+              </div>
+              <div class="comment-actions">
+                <button class="comment-action liked">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                  Helpful · 1
+                </button>
+                <button class="comment-action">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Reply
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Threaded Reply -->
+          <div class="comment-reply">
+            <div class="comment-main">
+              <div class="comment-avatar purple">EM</div>
+              <div class="comment-content">
+                <div class="comment-header">
+                  <div class="comment-author-info">
+                    <span class="comment-author">Emma Mitchell</span>
+                  </div>
+                  <span class="comment-date">Yesterday at 5:15 PM</span>
+                </div>
+                <div class="comment-body">
+                  Thank you Dr Thompson! I'll add a sentence about the IR spectroscopy work we did last term – that was really interesting.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date Divider -->
+        <div class="date-divider">
+          <div class="date-divider-line"></div>
+          <span class="date-divider-text">Last Week</span>
+          <div class="date-divider-line"></div>
+        </div>
+
+        <!-- Comment 3 - Longer, collapsed -->
+        <div class="comment-item">
+          <div class="comment-main">
+            <div class="comment-avatar orange">RW</div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <div class="comment-author-info">
+                  <span class="comment-author">Mr R. Williams</span>
+                  <span class="comment-role">UCAS Coordinator</span>
+                </div>
+                <span class="comment-date">12 Jan 2025</span>
+              </div>
+              <div class="comment-body collapsed" id="comment3">
+                Initial review complete. Overall structure is good – you've addressed all three questions and the content flows well. A few formatting notes: 1) Double-check that your paragraphs aren't too long for the UCAS character limit visualisation, 2) The transition between your academic section and extra-curricular could be smoother, 3) Your conclusion is strong but could tie back more explicitly to your opening. I've also noticed some minor grammatical issues – we can go through these in our one-to-one session on Thursday.
+              </div>
+              <button class="show-more-btn" onclick="toggleComment('comment3', this)">Show more</button>
+              <div class="comment-actions">
+                <button class="comment-action">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                  Helpful
+                </button>
+                <button class="comment-action">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Reply
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State Version (for reference) -->
+    <div style="margin-top: 32px;">
+      <div class="page-title" style="margin-bottom: 16px;">Empty State Version</div>
+      <div class="comments-section">
+        <div class="comments-header">
+          <div class="comments-header-left">
+            <div class="comments-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <div class="comments-title-group">
+              <h2>Tutor Feedback</h2>
+              <p>Comments from your teachers to help improve your statement</p>
+            </div>
+          </div>
+          <div class="comments-count">
+            <span class="count-num">0</span>
+            <span>Comments</span>
+          </div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="empty-title">No feedback yet</div>
+          <div class="empty-text">Your teachers will leave comments here to help you improve your personal statement.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleComment(id, btn) {
+      const el = document.getElementById(id);
+      if (el.classList.contains('collapsed')) {
+        el.classList.remove('collapsed');
+        btn.textContent = 'Show less';
+      } else {
+        el.classList.add('collapsed');
+        btn.textContent = 'Show more';
+      }
+    }
+  </script>
+</body>
+</html>
