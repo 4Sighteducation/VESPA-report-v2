@@ -138,7 +138,9 @@ async function fetchInvite() {
     studentName.value = d.studentName || ''
     academicYear.value = d.academicYear || ''
     subjectKey.value = d.subjectKey || ''
-    inboxUrl.value = d.inboxUrl || ''
+    // Backwards compatible: older backends may not return inboxUrl yet.
+    // We can still derive it from the token since the inbox is served from the same host.
+    inboxUrl.value = d.inboxUrl || `${apiBase.replace(/\/$/, '')}/reference-inbox?token=${encodeURIComponent(token)}`
     allowedSections.value = Array.isArray(d.allowedSections) && d.allowedSections.length ? d.allowedSections : [3]
     if (!allowedSections.value.includes(section.value)) section.value = allowedSections.value[0]
   } catch (e) {

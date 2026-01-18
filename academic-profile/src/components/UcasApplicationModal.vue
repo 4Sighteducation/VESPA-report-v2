@@ -1438,8 +1438,13 @@ async function sendInvite() {
       { roleHint: 'student' }
     )
     if (!resp?.success) throw new Error(resp?.error || 'Invite failed')
-    // Prefer the inbox link if available (reduces multiple-invite spam).
-    lastInviteUrl.value = safeText(resp?.data?.inboxUrl || resp?.data?.inviteUrl || '')
+    // Prefer inbox link; if backend is old, transform contribution URL into inbox URL.
+    const rawUrl = safeText(resp?.data?.inboxUrl || resp?.data?.inviteUrl || '')
+    if (rawUrl.includes('/reference-contribution') && rawUrl.includes('token=')) {
+      lastInviteUrl.value = rawUrl.replace('/reference-contribution', '/reference-inbox')
+    } else {
+      lastInviteUrl.value = rawUrl
+    }
     showToast('Invite created')
     inviteEmail.value = ''
     inviteSubjectKey.value = ''
