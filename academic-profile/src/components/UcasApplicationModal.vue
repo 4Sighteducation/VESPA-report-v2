@@ -219,7 +219,10 @@
                     }"
                   ></div>
                 </div>
-                <div class="ucas-metric-sub">{{ remainingChars.toLocaleString() }} remaining</div>
+                <div class="ucas-metric-sub" :class="{ 'ucas-metric-sub--danger': overChars > 0 }">
+                  <template v-if="overChars > 0">{{ overChars.toLocaleString() }} over limit</template>
+                  <template v-else>{{ remainingChars.toLocaleString() }} remaining</template>
+                </div>
               </div>
               <div class="ucas-metric" :class="{ 'ucas-metric--success': totalChars >= MIN_TOTAL_CHARS }">
                 <div class="ucas-metric-label">Minimum required</div>
@@ -452,13 +455,22 @@
             <span class="ucas-footer-total">{{ totalChars.toLocaleString() }}</span>
             <span class="ucas-footer-divider">/</span>
             <span class="ucas-footer-max">{{ MAX_TOTAL_CHARS.toLocaleString() }}</span>
-            <span class="ucas-footer-remaining">({{ remainingChars.toLocaleString() }} remaining)</span>
+            <span class="ucas-footer-remaining">
+              (
+              <template v-if="overChars > 0">{{ overChars.toLocaleString() }} over</template>
+              <template v-else>{{ remainingChars.toLocaleString() }} remaining</template>
+              )
+            </span>
           </div>
           <div v-if="totalChars > 0 && totalChars < MIN_TOTAL_CHARS" class="ucas-footer-warning">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Add {{ MIN_TOTAL_CHARS - totalChars }} more characters to reach the minimum.
           </div>
-          <div v-if="totalChars >= MAX_TOTAL_CHARS" class="ucas-footer-error">
+          <div v-if="totalChars > MAX_TOTAL_CHARS" class="ucas-footer-error">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            Over the limit by {{ overChars }} characters. Shorten your statement before saving or marking complete.
+          </div>
+          <div v-else-if="totalChars >= MAX_TOTAL_CHARS" class="ucas-footer-error">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
             Maximum character limit reached.
           </div>
@@ -1529,6 +1541,7 @@ function setSubjectOffer(subjectKey, value) {
 
 const totalChars = computed(() => answers.q1.length + answers.q2.length + answers.q3.length)
 const remainingChars = computed(() => Math.max(0, MAX_TOTAL_CHARS - totalChars.value))
+const overChars = computed(() => Math.max(0, totalChars.value - MAX_TOTAL_CHARS))
 
 const combinedStatement = computed(() => {
   const a = safeText(answers.q1).trim()
@@ -1536,6 +1549,23 @@ const combinedStatement = computed(() => {
   const c = safeText(answers.q3).trim()
   return [a, b, c].filter(Boolean).join('\n\n')
 })
+
+function enforceMaxTotalChars() {
+  let extra = totalChars.value - MAX_TOTAL_CHARS
+  if (extra <= 0) return
+  for (const field of ['q3', 'q2', 'q1']) {
+    if (extra <= 0) break
+    const cur = safeText(answers[field])
+    if (!cur) continue
+    if (cur.length <= extra) {
+      answers[field] = ''
+      extra -= cur.length
+    } else {
+      answers[field] = cur.slice(0, cur.length - extra)
+      extra = 0
+    }
+  }
+}
 
 function handleAnswerInput(field, nextValue) {
   if (!props.canEdit) return
@@ -1578,6 +1608,7 @@ function loadLocalDraft() {
       answers.q1 = safeText(parsed.answers.q1)
       answers.q2 = safeText(parsed.answers.q2)
       answers.q3 = safeText(parsed.answers.q3)
+      enforceMaxTotalChars()
     }
     if (parsed?.requirementsByCourse && typeof parsed.requirementsByCourse === 'object') {
       for (const [k, v] of Object.entries(parsed.requirementsByCourse)) {
@@ -1621,6 +1652,7 @@ async function loadFromServer() {
     answers.q1 = safeText(data.answers.q1)
     answers.q2 = safeText(data.answers.q2)
     answers.q3 = safeText(data.answers.q3)
+    enforceMaxTotalChars()
   }
   if (data.requirementsByCourse && typeof data.requirementsByCourse === 'object') {
     for (const [k, v] of Object.entries(data.requirementsByCourse)) {
@@ -1635,6 +1667,14 @@ async function loadFromServer() {
 async function markStatementComplete() {
   if (!props.canEdit || !props.apiUrl || !props.studentEmail) return
   if (statementCompletedAt.value) return
+  if (totalChars.value > MAX_TOTAL_CHARS) {
+    showToast(`Over the ${MAX_TOTAL_CHARS} character limit — please shorten before marking complete`)
+    return
+  }
+  if (totalChars.value < MIN_TOTAL_CHARS) {
+    showToast(`Need at least ${MIN_TOTAL_CHARS} characters before marking complete`)
+    return
+  }
   statementMarking.value = true
   try {
     const resp = await markUcasStatementComplete(
@@ -1659,6 +1699,14 @@ async function saveToServer() {
     return
   }
   if (!props.apiUrl || !props.studentEmail) return
+  if (totalChars.value > MAX_TOTAL_CHARS) {
+    showToast(`Over the ${MAX_TOTAL_CHARS} character limit — please shorten before saving`)
+    return
+  }
+  if (totalChars.value < MIN_TOTAL_CHARS) {
+    showToast(`Need at least ${MIN_TOTAL_CHARS} characters before saving`)
+    return
+  }
   saving.value = true
   try {
     const payload = {
@@ -1888,6 +1936,7 @@ onMounted(async () => {
   display:flex;align-items:center;justify-content:center;padding:16px;
 }
 .ucas-modal{width:100%;max-width:1400px;height:100%;max-height:calc(100vh - 32px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+@media (min-width:1024px){.ucas-modal{transform:scale(.9);transform-origin:center}}
 
 .ucas-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--ucas-white);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
 .ucas-header-left{display:flex;flex-direction:column;gap:8px}
@@ -1949,6 +1998,7 @@ onMounted(async () => {
 .ucas-metric-value{font-size:22px;font-weight:700;color:var(--ucas-gray-900);line-height:1.2}
 .ucas-metric-max{font-size:14px;font-weight:500;color:var(--ucas-gray-400)}
 .ucas-metric-sub{font-size:12px;color:var(--ucas-gray-500);margin-top:4px}
+.ucas-metric-sub--danger{color:var(--ucas-danger);font-weight:600}
 .ucas-metric-status{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:500;color:var(--ucas-gray-500);margin-top:6px}
 .ucas-progress-bar{height:6px;background:var(--ucas-gray-200);border-radius:3px;margin-top:8px;overflow:hidden}
 .ucas-progress-fill{height:100%;background:var(--ucas-primary);border-radius:3px;transition:width .3s ease,background-color .3s ease}
