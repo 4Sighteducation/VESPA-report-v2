@@ -34,7 +34,10 @@
     </div>
 
     <!-- Grades Container -->
-    <div class="grades-container" :class="{ 'grades-compact': showMeg && showStg }">
+    <div
+      class="grades-container"
+      :class="[`grades-cols-${gradeCount}`, { 'grades-compact': showMeg && showStg }]"
+    >
       <!-- MEG -->
       <div v-if="showMeg" class="grade-item">
         <div class="grade-label">
@@ -274,6 +277,13 @@ const stgGrade = computed(() => {
   return displayGrade(props.subject.subjectTargetGrade || props.subject.minimumExpectedGrade)
 })
 
+const gradeCount = computed(() => {
+  let count = 2 // Current + Target always shown
+  if (props.showMeg) count += 1
+  if (props.showStg) count += 1
+  return count
+})
+
 const hasRecordId = computed(() => {
   return !!(props.subject.id || props.subject.originalRecordId)
 })
@@ -457,13 +467,29 @@ const formatPercentage = (decimal) => {
 /* Grades */
 .grades-container {
   display: grid;
-  /* Always keep grades on one row (MEG, STG, Current, Target). */
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* Keep grade pills centered within the subject card. */
   gap: clamp(6px, 1.2vw, 10px);
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   flex: 1;
+}
+
+.grades-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.grades-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.grades-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .grades-container.grades-compact .grade-item {

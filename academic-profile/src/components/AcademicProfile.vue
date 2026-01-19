@@ -1216,7 +1216,6 @@ const showTemporaryMessage = (message, type) => {
   min-height: 170px;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 12px;
 }
 
@@ -1227,13 +1226,6 @@ const showTemporaryMessage = (message, type) => {
   width: 100%;
   align-items: stretch;
   grid-auto-rows: 1fr;
-  justify-content: center;
-}
-
-/* Center KS5 subject cards within wider modals */
-.profile-info.ks5-layout .subjects-grid {
-  max-width: 1100px;
-  margin: 0 auto;
 }
 
 @media (max-width: 768px) {
