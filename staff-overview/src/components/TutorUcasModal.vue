@@ -565,8 +565,10 @@ function formatDate(v) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10050;
+  /* Knack sometimes uses very high z-index overlays; force above everything */
+  z-index: 2147483000 !important;
   padding: 18px;
+  pointer-events: auto;
 }
 
 .tutor-ucas-modal {
@@ -579,6 +581,8 @@ function formatDate(v) {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 2147483001;
 }
 
 .tutor-ucas-header {
