@@ -219,6 +219,8 @@ const error = ref('')
 const ucasApp = ref(null)
 const refFull = ref(null)
 
+const effectiveAcademicYear = ref('current')
+
 const compiledText = ref('')
 const compiledOriginal = ref('')
 const saving = ref(false)
@@ -268,6 +270,38 @@ const compiledTextTrimmed = computed(() => (compiledText.value || '').trim())
 const compiledHasText = computed(() => compiledTextTrimmed.value.length > 0)
 const hasChanges = computed(() => compiledText.value.trim() !== (compiledOriginal.value || '').trim())
 
+function normalizeAy(v) {
+  const s = String(v || '').trim()
+  if (!s) return 'current'
+  const low = s.toLowerCase()
+  if (low === 'current') return 'current'
+  return s
+}
+
+async function resolveAcademicYear() {
+  const fromProp = normalizeAy(props.academicYear)
+  if (fromProp && fromProp !== 'current') {
+    effectiveAcademicYear.value = fromProp
+    return fromProp
+  }
+
+  // Ask academic profile endpoint (it returns academicYear)
+  try {
+    const prof = await staffAPI.getAcademicProfile(props.student.email, null, {
+      roleHint: 'staff',
+      staffEmail: props.staffEmail || ''
+    })
+    const ay = normalizeAy(prof?.academicYear || prof?.data?.academicYear)
+    if (ay && ay !== 'current') {
+      effectiveAcademicYear.value = ay
+      return ay
+    }
+  } catch (_) {}
+
+  effectiveAcademicYear.value = 'current'
+  return 'current'
+}
+
 const groupedSection3 = computed(() => {
   const items = refFull.value?.data?.section3 || []
   const bySubject = new Map()
@@ -294,9 +328,10 @@ async function load() {
   error.value = ''
   saveError.value = ''
   try {
+    await resolveAcademicYear()
     const [appResp, refResp] = await Promise.all([
-      staffAPI.getUcasApplication(props.student.email, props.academicYear),
-      staffAPI.getReferenceFull(props.student.email, props.academicYear)
+      staffAPI.getUcasApplication(props.student.email, effectiveAcademicYear.value),
+      staffAPI.getReferenceFull(props.student.email, effectiveAcademicYear.value)
     ])
     ucasApp.value = appResp
     refFull.value = refResp
@@ -353,7 +388,7 @@ async function saveCompiled() {
   saving.value = true
   try {
     await staffAPI.saveTutorCompiled(props.student.email, {
-      academicYear: props.academicYear,
+      academicYear: effectiveAcademicYear.value,
       staffEmail: props.staffEmail,
       staffName: props.staffName,
       text: compiledText.value
@@ -376,14 +411,14 @@ async function markComplete() {
     // Ensure latest draft is saved before completion (best UX)
     if (hasChanges.value) {
       await staffAPI.saveTutorCompiled(props.student.email, {
-        academicYear: props.academicYear,
+        academicYear: effectiveAcademicYear.value,
         staffEmail: props.staffEmail,
         staffName: props.staffName,
         text: compiledText.value
       })
     }
     await staffAPI.markTutorCompiledComplete(props.student.email, {
-      academicYear: props.academicYear,
+      academicYear: effectiveAcademicYear.value,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })
@@ -402,7 +437,7 @@ async function unmarkComplete() {
   saveError.value = ''
   try {
     await staffAPI.unmarkTutorCompiledComplete(props.student.email, {
-      academicYear: props.academicYear,
+      academicYear: effectiveAcademicYear.value,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })
@@ -432,7 +467,7 @@ async function copyText(text) {
 
 const ucasAcademicYear = computed(() => {
   const fromProfile = ucasProfile.value?.academicYear || ucasProfile.value?.data?.academicYear || ''
-  return (fromProfile || props.academicYear || 'current').toString()
+  return (fromProfile || effectiveAcademicYear.value || props.academicYear || 'current').toString()
 })
 
 const ucasSubjects = computed(() => {
@@ -455,7 +490,8 @@ async function openUcasInModal() {
   ucasAppError.value = ''
   try {
     // Fetch the small Academic Profile payload (subjects + offers) so UCAS renders correctly.
-    const prof = await staffAPI.getAcademicProfile(email, props.academicYear || 'current', {
+    const yearArg = normalizeAy(effectiveAcademicYear.value) === 'current' ? null : effectiveAcademicYear.value
+    const prof = await staffAPI.getAcademicProfile(email, yearArg, {
       roleHint: 'staff',
       staffEmail: props.staffEmail || ''
     })
@@ -463,6 +499,9 @@ async function openUcasInModal() {
       throw new Error(prof?.error || 'Failed to load academic profile')
     }
     ucasProfile.value = prof
+
+    const ay = normalizeAy(prof?.academicYear || prof?.data?.academicYear)
+    if (ay) effectiveAcademicYear.value = ay
   } catch (e) {
     ucasAppError.value = e?.message || 'Failed to open UCAS'
   } finally {
@@ -486,7 +525,7 @@ async function requestStatementEdits() {
   requestingEdits.value = true
   try {
     await staffAPI.requestUcasStatementEdits(props.student.email, {
-      academicYear: props.academicYear,
+      academicYear: effectiveAcademicYear.value,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })

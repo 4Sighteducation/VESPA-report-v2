@@ -250,7 +250,9 @@ export const staffAPI = {
   async getAcademicProfile(studentEmail, academicYear = 'current', opts = {}) {
     try {
       const qs = new URLSearchParams()
-      if (academicYear) qs.append('academic_year', academicYear)
+      // If academicYear is "current"/empty, omit the param so backend can pick best match
+      const ay = (academicYear === null || academicYear === undefined) ? '' : String(academicYear).trim()
+      if (ay && ay.toLowerCase() !== 'current') qs.append('academic_year', ay)
       const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}${qs.toString() ? `?${qs.toString()}` : ''}`
 
       const headers = {}
