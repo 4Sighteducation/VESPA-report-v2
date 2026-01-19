@@ -154,6 +154,8 @@
                     type="text"
                     :disabled="!canEdit"
                     :value="currentCourseSubjectOffers[s.key] || ''"
+                    @click="notifyReadOnlyEdit"
+                    @focus="notifyReadOnlyEdit"
                     @input="(e) => setSubjectOffer(s.key, e.target.value)"
                     placeholder="e.g. AAA"
                   />
@@ -271,6 +273,8 @@
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q1"
+              @click="notifyReadOnlyEdit"
+              @focus="notifyReadOnlyEdit"
               @input="(e) => handleAnswerInput('q1', e.target.value)"
               placeholder="Be specific. What sparked your interest, and why this course?"
             />
@@ -297,6 +301,8 @@
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q2"
+              @click="notifyReadOnlyEdit"
+              @focus="notifyReadOnlyEdit"
               @input="(e) => handleAnswerInput('q2', e.target.value)"
               placeholder="Use evidence: topics, projects, what you learned, and how it links."
             />
@@ -323,6 +329,8 @@
               class="ucas-textarea"
               :disabled="!canEdit"
               :value="answers.q3"
+              @click="notifyReadOnlyEdit"
+              @focus="notifyReadOnlyEdit"
               @input="(e) => handleAnswerInput('q3', e.target.value)"
               placeholder="Super-curricular, work experience, reading, volunteering, clubs… what did it develop?"
             />
@@ -1510,6 +1518,15 @@ const expandedValue = computed(() => {
   return answers[expandedField.value] || ''
 })
 const expandedChars = computed(() => expandedValue.value.length)
+
+const lastReadOnlyToastAt = ref(0)
+function notifyReadOnlyEdit() {
+  if (props.canEdit) return
+  const now = Date.now()
+  if (now - lastReadOnlyToastAt.value < 1500) return
+  lastReadOnlyToastAt.value = now
+  showToast('Only students can edit their UCAS statement.')
+}
 
 function openExpanded(field) {
   expandedField.value = field
