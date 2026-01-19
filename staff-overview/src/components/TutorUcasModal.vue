@@ -10,33 +10,31 @@
       </div>
 
       <div class="tutor-ucas-body">
-        <!-- UCAS application (embedded) -->
-        <div v-if="ucasIframeOpen" class="tutor-ucas-iframe-overlay" @click.self="closeUcasIframe">
-          <div class="tutor-ucas-iframe-modal">
-            <div class="tutor-ucas-iframe-header">
-              <div style="font-weight:900;">UCAS application</div>
-              <div style="display:flex; gap:10px; align-items:center;">
-                <button class="tutor-ucas-btn tutor-ucas-btn--ghost tutor-ucas-btn--sm" type="button" @click="closeUcasIframe">
-                  Back to reference
-                </button>
-                <button class="tutor-ucas-close" @click="closeUcasIframe">&times;</button>
-              </div>
-            </div>
-            <div class="tutor-ucas-iframe-body">
-              <iframe
-                v-if="ucasIframeUrl"
-                :src="ucasIframeUrl"
-                class="tutor-ucas-iframe"
-                @load="handleUcasIframeLoad"
-                frameborder="0"
-                allowfullscreen
-              ></iframe>
-              <div v-show="ucasIframeLoading" class="tutor-ucas-iframe-loading">
-                <div class="spinner"></div>
-                <div>Loading UCAS application…</div>
-              </div>
+        <!-- UCAS application (direct UCAS modal, no Knack iframe) -->
+        <div v-if="ucasAppOpen">
+          <div v-if="ucasAppLoading" class="tutor-ucas-iframe-loading" style="position: fixed; inset: 0; z-index: 10100;">
+            <div class="spinner"></div>
+            <div>Loading UCAS application…</div>
+          </div>
+          <div v-else-if="ucasAppError" class="tutor-ucas-error" style="position: fixed; inset: 24px; z-index: 10100; max-width: 820px; margin: auto;">
+            <div class="tutor-ucas-error-title">Could not open UCAS application</div>
+            <div class="tutor-ucas-error-msg">{{ ucasAppError }}</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">Try again</button>
+              <button class="tutor-ucas-btn tutor-ucas-btn--ghost" @click="closeUcasApp">Back to reference</button>
             </div>
           </div>
+          <UcasApplicationModal
+            v-else
+            :studentEmail="student?.email || ''"
+            :academicYear="ucasAcademicYear"
+            :subjects="ucasSubjects"
+            :offers="ucasOffers"
+            :apiUrl="DASHBOARD_API"
+            :canEdit="false"
+            :staffEmail="staffEmail || ''"
+            @close="closeUcasApp"
+          />
         </div>
 
         <div v-if="loading" class="tutor-ucas-loading">
@@ -88,7 +86,7 @@
 
           <div class="tutor-ucas-actions">
             <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">
-              Open UCAS application (modal)
+              Open UCAS application
             </button>
             <button class="tutor-ucas-btn" :disabled="requestingEdits" @click="requestStatementEdits">
               {{ requestingEdits ? 'Requesting…' : 'Request edits (statement)' }}
@@ -201,6 +199,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { staffAPI } from '../services/api.js'
+import UcasApplicationModal from '../../../academic-profile/src/components/UcasApplicationModal.vue'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true },
@@ -211,6 +210,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+const DASHBOARD_API = 'https://vespa-dashboard-9a1f84ee5341.herokuapp.com'
 
 const loading = ref(false)
 const error = ref('')
@@ -227,8 +228,10 @@ const requestingEdits = ref(false)
 
 const editorExpanded = ref(false)
 
-const ucasIframeOpen = ref(false)
-const ucasIframeLoading = ref(false)
+const ucasAppOpen = ref(false)
+const ucasAppLoading = ref(false)
+const ucasAppError = ref('')
+const ucasProfile = ref(null)
 
 const tutorCompiledUpdatedAt = ref(null)
 const tutorCompiledCompletedAt = ref(null)
@@ -333,7 +336,7 @@ watch(
         document.body.style.overflow = ''
       } catch (_) {}
       editorExpanded.value = false
-      ucasIframeOpen.value = false
+      ucasAppOpen.value = false
     }
   },
   { immediate: true }
@@ -427,32 +430,50 @@ async function copyText(text) {
   }
 }
 
-const ucasIframeUrl = computed(() => {
-  const email = String(props.student?.email || '').trim()
-  if (!email) return ''
-  return `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
+const ucasAcademicYear = computed(() => {
+  const fromProfile = ucasProfile.value?.academicYear || ucasProfile.value?.data?.academicYear || ''
+  return (fromProfile || props.academicYear || 'current').toString()
 })
 
-function openUcasInModal() {
+const ucasSubjects = computed(() => {
+  const p = ucasProfile.value
+  return Array.isArray(p?.subjects) ? p.subjects : Array.isArray(p?.data?.subjects) ? p.data.subjects : []
+})
+
+const ucasOffers = computed(() => {
+  const p = ucasProfile.value
+  const student = p?.student || p?.data?.student || null
+  const offers = student && Array.isArray(student.universityOffers) ? student.universityOffers : []
+  return offers
+})
+
+async function openUcasInModal() {
   const email = String(props.student?.email || '').trim()
   if (!email) return
+  ucasAppOpen.value = true
+  ucasAppLoading.value = true
+  ucasAppError.value = ''
   try {
-    localStorage.setItem('vespa_open_ucas', JSON.stringify({ email, ts: Date.now() }))
-  } catch (_) {}
-  ucasIframeLoading.value = true
-  ucasIframeOpen.value = true
+    // Fetch the small Academic Profile payload (subjects + offers) so UCAS renders correctly.
+    const prof = await staffAPI.getAcademicProfile(email, props.academicYear || 'current', {
+      roleHint: 'staff',
+      staffEmail: props.staffEmail || ''
+    })
+    if (!prof || prof.success === false) {
+      throw new Error(prof?.error || 'Failed to load academic profile')
+    }
+    ucasProfile.value = prof
+  } catch (e) {
+    ucasAppError.value = e?.message || 'Failed to open UCAS'
+  } finally {
+    ucasAppLoading.value = false
+  }
 }
 
-function handleUcasIframeLoad() {
-  // Cross-origin: we can't reliably hide Knack chrome here, but the UCAS modal will open on top.
-  setTimeout(() => {
-    ucasIframeLoading.value = false
-  }, 500)
-}
-
-function closeUcasIframe() {
-  ucasIframeOpen.value = false
-  ucasIframeLoading.value = false
+function closeUcasApp() {
+  ucasAppOpen.value = false
+  ucasAppLoading.value = false
+  ucasAppError.value = ''
 }
 
 function toggleEditorExpanded() {
@@ -559,52 +580,6 @@ function formatDate(v) {
 .tutor-ucas-body {
   padding: 14px 16px 18px;
   overflow: auto;
-}
-
-.tutor-ucas-iframe-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.78);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10100;
-  padding: 18px;
-}
-
-.tutor-ucas-iframe-modal {
-  width: min(1400px, 96vw);
-  height: min(92vh, 920px);
-  background: #fff;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-  display: flex;
-  flex-direction: column;
-}
-
-.tutor-ucas-iframe-header {
-  padding: 12px 14px;
-  background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.tutor-ucas-iframe-body {
-  position: relative;
-  flex: 1;
-  background: #f5f5f5;
-}
-
-.tutor-ucas-iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  display: block;
-  background: #fff;
 }
 
 .tutor-ucas-iframe-loading {
