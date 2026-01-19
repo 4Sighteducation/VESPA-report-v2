@@ -119,5 +119,125 @@ export const staffAPI = {
       throw error
     }
   }
+  ,
+
+  /**
+   * Fetch UCAS application data for a student (staff-only endpoint)
+   * @param {string} studentEmail
+   * @param {string} academicYear - 'current' or 'YYYY-YYYY'
+   */
+  async getUcasApplication(studentEmail, academicYear = 'current') {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application?academicYear=${encodeURIComponent(academicYear)}`
+      const response = await fetch(url)
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error fetching UCAS application:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Fetch full reference (invites + contributions + tutor compiled narrative)
+   * @param {string} studentEmail
+   * @param {string} academicYear - 'current' or 'YYYY-YYYY'
+   */
+  async getReferenceFull(studentEmail, academicYear = 'current') {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/full?academicYear=${encodeURIComponent(academicYear)}`
+      const response = await fetch(url)
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error fetching reference full:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Save tutor compiled narrative (Section 3 collation)
+   */
+  async saveTutorCompiled(studentEmail, payload) {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/tutor-compiled`
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error saving tutor compiled narrative:', error)
+      throw error
+    }
+  },
+
+  async markTutorCompiledComplete(studentEmail, payload) {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/tutor-compiled/mark-complete`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error marking tutor compiled complete:', error)
+      throw error
+    }
+  },
+
+  async unmarkTutorCompiledComplete(studentEmail, payload) {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/tutor-compiled/unmark-complete`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error unmarking tutor compiled complete:', error)
+      throw error
+    }
+  },
+
+  async requestUcasStatementEdits(studentEmail, payload) {
+    try {
+      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application/request-edits`
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      })
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error requesting UCAS statement edits:', error)
+      throw error
+    }
+  }
 }
 

@@ -220,6 +220,15 @@
       @close="closeEditCoaching"
       @save="handleSaveCoaching"
     />
+
+    <TutorUcasModal
+      :isOpen="tutorUcasOpen"
+      :student="tutorUcasStudent"
+      :staffEmail="currentStaffEmail"
+      :staffName="currentStaffName"
+      academicYear="current"
+      @close="closeTutorUcas"
+    />
   </div>
 </template>
 
@@ -228,6 +237,7 @@ import { ref, computed, watch } from 'vue'
 import { getScoreColor } from '../data/vespaColors.js'
 import TextViewModal from './TextViewModal.vue'
 import EditableTextModal from './EditableTextModal.vue'
+import TutorUcasModal from './TutorUcasModal.vue'
 import { staffAPI } from '../services/api.js'
 
 const props = defineProps({
@@ -505,18 +515,47 @@ function canAccessUcas(student) {
 
 function openUcas(student) {
   if (!canAccessUcas(student)) return
-  const email = String(student.email || '').trim()
-  if (!email) return
-  // Some Knack pages can strip unknown hash params; also set a short-lived localStorage flag
-  // so the Academic Profile widget can auto-open the UCAS modal after mount.
+  // Replaces the old behavior (jumping straight to Academic Profile in a new tab)
+  // with a tutor-centric UCAS popup that shows statuses + reference collation.
+  openTutorUcas(student)
+}
+
+// Tutor UCAS popup state
+const tutorUcasOpen = ref(false)
+const tutorUcasStudent = ref(null)
+
+const currentStaffEmail = computed(() => {
   try {
-    localStorage.setItem(
-      'vespa_open_ucas',
-      JSON.stringify({ email, ts: Date.now() })
-    )
-  } catch (_) {}
-  const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
-  window.open(url, '_blank', 'noopener')
+    const attrs = typeof Knack !== 'undefined' && Knack.getUserAttributes ? Knack.getUserAttributes() : null
+    return (attrs?.email || '').toString().trim().toLowerCase()
+  } catch (_) {
+    return ''
+  }
+})
+
+const currentStaffName = computed(() => {
+  try {
+    const attrs = typeof Knack !== 'undefined' && Knack.getUserAttributes ? Knack.getUserAttributes() : null
+    return (attrs?.name || attrs?.full_name || '').toString().trim()
+  } catch (_) {
+    return ''
+  }
+})
+
+function openTutorUcas(student) {
+  if (!canAccessUcas(student)) return
+  tutorUcasStudent.value = {
+    name: student?.name || '',
+    email: student?.email || '',
+    group: student?.group || '',
+    yearGroup: student?.yearGroup || student?.year || ''
+  }
+  tutorUcasOpen.value = true
+}
+
+function closeTutorUcas() {
+  tutorUcasOpen.value = false
+  tutorUcasStudent.value = null
 }
 
 // View-only modal (for Response)
