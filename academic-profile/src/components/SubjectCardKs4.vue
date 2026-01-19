@@ -229,28 +229,56 @@ const handleChange = (field, value) => {
 .ks4-grades {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: clamp(4px, 1vw, 6px);
 }
 
 .ks4-pill {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(124, 255, 154, 0.12);
   border-radius: 8px;
-  padding: 6px 6px;
+  padding: clamp(5px, 1vw, 6px);
   text-align: center;
+  min-width: 0;
 }
 
 .ks4-pill-label {
-  font-size: 10px;
+  font-size: clamp(9px, 1vw, 10px);
   color: rgba(215, 255, 228, 0.75);
   margin-bottom: 2px;
+  white-space: nowrap;
 }
 
 .ks4-pill-value {
-  font-size: 13px;
+  font-size: clamp(11px, 1.4vw, 13px);
   font-weight: 700;
   color: #ffffff;
   line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1100px) {
+  .ks4-card {
+    padding: 8px 9px 8px 11px;
+    gap: 6px;
+  }
+
+  .ks4-grades {
+    gap: 5px;
+  }
+
+  .ks4-pill {
+    padding: 5px;
+  }
+
+  .ks4-pill-label {
+    font-size: 9px;
+  }
+
+  .ks4-pill-value {
+    font-size: clamp(10px, 1.3vw, 12px);
+  }
 }
 
 .ks4-pill-value-strong {
@@ -269,18 +297,6 @@ const handleChange = (field, value) => {
   font-weight: 700;
   font-size: 12px;
   outline: none;
-}
-
-@media (max-width: 768px) {
-  .ks4-grades {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 420px) {
-  .ks4-grades {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 </style>
 

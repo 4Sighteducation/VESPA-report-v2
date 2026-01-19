@@ -34,7 +34,7 @@
     </div>
 
     <!-- Grades Container -->
-    <div class="grades-container">
+    <div class="grades-container" :class="{ 'grades-compact': showMeg && showStg }">
       <!-- MEG -->
       <div v-if="showMeg" class="grade-item">
         <div class="grade-label">
@@ -457,24 +457,44 @@ const formatPercentage = (decimal) => {
 /* Grades */
 .grades-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
+  /* Always keep grades on one row (MEG, STG, Current, Target). */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(6px, 1.2vw, 10px);
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.10);
   flex: 1;
 }
 
+.grades-container.grades-compact .grade-item {
+  padding: clamp(5px, 0.9vw, 8px) clamp(5px, 0.8vw, 7px);
+}
+
+.grades-container.grades-compact .grade-label {
+  font-size: clamp(9px, 1vw, 10px);
+  margin-bottom: 2px;
+}
+
+.grades-container.grades-compact .grade-text {
+  font-size: clamp(16px, 2vw, 20px);
+}
+
+.grades-container.grades-compact .current-grade-item .grade-text,
+.grades-container.grades-compact .target-grade-item .grade-text {
+  font-size: clamp(18px, 2.4vw, 24px);
+}
+
 .grade-item {
   text-align: center;
-  padding: 10px 8px;
+  min-width: 0;
+  padding: clamp(6px, 1.2vw, 10px) clamp(6px, 1vw, 8px);
   background: rgba(0,0,0,0.16);
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.08);
 }
 
 .grade-label {
-  font-size: 0.7em;
+  font-size: clamp(10px, 1.1vw, 11px);
   color: rgba(255,255,255,0.70);
   margin-bottom: 3px;
   display: flex;
@@ -484,6 +504,7 @@ const formatPercentage = (decimal) => {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 800;
+  white-space: nowrap;
 }
 
 .meg-info-button {
@@ -510,13 +531,18 @@ const formatPercentage = (decimal) => {
 
 .grade-value-display {
   font-size: 1em;
+  line-height: 1;
 }
 
 .grade-text {
   font-weight: 800;
   color: #ffffff;
-  font-size: 22px;
+  /* Prevent multi-line stacking like "A" over "B" on narrow widths */
+  font-size: clamp(18px, 2.1vw, 22px);
+  line-height: 1;
   letter-spacing: 0.02em;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 .grade-meg .grade-text {
@@ -530,7 +556,7 @@ const formatPercentage = (decimal) => {
 /* Make Current/Target bigger (highest-salience grades) */
 .current-grade-item .grade-text,
 .target-grade-item .grade-text {
-  font-size: 28px;
+  font-size: clamp(20px, 2.7vw, 28px);
 }
 
 /* Grade input fields */
@@ -638,6 +664,35 @@ const formatPercentage = (decimal) => {
 .progress-fill.below {
   background: linear-gradient(90deg, rgba(232, 127, 127, 0.95), rgba(244, 168, 168, 0.85));
   box-shadow: 0 0 10px rgba(232, 127, 127, 0.30);
+}
+
+@media (max-width: 1100px) {
+  .subject-card {
+    padding: 12px;
+  }
+
+  .grades-container {
+    gap: 6px;
+  }
+
+  .grade-item {
+    padding: 6px 6px;
+    border-radius: 10px;
+  }
+
+  .grade-label {
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .grade-text {
+    font-size: clamp(16px, 2.2vw, 20px);
+  }
+
+  .current-grade-item .grade-text,
+  .target-grade-item .grade-text {
+    font-size: clamp(18px, 2.5vw, 24px);
+  }
 }
 
 /* Qualification-specific borders */
