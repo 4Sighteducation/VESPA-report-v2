@@ -80,6 +80,35 @@ const config = ref(props.config)
 // Toggle state for show/hide - default to hidden unless config says otherwise
 const isVisible = ref(!!(props.config && props.config.defaultVisible))
 
+function _hashParams() {
+  try {
+    const hash = String(window.location.hash || '')
+    const qIdx = hash.indexOf('?')
+    const qs = qIdx >= 0 ? hash.slice(qIdx + 1) : ''
+    return new URLSearchParams(qs)
+  } catch (_) {
+    return new URLSearchParams()
+  }
+}
+
+function _wantsUcasOpen() {
+  try {
+    const params = _hashParams()
+    const open = String(params.get('open') || '').trim().toLowerCase()
+    return open === 'ucas'
+  } catch (_) {
+    return false
+  }
+}
+
+function _syncVisibilityFromDeepLink() {
+  // If we deep-link into UCAS, ensure the Academic Profile is visible.
+  // Otherwise the UCAS modal opens "behind" the collapsed wrapper.
+  if (!isVisible.value && _wantsUcasOpen()) {
+    isVisible.value = true
+  }
+}
+
 // Computed
 const studentEmail = computed(() => {
   // Allow parent app (e.g., Account Manager) to force a specific student
@@ -215,12 +244,14 @@ const createProfileFromProfileNotFound = () => {
 // Watch for hash changes (if student email changes via URL parameter)
 watch(() => window.location.hash, () => {
   console.log('[Academic Profile V2] Hash changed, reloading...')
+  _syncVisibilityFromDeepLink()
   loadProfile()
 })
 
 // Initialize
 onMounted(() => {
   console.log('[Academic Profile V2] Component mounted')
+  _syncVisibilityFromDeepLink()
   loadProfile()
 })
 </script>
