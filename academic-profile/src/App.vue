@@ -19,7 +19,20 @@
       <!-- Error State -->
       <div v-else-if="error" class="profile-error">
         <p>{{ error }}</p>
-        <button @click="loadProfile" class="retry-btn">Retry</button>
+        <div style="margin-top: 10px; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;">
+          <button @click="loadProfile" class="retry-btn">Retry</button>
+          <button
+            v-if="isProfileNotFound && canCreateProfile"
+            @click="createProfileFromProfileNotFound"
+            class="retry-btn"
+            style="background-color:#23356f; color:#fff;"
+          >
+            ➕ Create Academic Profile
+          </button>
+        </div>
+        <div v-if="isProfileNotFound" style="margin-top:8px; font-size:12px; opacity:0.85;">
+          No Academic Profile exists yet for this student/year.
+        </div>
       </div>
 
       <!-- Main Content -->
@@ -143,6 +156,15 @@ const canEditOffers = computed(() => {
   return config.value.offersEditable !== false
 })
 
+const isProfileNotFound = computed(() => {
+  const msg = (error.value || '').toString().toLowerCase()
+  return msg.includes('profile not found') || msg.includes('no academic profile')
+})
+
+const canCreateProfile = computed(() => {
+  return typeof config.value?.onCreateProfile === 'function'
+})
+
 // Methods
 const loadProfile = async () => {
   if (!studentEmail.value) {
@@ -178,6 +200,16 @@ const loadProfile = async () => {
 const toggleProfile = () => {
   isVisible.value = !isVisible.value
   console.log('[Academic Profile V2] Toggled visibility:', isVisible.value)
+}
+
+const createProfileFromProfileNotFound = () => {
+  try {
+    if (typeof config.value?.onCreateProfile === 'function') {
+      config.value.onCreateProfile()
+    }
+  } catch (e) {
+    console.warn('[Academic Profile V2] onCreateProfile failed:', e)
+  }
 }
 
 // Watch for hash changes (if student email changes via URL parameter)
