@@ -10,6 +10,35 @@
       </div>
 
       <div class="tutor-ucas-body">
+        <!-- UCAS application (embedded) -->
+        <div v-if="ucasIframeOpen" class="tutor-ucas-iframe-overlay" @click.self="closeUcasIframe">
+          <div class="tutor-ucas-iframe-modal">
+            <div class="tutor-ucas-iframe-header">
+              <div style="font-weight:900;">UCAS application</div>
+              <div style="display:flex; gap:10px; align-items:center;">
+                <button class="tutor-ucas-btn tutor-ucas-btn--ghost tutor-ucas-btn--sm" type="button" @click="closeUcasIframe">
+                  Back to reference
+                </button>
+                <button class="tutor-ucas-close" @click="closeUcasIframe">&times;</button>
+              </div>
+            </div>
+            <div class="tutor-ucas-iframe-body">
+              <iframe
+                v-if="ucasIframeUrl"
+                :src="ucasIframeUrl"
+                class="tutor-ucas-iframe"
+                @load="handleUcasIframeLoad"
+                frameborder="0"
+                allowfullscreen
+              ></iframe>
+              <div v-show="ucasIframeLoading" class="tutor-ucas-iframe-loading">
+                <div class="spinner"></div>
+                <div>Loading UCAS application…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="loading" class="tutor-ucas-loading">
           <div class="spinner"></div>
           <div>Loading UCAS data…</div>
@@ -58,8 +87,8 @@
           </div>
 
           <div class="tutor-ucas-actions">
-            <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInNewTab">
-              Open UCAS application
+            <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">
+              Open UCAS application (modal)
             </button>
             <button class="tutor-ucas-btn" :disabled="requestingEdits" @click="requestStatementEdits">
               {{ requestingEdits ? 'Requesting…' : 'Request edits (statement)' }}
@@ -110,11 +139,16 @@
           </div>
 
           <!-- Tutor compiled narrative editor -->
-          <div class="tutor-ucas-section">
+          <div class="tutor-ucas-section" :class="{ 'tutor-ucas-section--expanded': editorExpanded }">
             <div class="tutor-ucas-section-head">
               <h4>Tutor compiled reference (final narrative)</h4>
-              <div class="muted">
-                Saved: {{ tutorCompiledUpdatedAt ? formatDate(tutorCompiledUpdatedAt) : '—' }}
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div class="muted">
+                  Saved: {{ tutorCompiledUpdatedAt ? formatDate(tutorCompiledUpdatedAt) : '—' }}
+                </div>
+                <button class="tutor-ucas-btn tutor-ucas-btn--ghost tutor-ucas-btn--sm" type="button" @click="toggleEditorExpanded">
+                  {{ editorExpanded ? 'Collapse' : 'Expand' }}
+                </button>
               </div>
             </div>
 
@@ -124,6 +158,9 @@
               placeholder="Build the final tutor narrative here…"
               :disabled="saving || markingComplete"
               rows="10"
+              spellcheck="true"
+              autocorrect="on"
+              autocapitalize="sentences"
             ></textarea>
 
             <div class="tutor-ucas-editor-footer">
@@ -187,6 +224,11 @@ const saving = ref(false)
 const saveError = ref('')
 const markingComplete = ref(false)
 const requestingEdits = ref(false)
+
+const editorExpanded = ref(false)
+
+const ucasIframeOpen = ref(false)
+const ucasIframeLoading = ref(false)
 
 const tutorCompiledUpdatedAt = ref(null)
 const tutorCompiledCompletedAt = ref(null)
@@ -278,6 +320,25 @@ watch(
   }
 )
 
+// Lock background scroll while this modal is open
+watch(
+  () => props.isOpen,
+  (open) => {
+    if (open) {
+      try {
+        document.body.style.overflow = 'hidden'
+      } catch (_) {}
+    } else {
+      try {
+        document.body.style.overflow = ''
+      } catch (_) {}
+      editorExpanded.value = false
+      ucasIframeOpen.value = false
+    }
+  },
+  { immediate: true }
+)
+
 function handleClose() {
   if (hasChanges.value && !confirm('You have unsaved changes. Close without saving?')) return
   emit('close')
@@ -366,14 +427,36 @@ async function copyText(text) {
   }
 }
 
-function openUcasInNewTab() {
+const ucasIframeUrl = computed(() => {
+  const email = String(props.student?.email || '').trim()
+  if (!email) return ''
+  return `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
+})
+
+function openUcasInModal() {
   const email = String(props.student?.email || '').trim()
   if (!email) return
   try {
     localStorage.setItem('vespa_open_ucas', JSON.stringify({ email, ts: Date.now() }))
   } catch (_) {}
-  const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
-  window.open(url, '_blank', 'noopener')
+  ucasIframeLoading.value = true
+  ucasIframeOpen.value = true
+}
+
+function handleUcasIframeLoad() {
+  // Cross-origin: we can't reliably hide Knack chrome here, but the UCAS modal will open on top.
+  setTimeout(() => {
+    ucasIframeLoading.value = false
+  }, 500)
+}
+
+function closeUcasIframe() {
+  ucasIframeOpen.value = false
+  ucasIframeLoading.value = false
+}
+
+function toggleEditorExpanded() {
+  editorExpanded.value = !editorExpanded.value
 }
 
 async function requestStatementEdits() {
@@ -476,6 +559,65 @@ function formatDate(v) {
 .tutor-ucas-body {
   padding: 14px 16px 18px;
   overflow: auto;
+}
+
+.tutor-ucas-iframe-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10100;
+  padding: 18px;
+}
+
+.tutor-ucas-iframe-modal {
+  width: min(1400px, 96vw);
+  height: min(92vh, 920px);
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+}
+
+.tutor-ucas-iframe-header {
+  padding: 12px 14px;
+  background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tutor-ucas-iframe-body {
+  position: relative;
+  flex: 1;
+  background: #f5f5f5;
+}
+
+.tutor-ucas-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: #fff;
+}
+
+.tutor-ucas-iframe-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  z-index: 2;
+  font-weight: 800;
+  color: #444;
 }
 
 .tutor-ucas-loading {
@@ -640,6 +782,18 @@ function formatDate(v) {
   border-radius: 12px;
   padding: 12px;
   background: #fff;
+}
+
+.tutor-ucas-section--expanded {
+  position: fixed;
+  inset: 22px;
+  z-index: 10150;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  overflow: auto;
+}
+
+.tutor-ucas-section--expanded .tutor-ucas-textarea {
+  min-height: calc(100vh - 240px);
 }
 
 .tutor-ucas-section-head {
