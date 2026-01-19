@@ -1,6 +1,9 @@
 <template>
   <div class="ucas-overlay" role="dialog" aria-modal="true" aria-label="UCAS Application" @click.self="emit('close')">
     <div class="ucas-modal">
+      <button class="ucas-btn-close ucas-btn-close--corner" type="button" @click="emit('close')" aria-label="Close UCAS application">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
       <header class="ucas-header">
         <div class="ucas-header-left">
           <div class="ucas-title">UCAS Application</div>
@@ -124,9 +127,6 @@
             <svg v-if="!saving" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             <span v-if="saving" class="ucas-spinner"></span>
             {{ saving ? 'Saving…' : 'Save' }}
-          </button>
-          <button class="ucas-btn-close" type="button" @click="emit('close')" aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
       </header>
@@ -1936,7 +1936,7 @@ onMounted(async () => {
   background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
   display:flex;align-items:center;justify-content:center;padding:16px;
 }
-.ucas-modal{width:100%;max-width:1400px;height:100%;max-height:calc(100vh - 32px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.ucas-modal{width:100%;max-width:1400px;height:100%;max-height:calc(100vh - 32px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden;position:relative}
 @media (min-width:1024px){.ucas-modal{transform:scale(.9);transform-origin:center}}
 
 .ucas-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--ucas-white);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
@@ -1969,6 +1969,8 @@ onMounted(async () => {
 .ucas-btn-ghost:hover:not(:disabled){background:var(--ucas-gray-100);color:var(--ucas-gray-800)}
 .ucas-btn-close{display:flex;align-items:center;justify-content:center;width:36px;height:36px;padding:0;background:transparent;border:none;border-radius:var(--ucas-radius);color:var(--ucas-gray-500);cursor:pointer;transition:all .15s}
 .ucas-btn-close:hover{background:var(--ucas-gray-100);color:var(--ucas-gray-700)}
+.ucas-btn-close--corner{position:absolute;top:12px;right:12px;background:var(--ucas-white);border:1px solid var(--ucas-gray-200);box-shadow:var(--ucas-shadow-sm);width:40px;height:40px;z-index:2}
+.ucas-btn-close--corner:hover{background:var(--ucas-gray-50);color:var(--ucas-gray-900)}
 
 .ucas-body{flex:1;overflow-y:auto;padding:24px;background:var(--ucas-gray-50)}
 .ucas-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
