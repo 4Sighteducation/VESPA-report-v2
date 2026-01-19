@@ -239,6 +239,10 @@
               <div class="ucas-preview-header">
                 <h3 class="ucas-preview-title">Preview</h3>
                 <span class="ucas-preview-hint">Combined statement as it will appear</span>
+                <button class="ucas-q-expand" type="button" @click="openExpanded('preview')" title="Expand preview to read comfortably">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                  Expand
+                </button>
               </div>
               <div class="ucas-preview-box">{{ combinedStatement || 'Your combined statement will appear here as you type…' }}</div>
             </div>
@@ -253,7 +257,7 @@
                 <span class="ucas-q-title">Why do you want to study this course or subject?</span>
               </label>
               <div class="ucas-q-actions">
-                <button class="ucas-q-expand" type="button" @click="openExpanded('q1')" :disabled="!canEdit" title="Expand for focused writing">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q1')" :title="canEdit ? 'Expand for focused writing' : 'Expand to read comfortably'">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                   Expand
                 </button>
@@ -279,7 +283,7 @@
                 <span class="ucas-q-title">How have your qualifications and studies prepared you?</span>
               </label>
               <div class="ucas-q-actions">
-                <button class="ucas-q-expand" type="button" @click="openExpanded('q2')" :disabled="!canEdit" title="Expand for focused writing">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q2')" :title="canEdit ? 'Expand for focused writing' : 'Expand to read comfortably'">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                   Expand
                 </button>
@@ -305,7 +309,7 @@
                 <span class="ucas-q-title">What have you done outside education to prepare, and why is it useful?</span>
               </label>
               <div class="ucas-q-actions">
-                <button class="ucas-q-expand" type="button" @click="openExpanded('q3')" :disabled="!canEdit" title="Expand for focused writing">
+                <button class="ucas-q-expand" type="button" @click="openExpanded('q3')" :title="canEdit ? 'Expand for focused writing' : 'Expand to read comfortably'">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
                   Expand
                 </button>
@@ -537,7 +541,11 @@
             </button>
           </div>
           <div class="ucas-expand-body">
+            <div v-if="expandedField === 'preview'" class="ucas-preview-box ucas-preview-box--expanded">
+              {{ expandedValue || 'Your combined statement will appear here as you type…' }}
+            </div>
             <textarea
+              v-else
               ref="expandedTextareaEl"
               class="ucas-textarea ucas-textarea-expanded"
               :disabled="!canEdit"
@@ -1487,26 +1495,31 @@ function copyText(s) {
 
 // Expanded writing (mobile friendly)
 const expandedOpen = ref(false)
-const expandedField = ref('q1') // 'q1'|'q2'|'q3'
+const expandedField = ref('q1') // 'q1'|'q2'|'q3'|'preview'
 const expandedTextareaEl = ref(null)
 
 const expandedTitle = computed(() => {
+  if (expandedField.value === 'preview') return 'Preview: Combined statement'
   if (expandedField.value === 'q2') return 'Q2: How studies prepared you'
   if (expandedField.value === 'q3') return 'Q3: Outside education'
   return 'Q1: Why this course?'
 })
 
-const expandedValue = computed(() => answers[expandedField.value] || '')
-const expandedChars = computed(() => (answers[expandedField.value] || '').length)
+const expandedValue = computed(() => {
+  if (expandedField.value === 'preview') return combinedStatement.value || ''
+  return answers[expandedField.value] || ''
+})
+const expandedChars = computed(() => expandedValue.value.length)
 
 function openExpanded(field) {
-  if (!props.canEdit) return
   expandedField.value = field
   expandedOpen.value = true
   // Focus textarea after render
   setTimeout(() => {
     try {
-      expandedTextareaEl.value && expandedTextareaEl.value.focus && expandedTextareaEl.value.focus()
+      if (expandedField.value !== 'preview' && props.canEdit) {
+        expandedTextareaEl.value && expandedTextareaEl.value.focus && expandedTextareaEl.value.focus()
+      }
     } catch (_) {}
   }, 0)
 }
@@ -1980,6 +1993,7 @@ onMounted(async () => {
 .ucas-preview-title{font-size:13px;font-weight:600;color:var(--ucas-gray-700);margin:0}
 .ucas-preview-hint{font-size:12px;color:var(--ucas-gray-400)}
 .ucas-preview-box{white-space:pre-wrap;word-break:break-word;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;font-size:13px;line-height:1.5;color:var(--ucas-gray-700);max-height:160px;overflow-y:auto}
+.ucas-preview-box--expanded{max-height:none;min-height:60vh}
 
 .ucas-questions{display:flex;flex-direction:column;gap:16px}
 .ucas-q{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-lg);padding:20px;box-shadow:var(--ucas-shadow-sm)}
