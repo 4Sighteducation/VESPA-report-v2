@@ -1,54 +1,56 @@
 <template>
-  <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
-    <div class="tutor-ucas-modal">
-      <div class="tutor-ucas-header">
-        <div class="tutor-ucas-title">
-          <h3>{{ student?.name || 'Student' }} — UCAS</h3>
-          <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
-        </div>
-        <button class="tutor-ucas-close" @click="handleClose">&times;</button>
-      </div>
-
-      <div class="tutor-ucas-body">
-        <!-- UCAS application (direct UCAS modal, no Knack iframe) -->
-        <div v-if="ucasAppOpen">
-          <div v-if="ucasAppLoading" class="tutor-ucas-iframe-loading" style="position: fixed; inset: 0; z-index: 10100;">
-            <div class="spinner"></div>
-            <div>Loading UCAS application…</div>
+  <!-- Teleport to <body> to avoid Knack stacking/overflow contexts hiding the modal -->
+  <teleport to="body">
+    <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
+      <div class="tutor-ucas-modal">
+        <div class="tutor-ucas-header">
+          <div class="tutor-ucas-title">
+            <h3>{{ student?.name || 'Student' }} — UCAS</h3>
+            <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
           </div>
-          <div v-else-if="ucasAppError" class="tutor-ucas-error" style="position: fixed; inset: 24px; z-index: 10100; max-width: 820px; margin: auto;">
-            <div class="tutor-ucas-error-title">Could not open UCAS application</div>
-            <div class="tutor-ucas-error-msg">{{ ucasAppError }}</div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-              <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">Try again</button>
-              <button class="tutor-ucas-btn tutor-ucas-btn--ghost" @click="closeUcasApp">Back to reference</button>
+          <button class="tutor-ucas-close" @click="handleClose">&times;</button>
+        </div>
+
+        <div class="tutor-ucas-body">
+          <!-- UCAS application (direct UCAS modal, no Knack iframe) -->
+          <div v-if="ucasAppOpen">
+            <div v-if="ucasAppLoading" class="tutor-ucas-iframe-loading" style="position: fixed; inset: 0; z-index: 10100;">
+              <div class="spinner"></div>
+              <div>Loading UCAS application…</div>
             </div>
+            <div v-else-if="ucasAppError" class="tutor-ucas-error" style="position: fixed; inset: 24px; z-index: 10100; max-width: 820px; margin: auto;">
+              <div class="tutor-ucas-error-title">Could not open UCAS application</div>
+              <div class="tutor-ucas-error-msg">{{ ucasAppError }}</div>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">Try again</button>
+                <button class="tutor-ucas-btn tutor-ucas-btn--ghost" @click="closeUcasApp">Back to reference</button>
+              </div>
+            </div>
+            <UcasApplicationModal
+              v-else
+              :studentEmail="student?.email || ''"
+              :academicYear="ucasAcademicYear"
+              :subjects="ucasSubjects"
+              :offers="ucasOffers"
+              :apiUrl="DASHBOARD_API"
+              :canEdit="false"
+              :staffEmail="staffEmail || ''"
+              @close="closeUcasApp"
+            />
           </div>
-          <UcasApplicationModal
-            v-else
-            :studentEmail="student?.email || ''"
-            :academicYear="ucasAcademicYear"
-            :subjects="ucasSubjects"
-            :offers="ucasOffers"
-            :apiUrl="DASHBOARD_API"
-            :canEdit="false"
-            :staffEmail="staffEmail || ''"
-            @close="closeUcasApp"
-          />
-        </div>
 
-        <div v-if="loading" class="tutor-ucas-loading">
-          <div class="spinner"></div>
-          <div>Loading UCAS data…</div>
-        </div>
+          <div v-if="loading" class="tutor-ucas-loading">
+            <div class="spinner"></div>
+            <div>Loading UCAS data…</div>
+          </div>
 
-        <div v-else-if="error" class="tutor-ucas-error">
-          <div class="tutor-ucas-error-title">Could not load UCAS data</div>
-          <div class="tutor-ucas-error-msg">{{ error }}</div>
-          <button class="tutor-ucas-btn" @click="reload">Try again</button>
-        </div>
+          <div v-else-if="error" class="tutor-ucas-error">
+            <div class="tutor-ucas-error-title">Could not load UCAS data</div>
+            <div class="tutor-ucas-error-msg">{{ error }}</div>
+            <button class="tutor-ucas-btn" @click="reload">Try again</button>
+          </div>
 
-        <div v-else class="tutor-ucas-content">
+          <div v-else class="tutor-ucas-content">
           <!-- Status row -->
           <div class="tutor-ucas-status-row">
             <div class="tutor-ucas-status-card">
@@ -190,10 +192,11 @@
           <div class="tutor-ucas-footnote">
             Students can see status, not the reference content. Subject teachers submit into “Incoming…” above; tutors collate into the final narrative.
           </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script setup>
