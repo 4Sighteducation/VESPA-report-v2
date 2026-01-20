@@ -557,7 +557,7 @@ function formatDate(v) {
 }
 </script>
 
-<style scoped>
+<style>
 .tutor-ucas-overlay {
   position: fixed;
   inset: 0;
