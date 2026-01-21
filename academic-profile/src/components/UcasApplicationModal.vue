@@ -1,6 +1,16 @@
 <template>
-  <div class="ucas-overlay" role="dialog" aria-modal="true" aria-label="UCAS Application" @click.self="emit('close')">
-    <div class="ucas-modal">
+  <div class="ucas-overlay" :class="{ 'ucas-overlay--fullscreen': fullscreen }" role="dialog" aria-modal="true" aria-label="UCAS Application" @click.self="emit('close')">
+    <div class="ucas-modal" :class="{ 'ucas-modal--fullscreen': fullscreen }">
+      <button
+        class="ucas-btn-close ucas-btn-close--corner ucas-btn-close--corner-secondary"
+        type="button"
+        @click="toggleFullscreen"
+        :aria-label="fullscreen ? 'Exit full screen' : 'Full screen UCAS application'"
+        :title="fullscreen ? 'Exit full screen' : 'Full screen'"
+      >
+        <svg v-if="!fullscreen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/><path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg>
+      </button>
       <button class="ucas-btn-close ucas-btn-close--corner" type="button" @click="emit('close')" aria-label="Close UCAS application">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -177,6 +187,7 @@
                 >
                   <div class="ucas-tariff-label">Current</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.current.toLocaleString() }}</div>
+                  <div class="ucas-tariff-sub">Grades: <span class="ucas-tariff-sub-val">{{ ucasTariffGrades.current || '—' }}</span></div>
                 </div>
                 <div
                   class="ucas-tariff-box"
@@ -185,6 +196,7 @@
                 >
                   <div class="ucas-tariff-label">Target</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.target.toLocaleString() }}</div>
+                  <div class="ucas-tariff-sub">Grades: <span class="ucas-tariff-sub-val">{{ ucasTariffGrades.target || '—' }}</span></div>
                 </div>
                 <div
                   class="ucas-tariff-box ucas-tariff-box--required"
@@ -192,6 +204,7 @@
                 >
                   <div class="ucas-tariff-label">Required</div>
                   <div class="ucas-tariff-value">{{ ucasTariff.required.toLocaleString() }}</div>
+                  <div class="ucas-tariff-sub">Grades: <span class="ucas-tariff-sub-val">{{ ucasTariffGrades.required || '—' }}</span></div>
                 </div>
               </div>
               <div v-if="ucasTariff.unknownCount > 0" class="ucas-tariff-note">
@@ -1020,6 +1033,11 @@ import { fetchUcasApplication, saveUcasApplication, addUcasApplicationComment, g
 const MAX_TOTAL_CHARS = 4000
 const MIN_TOTAL_CHARS = 350
 
+const fullscreen = ref(false)
+function toggleFullscreen() {
+  fullscreen.value = !fullscreen.value
+}
+
 const props = defineProps({
   studentEmail: { type: String, default: '' },
   academicYear: { type: String, default: '' },
@@ -1837,6 +1855,36 @@ function pointsFor(subject, gradeRaw) {
   return { points: 0, unknown: 1 }
 }
 
+function gradesSummary(list) {
+  const grades = (Array.isArray(list) ? list : [])
+    .map((g) => normalizeGrade(g))
+    .filter(Boolean)
+  if (!grades.length) return ''
+  return grades.join(' · ')
+}
+
+const ucasTariffGrades = computed(() => {
+  const list = Array.isArray(props.subjects) ? props.subjects.slice(0, 5) : []
+
+  const current = gradesSummary(list.map(s => s?.currentGrade))
+  const target = gradesSummary(list.map(s => s?.targetGrade))
+
+  // Required: prefer per-subject offer inputs; fall back to course offer if set
+  const requiredList = []
+  for (let i = 0; i < list.length; i++) {
+    const rowKey = subjectRows.value[i]?.key
+    const requiredGrade = rowKey ? (currentCourseSubjectOffers.value[rowKey] || '') : ''
+    requiredList.push(requiredGrade)
+  }
+  let required = gradesSummary(requiredList)
+  if (!required) {
+    const courseOffer = safeText(selectedCourse.value?.offer).trim()
+    required = courseOffer || ''
+  }
+
+  return { current, target, required }
+})
+
 const ucasTariff = computed(() => {
   const list = Array.isArray(props.subjects) ? props.subjects.slice(0, 5) : []
   let current = 0
@@ -1934,10 +1982,11 @@ onMounted(async () => {
   --ucas-radius:8px;--ucas-radius-lg:12px;--ucas-radius-xl:16px;
   position:fixed;inset:0;z-index:99999;
   background:rgba(0,0,0,.5);backdrop-filter:blur(4px);
-  display:flex;align-items:center;justify-content:center;padding:16px;
+  display:flex;align-items:center;justify-content:center;padding:12px;
 }
-.ucas-modal{width:100%;max-width:1400px;height:100%;max-height:calc(100vh - 32px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden;position:relative}
-@media (min-width:1024px){.ucas-modal{transform:scale(.9);transform-origin:center}}
+.ucas-modal{width:100%;max-width:1600px;height:100%;max-height:calc(100vh - 24px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ucas-overlay--fullscreen{padding:0}
+.ucas-modal--fullscreen{max-width:none;max-height:none;border-radius:0}
 
 .ucas-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--ucas-white);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
 .ucas-header-left{display:flex;flex-direction:column;gap:8px}
@@ -1971,6 +2020,7 @@ onMounted(async () => {
 .ucas-btn-close:hover{background:var(--ucas-gray-100);color:var(--ucas-gray-700)}
 .ucas-btn-close--corner{position:absolute;top:12px;right:12px;background:var(--ucas-white);border:1px solid var(--ucas-gray-200);box-shadow:var(--ucas-shadow-sm);width:40px;height:40px;z-index:2}
 .ucas-btn-close--corner:hover{background:var(--ucas-gray-50);color:var(--ucas-gray-900)}
+.ucas-btn-close--corner-secondary{right:58px}
 
 .ucas-body{flex:1;overflow-y:auto;padding:24px;background:var(--ucas-gray-50)}
 .ucas-top-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
@@ -2012,7 +2062,8 @@ onMounted(async () => {
 .ucas-preview-title{font-size:13px;font-weight:600;color:var(--ucas-gray-700);margin:0}
 .ucas-preview-hint{font-size:12px;color:var(--ucas-gray-400)}
 .ucas-preview-box{white-space:pre-wrap;word-break:break-word;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;font-size:13px;line-height:1.5;color:var(--ucas-gray-700);max-height:160px;overflow-y:auto}
-.ucas-preview-box--expanded{max-height:none;min-height:60vh}
+.ucas-preview-box{white-space:pre-wrap;word-break:break-word;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);padding:12px;font-size:14px;line-height:1.6;color:var(--ucas-gray-700);max-height:200px;overflow-y:auto}
+.ucas-preview-box--expanded{max-height:none;min-height:70vh;font-size:16px;line-height:1.75}
 
 .ucas-questions{display:flex;flex-direction:column;gap:16px}
 .ucas-q{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-lg);padding:20px;box-shadow:var(--ucas-shadow-sm)}
@@ -2026,13 +2077,13 @@ onMounted(async () => {
 .ucas-q-expand:disabled{opacity:.5;cursor:not-allowed}
 .ucas-q-count{font-size:12px;font-weight:500;color:var(--ucas-gray-400);white-space:nowrap;padding:2px 8px;background:var(--ucas-gray-100);border-radius:999px}
 .ucas-q-count--active{background:var(--ucas-primary-light);color:var(--ucas-primary)}
-.ucas-textarea{width:100%;min-height:140px;padding:12px 14px;font-size:14px;line-height:1.6;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s;font-family:inherit}
+.ucas-textarea{width:100%;min-height:160px;padding:14px 16px;font-size:16px;line-height:1.7;border:1px solid var(--ucas-gray-300);border-radius:var(--ucas-radius);background:var(--ucas-white);color:var(--ucas-gray-900);resize:vertical;transition:border-color .15s,box-shadow .15s;font-family:inherit}
 .ucas-textarea:hover:not(:disabled){border-color:var(--ucas-gray-400)}
 .ucas-textarea:focus{outline:none;border-color:var(--ucas-primary);box-shadow:0 0 0 3px var(--ucas-primary-light)}
 .ucas-textarea::placeholder{color:var(--ucas-gray-400)}
 .ucas-textarea:disabled{background:var(--ucas-gray-100);cursor:not-allowed}
 .ucas-textarea-sm{min-height:80px}
-.ucas-textarea-expanded{min-height:52vh;resize:none}
+.ucas-textarea-expanded{min-height:68vh;resize:none;font-size:18px;line-height:1.75}
 
 .ucas-comments{margin-top:20px}
 .ucas-comments-shell{background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-sm);overflow:hidden}
@@ -2139,6 +2190,8 @@ onMounted(async () => {
 .ucas-tariff-box--bad .ucas-tariff-value{color:var(--ucas-danger)}
 .ucas-tariff-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--ucas-gray-500);margin-bottom:4px}
 .ucas-tariff-value{font-size:20px;font-weight:800;color:var(--ucas-gray-900);line-height:1.1}
+.ucas-tariff-sub{margin-top:6px;font-size:12px;font-weight:800;color:var(--ucas-gray-600)}
+.ucas-tariff-sub-val{font-weight:900;color:var(--ucas-gray-800)}
 .ucas-tariff-note{margin-top:8px;font-size:12px;color:var(--ucas-gray-500)}
 
 /* Course meta pills (required grade + UCAS points) */
@@ -2346,8 +2399,8 @@ onMounted(async () => {
 .ucas-ref-contrib-text{white-space:pre-wrap;font-size:13px;color:var(--ucas-gray-800);line-height:1.5}
 
 /* Expanded writing overlay */
-.ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:12px}
-.ucas-expand-modal{width:min(980px, 100%);height:min(86vh, 820px);background:var(--ucas-white);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
+.ucas-expand-overlay{position:fixed;inset:0;z-index:100000;background:rgba(17,24,39,.42);display:flex;align-items:center;justify-content:center;padding:0}
+.ucas-expand-modal{width:100vw;height:100vh;max-width:none;max-height:none;background:var(--ucas-white);border:0;border-radius:0;box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden}
 .ucas-expand-header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
 .ucas-expand-title{font-size:14px;font-weight:900;color:var(--ucas-gray-900)}
 .ucas-expand-meta{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
