@@ -13,6 +13,9 @@
           class="focus-textarea"
           :placeholder="placeholder"
           :rows="rows"
+          spellcheck="true"
+          autocorrect="on"
+          autocapitalize="sentences"
           @keydown.esc="handleClose"
         ></textarea>
       </div>
@@ -109,7 +112,7 @@ const handleClose = () => {
   align-items: center;
   justify-content: center;
   z-index: 99999;
-  padding: 20px;
+  padding: 0;
   animation: fadeIn 0.2s ease;
 }
 
@@ -124,10 +127,11 @@ const handleClose = () => {
 
 .textarea-modal-content {
   background: white;
-  border-radius: 16px;
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
+  border-radius: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
@@ -149,10 +153,13 @@ const handleClose = () => {
   padding: 24px 30px;
   background: linear-gradient(135deg, #079baa 0%, #7bd8d0 100%);
   color: white;
-  border-radius: 16px 16px 0 0;
+  border-radius: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .textarea-modal-header h3 {
@@ -187,19 +194,22 @@ const handleClose = () => {
   padding: 30px;
   flex: 1;
   overflow: auto;
+  background: #f5f5f5;
 }
 
 .focus-textarea {
   width: 100%;
-  min-height: 400px;
-  padding: 16px;
+  min-height: 60vh;
+  height: 100%;
+  padding: 20px 22px;
   border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 17px;
+  border-radius: 14px;
+  font-size: 18px;
   font-family: inherit;
-  line-height: 1.6;
-  resize: vertical;
+  line-height: 1.75;
+  resize: none;
   transition: border-color 0.3s;
+  background: #fff;
 }
 
 .focus-textarea:focus {
@@ -211,11 +221,14 @@ const handleClose = () => {
 .textarea-modal-footer {
   padding: 20px 30px;
   background: #f8f9fa;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0;
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   border-top: 1px solid #e0e0e0;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
 }
 
 .cancel-button,

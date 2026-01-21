@@ -503,15 +503,15 @@ const saveGoals = async () => {
   padding-right: 50px;
   border: 3px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 18px;
   font-family: inherit;
-  line-height: 1.6;
+  line-height: 1.75;
   resize: vertical;
   transition: all 0.3s ease;
   cursor: text;
   white-space: pre-wrap; /* Preserve line breaks */
   background: #fafafa;
-  min-height: 150px;
+  min-height: 200px;
   box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
