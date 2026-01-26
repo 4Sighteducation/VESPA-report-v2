@@ -1,56 +1,27 @@
 <template>
-  <!-- Teleport to <body> to avoid Knack stacking/overflow contexts hiding the modal -->
-  <teleport to="body">
-    <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
-      <div class="tutor-ucas-modal">
-        <div class="tutor-ucas-header">
-          <div class="tutor-ucas-title">
-            <h3>{{ student?.name || 'Student' }} — UCAS</h3>
-            <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
-          </div>
-          <button class="tutor-ucas-close" @click="handleClose">&times;</button>
+  <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
+    <div class="tutor-ucas-modal">
+      <div class="tutor-ucas-header">
+        <div class="tutor-ucas-title">
+          <h3>{{ student?.name || 'Student' }} — UCAS</h3>
+          <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
+        </div>
+        <button class="tutor-ucas-close" @click="handleClose">&times;</button>
+      </div>
+
+      <div class="tutor-ucas-body">
+        <div v-if="loading" class="tutor-ucas-loading">
+          <div class="spinner"></div>
+          <div>Loading UCAS data…</div>
         </div>
 
-        <div class="tutor-ucas-body">
-          <!-- UCAS application (direct UCAS modal, no Knack iframe) -->
-          <div v-if="ucasAppOpen">
-            <div v-if="ucasAppLoading" class="tutor-ucas-iframe-loading" style="position: fixed; inset: 0; z-index: 10100;">
-              <div class="spinner"></div>
-              <div>Loading UCAS application…</div>
-            </div>
-            <div v-else-if="ucasAppError" class="tutor-ucas-error" style="position: fixed; inset: 24px; z-index: 10100; max-width: 820px; margin: auto;">
-              <div class="tutor-ucas-error-title">Could not open UCAS application</div>
-              <div class="tutor-ucas-error-msg">{{ ucasAppError }}</div>
-              <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">Try again</button>
-                <button class="tutor-ucas-btn tutor-ucas-btn--ghost" @click="closeUcasApp">Back to reference</button>
-              </div>
-            </div>
-            <UcasApplicationModal
-              v-else
-              :studentEmail="student?.email || ''"
-              :academicYear="ucasAcademicYear"
-              :subjects="ucasSubjects"
-              :offers="ucasOffers"
-              :apiUrl="DASHBOARD_API"
-              :canEdit="false"
-              :staffEmail="staffEmail || ''"
-              @close="closeUcasApp"
-            />
-          </div>
+        <div v-else-if="error" class="tutor-ucas-error">
+          <div class="tutor-ucas-error-title">Could not load UCAS data</div>
+          <div class="tutor-ucas-error-msg">{{ error }}</div>
+          <button class="tutor-ucas-btn" @click="reload">Try again</button>
+        </div>
 
-          <div v-if="loading" class="tutor-ucas-loading">
-            <div class="spinner"></div>
-            <div>Loading UCAS data…</div>
-          </div>
-
-          <div v-else-if="error" class="tutor-ucas-error">
-            <div class="tutor-ucas-error-title">Could not load UCAS data</div>
-            <div class="tutor-ucas-error-msg">{{ error }}</div>
-            <button class="tutor-ucas-btn" @click="reload">Try again</button>
-          </div>
-
-          <div v-else class="tutor-ucas-content">
+        <div v-else class="tutor-ucas-content">
           <!-- Status row -->
           <div class="tutor-ucas-status-row">
             <div class="tutor-ucas-status-card">
@@ -87,7 +58,7 @@
           </div>
 
           <div class="tutor-ucas-actions">
-            <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInModal">
+            <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInNewTab">
               Open UCAS application
             </button>
             <button class="tutor-ucas-btn" :disabled="requestingEdits" @click="requestStatementEdits">
@@ -139,16 +110,11 @@
           </div>
 
           <!-- Tutor compiled narrative editor -->
-          <div class="tutor-ucas-section" :class="{ 'tutor-ucas-section--expanded': editorExpanded }">
+          <div class="tutor-ucas-section">
             <div class="tutor-ucas-section-head">
               <h4>Tutor compiled reference (final narrative)</h4>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <div class="muted">
-                  Saved: {{ tutorCompiledUpdatedAt ? formatDate(tutorCompiledUpdatedAt) : '—' }}
-                </div>
-                <button class="tutor-ucas-btn tutor-ucas-btn--ghost tutor-ucas-btn--sm" type="button" @click="toggleEditorExpanded">
-                  {{ editorExpanded ? 'Collapse' : 'Expand' }}
-                </button>
+              <div class="muted">
+                Saved: {{ tutorCompiledUpdatedAt ? formatDate(tutorCompiledUpdatedAt) : '—' }}
               </div>
             </div>
 
@@ -158,9 +124,6 @@
               placeholder="Build the final tutor narrative here…"
               :disabled="saving || markingComplete"
               rows="10"
-              spellcheck="true"
-              autocorrect="on"
-              autocapitalize="sentences"
             ></textarea>
 
             <div class="tutor-ucas-editor-footer">
@@ -192,17 +155,15 @@
           <div class="tutor-ucas-footnote">
             Students can see status, not the reference content. Subject teachers submit into “Incoming…” above; tutors collate into the final narrative.
           </div>
-          </div>
         </div>
       </div>
     </div>
-  </teleport>
+  </div>
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { staffAPI } from '../services/api.js'
-import UcasApplicationModal from '../../../academic-profile/src/components/UcasApplicationModal.vue'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true },
@@ -214,15 +175,11 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const DASHBOARD_API = 'https://vespa-dashboard-9a1f84ee5341.herokuapp.com'
-
 const loading = ref(false)
 const error = ref('')
 
 const ucasApp = ref(null)
 const refFull = ref(null)
-
-const effectiveAcademicYear = ref('current')
 
 const compiledText = ref('')
 const compiledOriginal = ref('')
@@ -230,13 +187,6 @@ const saving = ref(false)
 const saveError = ref('')
 const markingComplete = ref(false)
 const requestingEdits = ref(false)
-
-const editorExpanded = ref(false)
-
-const ucasAppOpen = ref(false)
-const ucasAppLoading = ref(false)
-const ucasAppError = ref('')
-const ucasProfile = ref(null)
 
 const tutorCompiledUpdatedAt = ref(null)
 const tutorCompiledCompletedAt = ref(null)
@@ -273,38 +223,6 @@ const compiledTextTrimmed = computed(() => (compiledText.value || '').trim())
 const compiledHasText = computed(() => compiledTextTrimmed.value.length > 0)
 const hasChanges = computed(() => compiledText.value.trim() !== (compiledOriginal.value || '').trim())
 
-function normalizeAy(v) {
-  const s = String(v || '').trim()
-  if (!s) return 'current'
-  const low = s.toLowerCase()
-  if (low === 'current') return 'current'
-  return s
-}
-
-async function resolveAcademicYear() {
-  const fromProp = normalizeAy(props.academicYear)
-  if (fromProp && fromProp !== 'current') {
-    effectiveAcademicYear.value = fromProp
-    return fromProp
-  }
-
-  // Ask academic profile endpoint (it returns academicYear)
-  try {
-    const prof = await staffAPI.getAcademicProfile(props.student.email, null, {
-      roleHint: 'staff',
-      staffEmail: props.staffEmail || ''
-    })
-    const ay = normalizeAy(prof?.academicYear || prof?.data?.academicYear)
-    if (ay && ay !== 'current') {
-      effectiveAcademicYear.value = ay
-      return ay
-    }
-  } catch (_) {}
-
-  effectiveAcademicYear.value = 'current'
-  return 'current'
-}
-
 const groupedSection3 = computed(() => {
   const items = refFull.value?.data?.section3 || []
   const bySubject = new Map()
@@ -331,10 +249,9 @@ async function load() {
   error.value = ''
   saveError.value = ''
   try {
-    await resolveAcademicYear()
     const [appResp, refResp] = await Promise.all([
-      staffAPI.getUcasApplication(props.student.email, effectiveAcademicYear.value),
-      staffAPI.getReferenceFull(props.student.email, effectiveAcademicYear.value)
+      staffAPI.getUcasApplication(props.student.email, props.academicYear),
+      staffAPI.getReferenceFull(props.student.email, props.academicYear)
     ])
     ucasApp.value = appResp
     refFull.value = refResp
@@ -361,25 +278,6 @@ watch(
   }
 )
 
-// Lock background scroll while this modal is open
-watch(
-  () => props.isOpen,
-  (open) => {
-    if (open) {
-      try {
-        document.body.style.overflow = 'hidden'
-      } catch (_) {}
-    } else {
-      try {
-        document.body.style.overflow = ''
-      } catch (_) {}
-      editorExpanded.value = false
-      ucasAppOpen.value = false
-    }
-  },
-  { immediate: true }
-)
-
 function handleClose() {
   if (hasChanges.value && !confirm('You have unsaved changes. Close without saving?')) return
   emit('close')
@@ -391,7 +289,7 @@ async function saveCompiled() {
   saving.value = true
   try {
     await staffAPI.saveTutorCompiled(props.student.email, {
-      academicYear: effectiveAcademicYear.value,
+      academicYear: props.academicYear,
       staffEmail: props.staffEmail,
       staffName: props.staffName,
       text: compiledText.value
@@ -414,14 +312,14 @@ async function markComplete() {
     // Ensure latest draft is saved before completion (best UX)
     if (hasChanges.value) {
       await staffAPI.saveTutorCompiled(props.student.email, {
-        academicYear: effectiveAcademicYear.value,
+        academicYear: props.academicYear,
         staffEmail: props.staffEmail,
         staffName: props.staffName,
         text: compiledText.value
       })
     }
     await staffAPI.markTutorCompiledComplete(props.student.email, {
-      academicYear: effectiveAcademicYear.value,
+      academicYear: props.academicYear,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })
@@ -440,7 +338,7 @@ async function unmarkComplete() {
   saveError.value = ''
   try {
     await staffAPI.unmarkTutorCompiledComplete(props.student.email, {
-      academicYear: effectiveAcademicYear.value,
+      academicYear: props.academicYear,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })
@@ -468,58 +366,14 @@ async function copyText(text) {
   }
 }
 
-const ucasAcademicYear = computed(() => {
-  const fromProfile = ucasProfile.value?.academicYear || ucasProfile.value?.data?.academicYear || ''
-  return (fromProfile || effectiveAcademicYear.value || props.academicYear || 'current').toString()
-})
-
-const ucasSubjects = computed(() => {
-  const p = ucasProfile.value
-  return Array.isArray(p?.subjects) ? p.subjects : Array.isArray(p?.data?.subjects) ? p.data.subjects : []
-})
-
-const ucasOffers = computed(() => {
-  const p = ucasProfile.value
-  const student = p?.student || p?.data?.student || null
-  const offers = student && Array.isArray(student.universityOffers) ? student.universityOffers : []
-  return offers
-})
-
-async function openUcasInModal() {
+function openUcasInNewTab() {
   const email = String(props.student?.email || '').trim()
   if (!email) return
-  ucasAppOpen.value = true
-  ucasAppLoading.value = true
-  ucasAppError.value = ''
   try {
-    // Fetch the small Academic Profile payload (subjects + offers) so UCAS renders correctly.
-    const yearArg = normalizeAy(effectiveAcademicYear.value) === 'current' ? null : effectiveAcademicYear.value
-    const prof = await staffAPI.getAcademicProfile(email, yearArg, {
-      roleHint: 'staff',
-      staffEmail: props.staffEmail || ''
-    })
-    if (!prof || prof.success === false) {
-      throw new Error(prof?.error || 'Failed to load academic profile')
-    }
-    ucasProfile.value = prof
-
-    const ay = normalizeAy(prof?.academicYear || prof?.data?.academicYear)
-    if (ay) effectiveAcademicYear.value = ay
-  } catch (e) {
-    ucasAppError.value = e?.message || 'Failed to open UCAS'
-  } finally {
-    ucasAppLoading.value = false
-  }
-}
-
-function closeUcasApp() {
-  ucasAppOpen.value = false
-  ucasAppLoading.value = false
-  ucasAppError.value = ''
-}
-
-function toggleEditorExpanded() {
-  editorExpanded.value = !editorExpanded.value
+    localStorage.setItem('vespa_open_ucas', JSON.stringify({ email, ts: Date.now() }))
+  } catch (_) {}
+  const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
+  window.open(url, '_blank', 'noopener')
 }
 
 async function requestStatementEdits() {
@@ -528,7 +382,7 @@ async function requestStatementEdits() {
   requestingEdits.value = true
   try {
     await staffAPI.requestUcasStatementEdits(props.student.email, {
-      academicYear: effectiveAcademicYear.value,
+      academicYear: props.academicYear,
       staffEmail: props.staffEmail,
       staffName: props.staffName
     })
@@ -557,7 +411,7 @@ function formatDate(v) {
 }
 </script>
 
-<style>
+<style scoped>
 .tutor-ucas-overlay {
   position: fixed;
   inset: 0;
@@ -565,10 +419,8 @@ function formatDate(v) {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Knack sometimes uses very high z-index overlays; force above everything */
-  z-index: 2147483000 !important;
+  z-index: 10050;
   padding: 18px;
-  pointer-events: auto;
 }
 
 .tutor-ucas-modal {
@@ -581,8 +433,6 @@ function formatDate(v) {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   display: flex;
   flex-direction: column;
-  position: relative;
-  z-index: 2147483001;
 }
 
 .tutor-ucas-header {
@@ -626,19 +476,6 @@ function formatDate(v) {
 .tutor-ucas-body {
   padding: 14px 16px 18px;
   overflow: auto;
-}
-
-.tutor-ucas-iframe-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.92);
-  z-index: 2;
-  font-weight: 800;
-  color: #444;
 }
 
 .tutor-ucas-loading {
@@ -803,18 +640,6 @@ function formatDate(v) {
   border-radius: 12px;
   padding: 12px;
   background: #fff;
-}
-
-.tutor-ucas-section--expanded {
-  position: fixed;
-  inset: 22px;
-  z-index: 10150;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-  overflow: auto;
-}
-
-.tutor-ucas-section--expanded .tutor-ucas-textarea {
-  min-height: calc(100vh - 240px);
 }
 
 .tutor-ucas-section-head {

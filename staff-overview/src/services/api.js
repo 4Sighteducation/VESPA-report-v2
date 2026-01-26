@@ -239,37 +239,5 @@ export const staffAPI = {
       throw error
     }
   }
-  ,
-
-  /**
-   * Fetch Academic Profile (subjects + offers) for UCAS rendering
-   * @param {string} studentEmail
-   * @param {string} academicYear - 'current' or 'YYYY/YY' etc
-   * @param {{ staffEmail?: string, roleHint?: string }} opts
-   */
-  async getAcademicProfile(studentEmail, academicYear = 'current', opts = {}) {
-    try {
-      const qs = new URLSearchParams()
-      // If academicYear is "current"/empty, omit the param so backend can pick best match
-      const ay = (academicYear === null || academicYear === undefined) ? '' : String(academicYear).trim()
-      if (ay && ay.toLowerCase() !== 'current') qs.append('academic_year', ay)
-      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}${qs.toString() ? `?${qs.toString()}` : ''}`
-
-      const headers = {}
-      // Best-effort: provide staff hint headers (backend tolerates missing)
-      if (opts?.roleHint) headers['X-User-Role'] = String(opts.roleHint)
-      if (opts?.staffEmail) headers['X-User-Email'] = String(opts.staffEmail)
-
-      const response = await fetch(url, { headers })
-      if (!response.ok) {
-        const err = await response.json().catch(() => null)
-        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
-      }
-      return await response.json()
-    } catch (error) {
-      console.error('[Staff API] Error fetching academic profile:', error)
-      throw error
-    }
-  }
 }
 
