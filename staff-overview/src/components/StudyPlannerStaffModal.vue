@@ -106,7 +106,7 @@
         <p><strong>Topic:</strong> {{ sessionModal.topic || '-' }}</p>
         <p><strong>Notes:</strong> {{ sessionModal.notes || '-' }}</p>
         <div class="sp-comment-block">
-          <label class="sp-comment-label">Teacher intervention comment</label>
+          <label class="sp-comment-label">Tutor Comment</label>
           <textarea
             v-model="commentDraft"
             class="sp-comment-input"
