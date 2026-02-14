@@ -1,5 +1,5 @@
 // API Service for VESPA Staff Overview
-const API_BASE_URL = 'https://vespa-dashboard-9a1f84ee5341.herokuapp.com'
+export const API_BASE_URL = 'https://vespa-dashboard-9a1f84ee5341.herokuapp.com'
 
 export const staffAPI = {
   /**
@@ -122,13 +122,41 @@ export const staffAPI = {
   ,
 
   /**
+   * Fetch academic profile data (subjects, offers, resolved academic year)
+   * @param {string} studentEmail
+   * @param {string|null|undefined} academicYear - omit when 'current' to let backend resolve
+   */
+  async getAcademicProfile(studentEmail, academicYear = 'current') {
+    try {
+      let url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}`
+      const ay = (academicYear || '').toString().trim()
+      if (ay && ay.toLowerCase() !== 'current') {
+        url += `?academic_year=${encodeURIComponent(ay)}`
+      }
+      const response = await fetch(url)
+      if (!response.ok) {
+        const err = await response.json().catch(() => null)
+        throw new Error(err?.error || `HTTP error! status: ${response.status}`)
+      }
+      return await response.json()
+    } catch (error) {
+      console.error('[Staff API] Error fetching academic profile:', error)
+      throw error
+    }
+  },
+
+  /**
    * Fetch UCAS application data for a student (staff-only endpoint)
    * @param {string} studentEmail
    * @param {string} academicYear - 'current' or 'YYYY-YYYY'
    */
   async getUcasApplication(studentEmail, academicYear = 'current') {
     try {
-      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application?academicYear=${encodeURIComponent(academicYear)}`
+      let url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/ucas-application`
+      const ay = (academicYear || '').toString().trim()
+      if (ay && ay.toLowerCase() !== 'current') {
+        url += `?academic_year=${encodeURIComponent(ay)}`
+      }
       const response = await fetch(url)
       if (!response.ok) {
         const err = await response.json().catch(() => null)
@@ -148,7 +176,11 @@ export const staffAPI = {
    */
   async getReferenceFull(studentEmail, academicYear = 'current') {
     try {
-      const url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/full?academicYear=${encodeURIComponent(academicYear)}`
+      let url = `${API_BASE_URL}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/full`
+      const ay = (academicYear || '').toString().trim()
+      if (ay && ay.toLowerCase() !== 'current') {
+        url += `?academic_year=${encodeURIComponent(ay)}`
+      }
       const response = await fetch(url)
       if (!response.ok) {
         const err = await response.json().catch(() => null)

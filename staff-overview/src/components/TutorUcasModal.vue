@@ -58,8 +58,8 @@
           </div>
 
           <div class="tutor-ucas-actions">
-            <button class="tutor-ucas-btn tutor-ucas-btn--primary" @click="openUcasInNewTab">
-              Open UCAS application
+            <button class="tutor-ucas-btn tutor-ucas-btn--primary" :disabled="ucasAppLoading" @click="openUcasInModal">
+              {{ ucasAppLoading ? 'Opening…' : 'Open UCAS application' }}
             </button>
             <button class="tutor-ucas-btn" :disabled="requestingEdits" @click="requestStatementEdits">
               {{ requestingEdits ? 'Requesting…' : 'Request edits (statement)' }}
@@ -159,18 +159,33 @@
       </div>
     </div>
   </div>
+
+  <!-- Direct UCAS Application Modal (bypass full report route) -->
+  <UcasApplicationModal
+    v-if="ucasAppOpen"
+    :studentEmail="student?.email || ''"
+    :academicYear="ucasAcademicYear"
+    :subjects="ucasSubjects"
+    :offers="ucasOffers"
+    :apiUrl="apiUrl"
+    :canEdit="false"
+    :staffEmail="staffEmail"
+    @close="closeUcasApp"
+  />
 </template>
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { staffAPI } from '../services/api.js'
+import { staffAPI, API_BASE_URL } from '../services/api.js'
+import UcasApplicationModal from '../../../academic-profile/src/components/UcasApplicationModal.vue'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true },
   student: { type: Object, default: null },
   staffEmail: { type: String, default: '' },
   staffName: { type: String, default: '' },
-  academicYear: { type: String, default: 'current' }
+  academicYear: { type: String, default: 'current' },
+  autoOpenApplication: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['close'])
@@ -180,6 +195,28 @@ const error = ref('')
 
 const ucasApp = ref(null)
 const refFull = ref(null)
+
+// Direct UCAS application modal state
+const ucasAppOpen = ref(false)
+const ucasAppLoading = ref(false)
+const ucasAppError = ref('')
+const ucasProfile = ref(null)
+
+const apiUrl = API_BASE_URL
+
+const effectiveAcademicYear = ref(props.academicYear || 'current')
+const ucasAcademicYear = computed(() => {
+  const p = ucasProfile.value?.data || ucasProfile.value || {}
+  return (p.academic_year || p.academicYear || effectiveAcademicYear.value || 'current')
+})
+const ucasSubjects = computed(() => {
+  const p = ucasProfile.value?.data || ucasProfile.value || {}
+  return Array.isArray(p.subjects) ? p.subjects : []
+})
+const ucasOffers = computed(() => {
+  const p = ucasProfile.value?.data || ucasProfile.value || {}
+  return Array.isArray(p.offers) ? p.offers : []
+})
 
 const compiledText = ref('')
 const compiledOriginal = ref('')
@@ -249,9 +286,10 @@ async function load() {
   error.value = ''
   saveError.value = ''
   try {
+    await resolveAcademicYear()
     const [appResp, refResp] = await Promise.all([
-      staffAPI.getUcasApplication(props.student.email, props.academicYear),
-      staffAPI.getReferenceFull(props.student.email, props.academicYear)
+      staffAPI.getUcasApplication(props.student.email, effectiveAcademicYear.value),
+      staffAPI.getReferenceFull(props.student.email, effectiveAcademicYear.value)
     ])
     ucasApp.value = appResp
     refFull.value = refResp
@@ -277,6 +315,35 @@ watch(
     if (isOpen) load()
   }
 )
+
+function normalizeAy(v) {
+  const s = (v ?? '').toString().trim()
+  if (!s) return 'current'
+  const low = s.toLowerCase()
+  if (low === 'current') return 'current'
+  return s
+}
+
+async function resolveAcademicYear() {
+  const desired = normalizeAy(props.academicYear)
+  if (!props.student?.email) {
+    effectiveAcademicYear.value = desired
+    return
+  }
+  if (desired !== 'current') {
+    effectiveAcademicYear.value = desired
+    return
+  }
+  // Ask backend to resolve the student's current academic year.
+  try {
+    const resp = await staffAPI.getAcademicProfile(props.student.email, 'current')
+    const data = resp?.data || resp || {}
+    const resolved = normalizeAy(data.academic_year || data.academicYear || desired)
+    effectiveAcademicYear.value = resolved || desired
+  } catch (_) {
+    effectiveAcademicYear.value = desired
+  }
+}
 
 function handleClose() {
   if (hasChanges.value && !confirm('You have unsaved changes. Close without saving?')) return
@@ -366,14 +433,28 @@ async function copyText(text) {
   }
 }
 
-function openUcasInNewTab() {
+async function openUcasInModal() {
   const email = String(props.student?.email || '').trim()
   if (!email) return
+  ucasAppError.value = ''
+  ucasAppLoading.value = true
   try {
-    localStorage.setItem('vespa_open_ucas', JSON.stringify({ email, ts: Date.now() }))
-  } catch (_) {}
-  const url = `https://vespaacademy.knack.com/vespa-academy#vespa-coaching-report?email=${encodeURIComponent(email)}&open=ucas`
-  window.open(url, '_blank', 'noopener')
+    await resolveAcademicYear()
+    const profileResp = await staffAPI.getAcademicProfile(email, effectiveAcademicYear.value)
+    ucasProfile.value = profileResp
+    ucasAppOpen.value = true
+  } catch (e) {
+    ucasAppError.value = e?.message || 'Failed to open UCAS application'
+    error.value = ucasAppError.value
+  } finally {
+    ucasAppLoading.value = false
+  }
+}
+
+function closeUcasApp() {
+  ucasAppOpen.value = false
+  ucasProfile.value = null
+  ucasAppError.value = ''
 }
 
 async function requestStatementEdits() {
