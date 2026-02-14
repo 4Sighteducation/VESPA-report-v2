@@ -323,6 +323,67 @@ export const staffAPI = {
       console.error('[Staff API] Error fetching study planner context:', error)
       throw error
     }
+  },
+
+  /**
+   * Save/clear teacher intervention comment on a study planner session.
+   */
+  async saveStudyPlannerSessionComment({
+    sessionId,
+    studentEmail,
+    comment,
+    staffEmail,
+    staffName
+  }) {
+    const id = String(sessionId || '').trim()
+    const student = String(studentEmail || '').trim().toLowerCase()
+    if (!id) throw new Error('Session id is required')
+    if (!student) throw new Error('Student email is required')
+
+    const supabaseUrl =
+      window?.VESPA_SUPABASE_URL_DEFAULT ||
+      window?.VESPA_SUPABASE_URL ||
+      ''
+    const edgeUrl = supabaseUrl
+      ? `${String(supabaseUrl).replace(/\/$/, '')}/functions/v1/study-planner-staff-comment`
+      : ''
+    if (!edgeUrl) {
+      throw new Error('Supabase staff comment endpoint is not configured')
+    }
+
+    const anon =
+      window?.VESPA_SUPABASE_ANON_DEFAULT ||
+      window?.VESPA_SUPABASE_ANON_KEY ||
+      ''
+
+    const headers = { 'Content-Type': 'application/json' }
+    if (anon) {
+      headers.Authorization = `Bearer ${anon}`
+      headers.apikey = anon
+    }
+
+    try {
+      const response = await fetch(edgeUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          session_id: id,
+          student_email: student,
+          comment: String(comment || ''),
+          staff_email: String(staffEmail || '').trim().toLowerCase() || null,
+          staff_name: String(staffName || '').trim() || null
+        })
+      })
+      if (!response.ok) {
+        throw new Error(await response.text().catch(() => `HTTP error! status: ${response.status}`))
+      }
+      const data = await response.json()
+      if (!data?.ok) throw new Error(data?.error || 'Failed to save session comment')
+      return data
+    } catch (error) {
+      console.error('[Staff API] Error saving study planner session comment:', error)
+      throw error
+    }
   }
 }
 

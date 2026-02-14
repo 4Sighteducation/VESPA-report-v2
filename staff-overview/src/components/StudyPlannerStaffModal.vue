@@ -49,9 +49,13 @@
                   :key="`${time}-${day}`"
                   class="sp-cell"
                   :class="{ 'sp-cell--filled': !!slotFor(time, day) }"
+                  :style="slotStyle(slotFor(time, day))"
                   @click="openSession(slotFor(time, day))"
                 >
-                  <span v-if="slotFor(time, day)">{{ slotFor(time, day).label || 'Session' }}</span>
+                  <template v-if="slotFor(time, day)">
+                    <span class="sp-cell-label">{{ slotFor(time, day).label || 'Session' }}</span>
+                    <span class="sp-cell-type">{{ sessionTypeLabel(slotFor(time, day)) }}</span>
+                  </template>
                 </button>
               </template>
             </div>
@@ -97,10 +101,30 @@
         <p><strong>Day:</strong> {{ dayLabels[(sessionModal.day_of_week || 1) - 1] }}</p>
         <p><strong>Start:</strong> {{ normalizeTime(sessionModal.start_time) }}</p>
         <p><strong>Duration:</strong> {{ sessionModal.duration_minutes || 0 }} mins</p>
+        <p><strong>Type:</strong> {{ sessionTypeLabel(sessionModal) }}</p>
         <p><strong>Subject:</strong> {{ sessionModal.subject || '-' }}</p>
         <p><strong>Topic:</strong> {{ sessionModal.topic || '-' }}</p>
         <p><strong>Notes:</strong> {{ sessionModal.notes || '-' }}</p>
-        <button class="sp-btn sp-btn-primary" @click="sessionModal = null">Close</button>
+        <div class="sp-comment-block">
+          <label class="sp-comment-label">Teacher intervention comment</label>
+          <textarea
+            v-model="commentDraft"
+            class="sp-comment-input"
+            placeholder="Add optional intervention guidance for this session..."
+          ></textarea>
+          <div v-if="commentSavedAt" class="sp-comment-meta">
+            Last updated:
+            {{ commentSavedAt }}
+            <span v-if="commentSavedByName">by {{ commentSavedByName }}</span>
+            <span v-else-if="commentSavedByEmail">by {{ commentSavedByEmail }}</span>
+          </div>
+        </div>
+        <div class="sp-session-actions">
+          <button class="sp-btn" :disabled="savingComment" @click="saveComment">
+            {{ savingComment ? 'Saving…' : 'Save comment' }}
+          </button>
+          <button class="sp-btn sp-btn-primary" @click="sessionModal = null">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -112,7 +136,9 @@ import { staffAPI } from '../services/api.js'
 
 const props = defineProps({
   isOpen: { type: Boolean, required: true },
-  student: { type: Object, default: null }
+  student: { type: Object, default: null },
+  staffEmail: { type: String, default: '' },
+  staffName: { type: String, default: '' }
 })
 const emit = defineEmits(['close'])
 
@@ -125,11 +151,21 @@ const activePlan = ref(null)
 const sessions = ref([])
 const sessionModal = ref(null)
 const backendNotice = ref('')
+const sprintTypes = ref([])
+const commentDraft = ref('')
+const savingComment = ref(false)
+const commentSavedAt = ref('')
+const commentSavedByName = ref('')
+const commentSavedByEmail = ref('')
 
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 const times = computed(() => {
-  const out = [...new Set((sessions.value || []).map((s) => normalizeTime(s.start_time)).filter(Boolean))]
+  const out = buildDefaultTimes()
+  for (const s of sessions.value || []) {
+    const t = normalizeTime(s.start_time)
+    if (t && !out.includes(t)) out.push(t)
+  }
   out.sort()
   return out
 })
@@ -158,6 +194,14 @@ function normalizeTime(v) {
   return String(v || '').slice(0, 5)
 }
 
+function buildDefaultTimes() {
+  const fixed = []
+  for (let h = 6; h <= 23; h += 1) {
+    fixed.push(`${String(h).padStart(2, '0')}:00`)
+  }
+  return fixed
+}
+
 function startOfWeekDate(d) {
   const copy = new Date(d)
   const day = copy.getDay() || 7
@@ -180,9 +224,88 @@ function slotFor(time, day) {
   return sessions.value.find((s) => Number(s.day_of_week) === dayIndex && normalizeTime(s.start_time) === time) || null
 }
 
+function getSprintType(typeId) {
+  if (!typeId) return null
+  return (sprintTypes.value || []).find((t) => t.id === typeId) || null
+}
+
+function sessionTypeLabel(session) {
+  const type = getSprintType(session?.sprint_type_id)
+  return type?.display_name || 'Session'
+}
+
+function slotStyle(session) {
+  if (!session) return {}
+  const type = getSprintType(session?.sprint_type_id)
+  const color = String(type?.color_hex || '').trim()
+  if (!color) return {}
+  return {
+    borderColor: color,
+    background: `${color}22`
+  }
+}
+
 function openSession(session) {
   if (!session) return
   sessionModal.value = session
+  commentDraft.value = String(session.staff_comment || '')
+  commentSavedAt.value = formatTimestamp(session.staff_comment_updated_at)
+  commentSavedByName.value = String(session.staff_comment_by_name || '')
+  commentSavedByEmail.value = String(session.staff_comment_by_email || '')
+}
+
+function formatTimestamp(v) {
+  const raw = String(v || '').trim()
+  if (!raw) return ''
+  const d = new Date(raw)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+async function saveComment() {
+  if (!sessionModal.value?.id || !props.student?.email) return
+  savingComment.value = true
+  error.value = ''
+  try {
+    const payload = await staffAPI.saveStudyPlannerSessionComment({
+      sessionId: sessionModal.value.id,
+      studentEmail: props.student.email,
+      comment: commentDraft.value,
+      staffEmail: props.staffEmail || '',
+      staffName: props.staffName || ''
+    })
+    const savedComment = String(payload?.staff_comment || '')
+    const savedAtIso = String(payload?.staff_comment_updated_at || '')
+    const savedByName = String(payload?.staff_comment_by_name || '')
+    const savedByEmail = String(payload?.staff_comment_by_email || '')
+
+    commentDraft.value = savedComment
+    commentSavedAt.value = formatTimestamp(savedAtIso)
+    commentSavedByName.value = savedByName
+    commentSavedByEmail.value = savedByEmail
+
+    const idx = sessions.value.findIndex((s) => String(s?.id || '') === String(sessionModal.value.id))
+    if (idx >= 0) {
+      sessions.value[idx] = {
+        ...sessions.value[idx],
+        staff_comment: savedComment || null,
+        staff_comment_updated_at: savedAtIso || null,
+        staff_comment_by_name: savedByName || null,
+        staff_comment_by_email: savedByEmail || null
+      }
+      sessionModal.value = { ...sessions.value[idx] }
+    }
+  } catch (e) {
+    error.value = e?.message || 'Failed to save teacher comment'
+  } finally {
+    savingComment.value = false
+  }
 }
 
 async function loadPlan(planId) {
@@ -192,6 +315,7 @@ async function loadPlan(planId) {
   backendNotice.value = ''
   try {
     const data = await staffAPI.getStudyPlannerContext(props.student.email, { planId })
+    sprintTypes.value = Array.isArray(data?.sprintTypes) ? data.sprintTypes : []
     const normalizedPlans = normalizePlans(data?.plans)
     plans.value = normalizedPlans
 
@@ -312,8 +436,10 @@ function normalizePlans(rawPlans) {
 .sp-grid{display:grid;grid-template-columns:80px repeat(7,minmax(90px,1fr));gap:6px}
 .sp-grid-head{font-size:12px;font-weight:800;color:#4b5563;padding:6px}
 .sp-time{font-size:12px;color:#6b7280;padding:10px 6px}
-.sp-cell{min-height:52px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;padding:8px;font-size:12px;text-align:left;cursor:pointer}
+.sp-cell{min-height:52px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;padding:8px;font-size:12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px}
 .sp-cell--filled{background:#ecfeff;border-color:#67e8f9}
+.sp-cell-label{font-weight:700;color:#0f172a}
+.sp-cell-type{font-size:11px;color:#334155;background:rgba(255,255,255,.65);padding:2px 6px;border-radius:999px;display:inline-flex;width:fit-content}
 .sp-list-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .sp-list-col h4{margin:0 0 10px 0}
 .sp-plan{width:100%;text-align:left;border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:10px;margin-bottom:8px;cursor:pointer}
@@ -322,5 +448,10 @@ function normalizePlans(rawPlans) {
 .sp-session-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:12100}
 .sp-session-modal{width:min(560px,92vw);background:#fff;border-radius:12px;padding:16px}
 .sp-session-modal h4{margin:0 0 10px 0}
+.sp-comment-block{margin-top:10px}
+.sp-comment-label{display:block;font-weight:700;font-size:12px;margin-bottom:6px;color:#334155}
+.sp-comment-input{width:100%;min-height:90px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;resize:vertical;font-size:13px}
+.sp-comment-meta{font-size:12px;color:#64748b;margin-top:6px}
+.sp-session-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 @media (max-width: 1100px){.sp-list-wrap{grid-template-columns:1fr}.sp-grid{grid-template-columns:70px repeat(7,minmax(70px,1fr))}}
 </style>

@@ -245,6 +245,8 @@
     <StudyPlannerStaffModal
       :isOpen="studyPlannerOpen"
       :student="studyPlannerStudent"
+      :staffEmail="currentStaffEmail"
+      :staffName="currentStaffName"
       @close="closeStudyPlanner"
     />
   </div>
