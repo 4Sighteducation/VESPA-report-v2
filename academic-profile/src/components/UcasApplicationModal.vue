@@ -1,19 +1,28 @@
 <template>
-  <div class="ucas-overlay" :class="{ 'ucas-overlay--fullscreen': fullscreen }" role="dialog" aria-modal="true" aria-label="UCAS Application" @click.self="emit('close')">
+  <div
+    class="ucas-overlay"
+    :class="[{ 'ucas-overlay--fullscreen': fullscreen }, embedded ? 'ucas-overlay--embedded' : '']"
+    role="dialog"
+    aria-modal="true"
+    aria-label="UCAS Application"
+    @click.self="embedded ? null : emit('close')"
+  >
     <div class="ucas-modal" :class="{ 'ucas-modal--fullscreen': fullscreen }">
-      <button
-        class="ucas-btn-close ucas-btn-close--corner ucas-btn-close--corner-secondary"
-        type="button"
-        @click="toggleFullscreen"
-        :aria-label="fullscreen ? 'Exit full screen' : 'Full screen UCAS application'"
-        :title="fullscreen ? 'Exit full screen' : 'Full screen'"
-      >
-        <svg v-if="!fullscreen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
-        <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/><path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg>
-      </button>
-      <button class="ucas-btn-close ucas-btn-close--corner" type="button" @click="emit('close')" aria-label="Close UCAS application">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
+      <template v-if="!embedded">
+        <button
+          class="ucas-btn-close ucas-btn-close--corner ucas-btn-close--corner-secondary"
+          type="button"
+          @click="toggleFullscreen"
+          :aria-label="fullscreen ? 'Exit full screen' : 'Full screen UCAS application'"
+          :title="fullscreen ? 'Exit full screen' : 'Full screen'"
+        >
+          <svg v-if="!fullscreen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+          <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H3v6"/><path d="M15 21h6v-6"/><path d="M3 3l7 7"/><path d="M21 21l-7-7"/></svg>
+        </button>
+        <button class="ucas-btn-close ucas-btn-close--corner" type="button" @click="emit('close')" aria-label="Close UCAS application">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </template>
       <header class="ucas-header">
         <div class="ucas-header-left">
           <div class="ucas-title">UCAS Application</div>
@@ -1048,7 +1057,9 @@ const props = defineProps({
   canEdit: { type: Boolean, default: false },
   commentsEnabled: { type: Boolean, default: true },
   canAddComment: { type: Boolean, default: false },
-  staffEmail: { type: String, default: '' }
+  staffEmail: { type: String, default: '' },
+  // When embedded, render as a normal container (no fixed overlay / no corner chrome)
+  embedded: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close'])
@@ -1987,6 +1998,29 @@ onMounted(async () => {
 .ucas-modal{width:100%;max-width:1600px;height:100%;max-height:calc(100vh - 24px);background:var(--ucas-white);border-radius:var(--ucas-radius-xl);box-shadow:var(--ucas-shadow-lg);display:flex;flex-direction:column;overflow:hidden;position:relative}
 .ucas-overlay--fullscreen{padding:0}
 .ucas-modal--fullscreen{max-width:none;max-height:none;border-radius:0}
+
+/* Embedded mode: allow UCAS UI to sit inside another modal/panel */
+.ucas-overlay--embedded{
+  position:relative;
+  inset:auto;
+  width:100%;
+  height:100%;
+  z-index:auto;
+  background:transparent;
+  backdrop-filter:none;
+  padding:0;
+}
+.ucas-overlay--embedded .ucas-modal{
+  max-width:none;
+  max-height:none;
+  width:100%;
+  height:100%;
+  border-radius:0;
+  box-shadow:none;
+}
+.ucas-overlay--embedded .ucas-body{
+  padding:16px;
+}
 
 .ucas-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 24px;background:var(--ucas-white);border-bottom:1px solid var(--ucas-gray-200);flex-wrap:wrap}
 .ucas-header-left{display:flex;flex-direction:column;gap:8px}

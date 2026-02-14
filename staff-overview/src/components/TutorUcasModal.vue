@@ -21,7 +21,9 @@
           <button class="tutor-ucas-btn" @click="reload">Try again</button>
         </div>
 
-        <div v-else class="tutor-ucas-content">
+        <div v-else class="tutor-ucas-split" :class="{ 'tutor-ucas-split--app-open': ucasAppOpen }">
+          <!-- Left: tutor reference + statuses -->
+          <div class="tutor-ucas-pane tutor-ucas-pane--left">
           <!-- Status row -->
           <div class="tutor-ucas-status-row">
             <div class="tutor-ucas-status-card">
@@ -58,8 +60,8 @@
           </div>
 
           <div class="tutor-ucas-actions">
-            <button class="tutor-ucas-btn tutor-ucas-btn--primary" :disabled="ucasAppLoading" @click="openUcasInModal">
-              {{ ucasAppLoading ? 'Opening…' : 'Open UCAS application' }}
+            <button class="tutor-ucas-btn tutor-ucas-btn--primary" :disabled="ucasAppLoading" @click="toggleUcasPanel">
+              {{ ucasAppOpen ? 'Back to tutor reference' : (ucasAppLoading ? 'Opening…' : 'View student application') }}
             </button>
             <button class="tutor-ucas-btn" :disabled="requestingEdits" @click="requestStatementEdits">
               {{ requestingEdits ? 'Requesting…' : 'Request edits (statement)' }}
@@ -155,23 +157,40 @@
           <div class="tutor-ucas-footnote">
             Students can see status, not the reference content. Subject teachers submit into “Incoming…” above; tutors collate into the final narrative.
           </div>
+          </div>
+
+          <!-- Right: student UCAS application (slide-in) -->
+          <div class="tutor-ucas-pane tutor-ucas-pane--right" :class="{ 'is-open': ucasAppOpen }">
+            <div class="tutor-ucas-app-head">
+              <div class="tutor-ucas-app-title">Student UCAS application</div>
+              <button class="tutor-ucas-btn tutor-ucas-btn--sm tutor-ucas-btn--ghost" type="button" @click="closeUcasApp">
+                Close
+              </button>
+            </div>
+
+            <div v-if="ucasAppError" class="tutor-ucas-app-error">
+              {{ ucasAppError }}
+            </div>
+
+            <div v-else class="tutor-ucas-app-body">
+              <UcasApplicationModal
+                v-if="ucasAppOpen"
+                embedded
+                :studentEmail="student?.email || ''"
+                :academicYear="ucasAcademicYear"
+                :subjects="ucasSubjects"
+                :offers="ucasOffers"
+                :apiUrl="apiUrl"
+                :canEdit="false"
+                :staffEmail="staffEmail"
+                @close="closeUcasApp"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Direct UCAS Application Modal (bypass full report route) -->
-  <UcasApplicationModal
-    v-if="ucasAppOpen"
-    :studentEmail="student?.email || ''"
-    :academicYear="ucasAcademicYear"
-    :subjects="ucasSubjects"
-    :offers="ucasOffers"
-    :apiUrl="apiUrl"
-    :canEdit="false"
-    :staffEmail="staffEmail"
-    @close="closeUcasApp"
-  />
 </template>
 
 <script setup>
@@ -451,6 +470,14 @@ async function openUcasInModal() {
   }
 }
 
+async function toggleUcasPanel() {
+  if (ucasAppOpen.value) {
+    closeUcasApp()
+    return
+  }
+  await openUcasInModal()
+}
+
 function closeUcasApp() {
   ucasAppOpen.value = false
   ucasProfile.value = null
@@ -555,8 +582,72 @@ function formatDate(v) {
 }
 
 .tutor-ucas-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tutor-ucas-split {
+  display: flex;
+  gap: 12px;
+  height: 100%;
   padding: 14px 16px 18px;
+  box-sizing: border-box;
+}
+
+.tutor-ucas-pane {
+  min-width: 0;
   overflow: auto;
+}
+
+.tutor-ucas-pane--left {
+  flex: 1 1 auto;
+}
+
+.tutor-ucas-pane--right {
+  flex: 0 0 0;
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width 0.22s ease, flex-basis 0.22s ease, opacity 0.18s ease;
+}
+
+.tutor-ucas-pane--right.is-open {
+  flex: 0 0 56%;
+  width: 56%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tutor-ucas-app-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ececec;
+  background: #f8fafc;
+}
+
+.tutor-ucas-app-title {
+  font-weight: 900;
+  color: #111827;
+  font-size: 13px;
+}
+
+.tutor-ucas-app-body {
+  height: calc(100% - 48px);
+  min-height: 520px;
+}
+
+.tutor-ucas-app-error {
+  padding: 12px;
+  color: #991b1b;
+  font-weight: 800;
+  background: #fff5f5;
 }
 
 .tutor-ucas-loading {
@@ -838,6 +929,18 @@ function formatDate(v) {
 @media (max-width: 900px) {
   .tutor-ucas-status-row {
     grid-template-columns: 1fr;
+  }
+
+  .tutor-ucas-split {
+    flex-direction: column;
+  }
+
+  .tutor-ucas-pane--right,
+  .tutor-ucas-pane--right.is-open {
+    flex: 0 0 auto;
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 </style>
