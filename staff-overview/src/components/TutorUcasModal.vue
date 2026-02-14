@@ -532,9 +532,11 @@ function formatDate(v) {
 }
 
 .tutor-ucas-modal {
-  width: 980px;
-  max-width: 96vw;
-  max-height: 92vh;
+  /* Fill far more of the viewport (Knack embedded pages often feel cramped) */
+  width: min(1800px, 92vw);
+  max-width: 92vw;
+  height: min(94vh, 980px);
+  max-height: 94vh;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
@@ -555,13 +557,13 @@ function formatDate(v) {
 
 .tutor-ucas-title h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
 }
 
 .tutor-ucas-sub {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.95;
 }
 
@@ -584,12 +586,16 @@ function formatDate(v) {
 .tutor-ucas-body {
   padding: 0;
   overflow: hidden;
+  flex: 1;
+  min-height: 0;
 }
 
 .tutor-ucas-split {
   display: flex;
   gap: 12px;
   height: 100%;
+  flex: 1;
+  min-height: 0;
   padding: 14px 16px 18px;
   box-sizing: border-box;
 }
@@ -597,6 +603,7 @@ function formatDate(v) {
 .tutor-ucas-pane {
   min-width: 0;
   overflow: auto;
+  min-height: 0;
 }
 
 .tutor-ucas-pane--left {
@@ -613,11 +620,13 @@ function formatDate(v) {
   border-radius: 12px;
   overflow: hidden;
   transition: width 0.22s ease, flex-basis 0.22s ease, opacity 0.18s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .tutor-ucas-pane--right.is-open {
-  flex: 0 0 56%;
-  width: 56%;
+  flex: 0 0 60%;
+  width: 60%;
   opacity: 1;
   pointer-events: auto;
 }
@@ -635,12 +644,12 @@ function formatDate(v) {
 .tutor-ucas-app-title {
   font-weight: 900;
   color: #111827;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .tutor-ucas-app-body {
-  height: calc(100% - 48px);
-  min-height: 520px;
+  flex: 1;
+  min-height: 0;
 }
 
 .tutor-ucas-app-error {
@@ -715,7 +724,7 @@ function formatDate(v) {
 
 .tutor-ucas-status-card .detail {
   margin-top: 6px;
-  font-size: 12px;
+  font-size: 13px;
   color: #666;
 }
 
@@ -724,7 +733,7 @@ function formatDate(v) {
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   margin-top: 8px;
 }
@@ -763,7 +772,7 @@ function formatDate(v) {
   border-radius: 10px;
   padding: 9px 12px;
   font-weight: 800;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -803,7 +812,7 @@ function formatDate(v) {
 .tutor-ucas-btn--sm {
   padding: 7px 10px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .tutor-ucas-section {
@@ -887,8 +896,8 @@ function formatDate(v) {
   border-radius: 12px;
   padding: 12px;
   font-family: inherit;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 16px;
+  line-height: 1.65;
   resize: vertical;
   min-height: 220px;
 }

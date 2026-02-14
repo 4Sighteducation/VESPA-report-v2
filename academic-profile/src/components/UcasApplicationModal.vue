@@ -2017,6 +2017,11 @@ onMounted(async () => {
   height:100%;
   border-radius:0;
   box-shadow:none;
+  /* Make text/UI more readable when embedded in a split panel */
+  transform:scale(1.08);
+  transform-origin:top left;
+  width:calc(100% / 1.08);
+  height:calc(100% / 1.08);
 }
 .ucas-overlay--embedded .ucas-body{
   padding:16px;
