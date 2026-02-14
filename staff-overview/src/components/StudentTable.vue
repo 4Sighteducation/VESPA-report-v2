@@ -62,6 +62,7 @@
             </th>
             <th class="report-col">Report</th>
             <th class="ucas-col" title="UCAS Application (Year 12+)">UCAS</th>
+            <th class="planner-col" title="Read-only Study Planner">Planner</th>
             <th @click="sortBy('vision')" class="score-cell sortable" title="Vision">
               V
               <span class="sort-indicator">{{ getSortIndicator('vision') }}</span>
@@ -109,6 +110,17 @@
                 :title="canAccessUcas(student) ? 'Open UCAS Application' : 'UCAS available for Year 12+ only'"
               >
                 🎓
+              </button>
+            </td>
+            <td class="report-cell">
+              <button
+                class="planner-button"
+                type="button"
+                @click="openStudyPlanner(student)"
+                :disabled="!student?.email"
+                :title="student?.email ? 'Open Study Planner' : 'Student email missing'"
+              >
+                📅
               </button>
             </td>
             <td class="score-cell" :style="{ background: getScoreColor(student.scores?.vision) }">
@@ -229,6 +241,12 @@
       academicYear="current"
       @close="closeTutorUcas"
     />
+
+    <StudyPlannerStaffModal
+      :isOpen="studyPlannerOpen"
+      :student="studyPlannerStudent"
+      @close="closeStudyPlanner"
+    />
   </div>
 </template>
 
@@ -238,6 +256,7 @@ import { getScoreColor } from '../data/vespaColors.js'
 import TextViewModal from './TextViewModal.vue'
 import EditableTextModal from './EditableTextModal.vue'
 import TutorUcasModal from './TutorUcasModal.vue'
+import StudyPlannerStaffModal from './StudyPlannerStaffModal.vue'
 import { staffAPI } from '../services/api.js'
 
 const props = defineProps({
@@ -523,6 +542,8 @@ function openUcas(student) {
 // Tutor UCAS popup state
 const tutorUcasOpen = ref(false)
 const tutorUcasStudent = ref(null)
+const studyPlannerOpen = ref(false)
+const studyPlannerStudent = ref(null)
 
 const currentStaffEmail = computed(() => {
   try {
@@ -556,6 +577,20 @@ function openTutorUcas(student) {
 function closeTutorUcas() {
   tutorUcasOpen.value = false
   tutorUcasStudent.value = null
+}
+
+function openStudyPlanner(student) {
+  if (!student?.email) return
+  studyPlannerStudent.value = {
+    name: student?.name || '',
+    email: student?.email || ''
+  }
+  studyPlannerOpen.value = true
+}
+
+function closeStudyPlanner() {
+  studyPlannerOpen.value = false
+  studyPlannerStudent.value = null
 }
 
 // View-only modal (for Response)
@@ -858,6 +893,11 @@ const handleSaveCoaching = async (newText) => {
   text-align: center;
 }
 
+.planner-col {
+  width: 70px;
+  text-align: center;
+}
+
 .report-cell {
   text-align: center;
   padding: 8px !important;
@@ -910,6 +950,34 @@ const handleSaveCoaching = async (newText) => {
 }
 
 .ucas-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.planner-button {
+  padding: 8px 12px;
+  background: #0f766e;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.3s;
+  line-height: 1;
+  width: 44px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planner-button:hover:not(:disabled) {
+  background: #0b5c56;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.planner-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1103,6 +1171,12 @@ const handleSaveCoaching = async (newText) => {
   }
 
   .ucas-button {
+    font-size: 14px;
+    width: 36px;
+    height: 32px;
+  }
+
+  .planner-button {
     font-size: 14px;
     width: 36px;
     height: 32px;

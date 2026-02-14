@@ -270,6 +270,59 @@ export const staffAPI = {
       console.error('[Staff API] Error requesting UCAS statement edits:', error)
       throw error
     }
+  },
+
+  /**
+   * Fetch study planner context from Supabase Edge (staff read-only usage).
+   * Fully Supabase-native (no Knack writes).
+   */
+  async getStudyPlannerContext(studentEmail, opts = {}) {
+    const email = String(studentEmail || '').trim().toLowerCase()
+    if (!email) throw new Error('Student email is required')
+
+    const supabaseUrl =
+      window?.VESPA_SUPABASE_URL_DEFAULT ||
+      window?.VESPA_SUPABASE_URL ||
+      ''
+    const edgeUrl = supabaseUrl
+      ? `${String(supabaseUrl).replace(/\/$/, '')}/functions/v1/study-planner-context`
+      : ''
+    if (!edgeUrl) {
+      throw new Error('Supabase study planner endpoint is not configured')
+    }
+
+    const anon =
+      window?.VESPA_SUPABASE_ANON_DEFAULT ||
+      window?.VESPA_SUPABASE_ANON_KEY ||
+      ''
+
+    const headers = { 'Content-Type': 'application/json' }
+    if (anon) {
+      headers.Authorization = `Bearer ${anon}`
+      headers.apikey = anon
+    }
+
+    const body = {
+      email,
+      plan_id: opts?.planId || null
+    }
+
+    try {
+      const response = await fetch(edgeUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body)
+      })
+      if (!response.ok) {
+        throw new Error(await response.text().catch(() => `HTTP error! status: ${response.status}`))
+      }
+      const data = await response.json()
+      if (!data?.ok) throw new Error(data?.error || 'Failed to load study planner')
+      return data
+    } catch (error) {
+      console.error('[Staff API] Error fetching study planner context:', error)
+      throw error
+    }
   }
 }
 
