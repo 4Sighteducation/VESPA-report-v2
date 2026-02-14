@@ -32,7 +32,13 @@
               <button class="sp-btn" :disabled="activePlanIndex <= 0" @click="nextWeek">Next →</button>
             </div>
 
-            <div class="sp-grid">
+            <div v-if="backendNotice" class="sp-warning">{{ backendNotice }}</div>
+            <div v-if="!sessions.length" class="sp-empty">
+              No sessions found for this week.
+              <br>
+              Open the <strong>List</strong> tab and select a different week.
+            </div>
+            <div v-else class="sp-grid">
               <div class="sp-grid-head"></div>
               <div v-for="day in dayLabels" :key="`h-${day}`" class="sp-grid-head">{{ day }}</div>
 
@@ -118,6 +124,7 @@ const plans = ref([])
 const activePlan = ref(null)
 const sessions = ref([])
 const sessionModal = ref(null)
+const backendNotice = ref('')
 
 const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -182,11 +189,44 @@ async function loadPlan(planId) {
   if (!props.student?.email) return
   loading.value = true
   error.value = ''
+  backendNotice.value = ''
   try {
     const data = await staffAPI.getStudyPlannerContext(props.student.email, { planId })
-    plans.value = Array.isArray(data?.plans) ? data.plans : []
-    activePlan.value = data?.activePlan || plans.value[0] || null
-    sessions.value = Array.isArray(data?.sessions) ? data.sessions : []
+    const normalizedPlans = normalizePlans(data?.plans)
+    plans.value = normalizedPlans
+
+    const requestedId = String(planId || '').trim()
+    const activeFromApiId = String(data?.activePlan?.id || '').trim()
+
+    let selectedPlan = null
+    if (requestedId) {
+      selectedPlan = normalizedPlans.find((p) => p.id === requestedId) || null
+    }
+    if (!selectedPlan && activeFromApiId) {
+      selectedPlan = normalizedPlans.find((p) => p.id === activeFromApiId) || null
+    }
+    if (!selectedPlan) selectedPlan = normalizedPlans[0] || null
+    activePlan.value = selectedPlan
+
+    let resolvedSessions = Array.isArray(data?.sessions) ? data.sessions : []
+
+    // If API defaulted to an empty/filtered-out plan, fetch the selected plan explicitly.
+    if (
+      selectedPlan?.id &&
+      !requestedId &&
+      activeFromApiId &&
+      activeFromApiId !== selectedPlan.id
+    ) {
+      const retry = await staffAPI.getStudyPlannerContext(props.student.email, { planId: selectedPlan.id })
+      const retrySessions = Array.isArray(retry?.sessions) ? retry.sessions : []
+      if (retrySessions.length) {
+        resolvedSessions = retrySessions
+      } else if ((selectedPlan.session_count || 0) > 0) {
+        backendNotice.value = 'Selected week has sessions in plan metadata, but no session rows were returned. This usually means the edge function is still on an older version.'
+      }
+    }
+
+    sessions.value = resolvedSessions
   } catch (e) {
     error.value = e?.message || 'Failed to load study planner'
   } finally {
@@ -221,6 +261,33 @@ watch(
     await loadPlan(null)
   }
 )
+
+function normalizePlans(rawPlans) {
+  const list = Array.isArray(rawPlans) ? rawPlans : []
+  const filtered = list
+    .filter((p) => String(p?.status || '').trim().toLowerCase() !== 'deleted')
+    .map((p) => ({
+      ...p,
+      session_count: Number(p?.session_count || 0)
+    }))
+    .filter((p) => p.session_count > 0)
+    .sort((a, b) => {
+      if (a.week_start_date > b.week_start_date) return -1
+      if (a.week_start_date < b.week_start_date) return 1
+      return Number(b.session_count || 0) - Number(a.session_count || 0)
+    })
+
+  // Keep one plan per week to avoid duplicated entries.
+  const seenWeeks = new Set()
+  const unique = []
+  for (const p of filtered) {
+    const key = String(p.week_start_date || '')
+    if (!key || seenWeeks.has(key)) continue
+    seenWeeks.add(key)
+    unique.push(p)
+  }
+  return unique
+}
 </script>
 
 <style scoped>
@@ -239,6 +306,7 @@ watch(
 .sp-body{flex:1;min-height:0;overflow:auto;padding:14px}
 .sp-loading,.sp-error,.sp-empty{padding:18px;border:1px solid #ececec;border-radius:10px}
 .sp-error{background:#fff5f5;color:#991b1b;border-color:#fecaca}
+.sp-warning{padding:12px;border:1px solid #fcd34d;border-radius:10px;background:#fffbeb;color:#92400e;margin-bottom:10px}
 .sp-week-nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
 .sp-week-label{font-weight:800}
 .sp-grid{display:grid;grid-template-columns:80px repeat(7,minmax(90px,1fr));gap:6px}
