@@ -147,8 +147,8 @@
                   v-if="offersEditable"
                   class="offers-edit-btn"
                   @click="openOffersEditor"
-                  title="Add or edit up to 5 university choices">
-                  ✏️ Edit Choices
+                  title="Open UniGuide to build your 5 university choices">
+                  🔎 UniGuide
                 </button>
                 <button
                   v-if="offers.length > 0"
@@ -265,11 +265,11 @@
       <p>Saving changes...</p>
     </div>
 
-    <!-- University Choices Editor Modal -->
+    <!-- UniGuide Modal (includes manual editor) -->
     <div v-if="offersEditorOpen" class="offers-modal-overlay" @click.self="closeOffersEditor">
       <div class="offers-modal">
         <div class="offers-modal-header">
-          <div class="offers-modal-title">University Choices (max 5)</div>
+          <div class="offers-modal-title">UniGuide</div>
           <a
             class="offers-ucas-link"
             href="https://www.ucas.com/"
@@ -281,53 +281,92 @@
           <button class="offers-modal-close" @click="closeOffersEditor">✖</button>
         </div>
         <div class="offers-modal-body">
-          <div class="offers-help">
-            Add up to 5 choices. The profile displays your <strong>#1 ranked</strong> choice by default.
-          </div>
-
-          <div class="offers-grid">
-            <div class="offers-grid-head">Rank</div>
-            <div class="offers-grid-head">University</div>
-            <div class="offers-grid-head">Course</div>
-            <div class="offers-grid-head">Link</div>
-            <div class="offers-grid-head">Offer</div>
-            <div class="offers-grid-head">UCAS</div>
-            <div class="offers-grid-head"></div>
-
-            <template v-for="(row, idx) in offersDraft" :key="row._key">
-              <div>
-                <select v-model.number="row.ranking" class="offers-input">
-                  <option :value="1">1</option>
-                  <option :value="2">2</option>
-                  <option :value="3">3</option>
-                  <option :value="4">4</option>
-                  <option :value="5">5</option>
-                </select>
-              </div>
-              <div><input v-model="row.universityName" class="offers-input" placeholder="e.g. Manchester" /></div>
-              <div><input v-model="row.courseTitle" class="offers-input" placeholder="e.g. Computer Science" /></div>
-              <div><input v-model="row.courseLink" class="offers-input" placeholder="https://…" /></div>
-              <div><input v-model="row.offer" class="offers-input" placeholder="e.g. AAB" /></div>
-              <div><input v-model="row.ucasPoints" class="offers-input" placeholder="e.g. 128" /></div>
-              <div>
-                <button class="offers-remove" @click="removeOfferRow(idx)" title="Remove">🗑️</button>
-              </div>
-            </template>
-          </div>
-
-          <div class="offers-modal-actions">
+          <div class="offers-modal-tabs" role="tablist" aria-label="UniGuide tabs">
             <button
-              class="offers-secondary"
-              @click="addOfferRow"
-              :disabled="offersDraft.length >= 5">
-              ➕ Add Choice
+              class="offers-modal-tab"
+              :class="{ active: offersEditorTab === 'uniguide' }"
+              type="button"
+              role="tab"
+              :aria-selected="offersEditorTab === 'uniguide'"
+              @click="offersEditorTab = 'uniguide'"
+            >
+              UniGuide
             </button>
+            <button
+              class="offers-modal-tab"
+              :class="{ active: offersEditorTab === 'manual' }"
+              type="button"
+              role="tab"
+              :aria-selected="offersEditorTab === 'manual'"
+              @click="offersEditorTab = 'manual'"
+            >
+              Manual edit
+            </button>
+          </div>
+
+          <div v-if="offersEditorTab === 'uniguide'" class="uniguide-shell" role="tabpanel">
+            <div class="uniguide-shell-title">Find and build your 5 university choices</div>
+            <div class="uniguide-shell-sub">
+              This is where the Discover Uni dataset search and the AI advisor chat will live.
+              For now, use <strong>Manual edit</strong> to set your 5 choices.
+            </div>
+            <div class="uniguide-shell-actions">
+              <button class="offers-secondary" type="button" @click="offersEditorTab = 'manual'">
+                ✏️ Open manual editor
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="uniguide-manual" role="tabpanel">
+            <div class="offers-help">
+              Add up to 5 choices. The profile displays your <strong>#1 ranked</strong> choice by default.
+            </div>
+
+            <div class="offers-grid">
+              <div class="offers-grid-head">Rank</div>
+              <div class="offers-grid-head">University</div>
+              <div class="offers-grid-head">Course</div>
+              <div class="offers-grid-head">Link</div>
+              <div class="offers-grid-head">Offer</div>
+              <div class="offers-grid-head">UCAS</div>
+              <div class="offers-grid-head"></div>
+
+              <template v-for="(row, idx) in offersDraft" :key="row._key">
+                <div>
+                  <select v-model.number="row.ranking" class="offers-input">
+                    <option :value="1">1</option>
+                    <option :value="2">2</option>
+                    <option :value="3">3</option>
+                    <option :value="4">4</option>
+                    <option :value="5">5</option>
+                  </select>
+                </div>
+                <div><input v-model="row.universityName" class="offers-input" placeholder="e.g. Manchester" /></div>
+                <div><input v-model="row.courseTitle" class="offers-input" placeholder="e.g. Computer Science" /></div>
+                <div><input v-model="row.courseLink" class="offers-input" placeholder="https://…" /></div>
+                <div><input v-model="row.offer" class="offers-input" placeholder="e.g. AAB" /></div>
+                <div><input v-model="row.ucasPoints" class="offers-input" placeholder="e.g. 128" /></div>
+                <div>
+                  <button class="offers-remove" @click="removeOfferRow(idx)" title="Remove">🗑️</button>
+                </div>
+              </template>
+            </div>
+
+            <div class="offers-modal-actions">
+              <button
+                class="offers-secondary"
+                type="button"
+                @click="addOfferRow"
+                :disabled="offersDraft.length >= 5">
+                ➕ Add Choice
+              </button>
+            </div>
           </div>
         </div>
         <div class="offers-modal-footer">
           <button class="offers-secondary" @click="closeOffersEditor">Cancel</button>
           <button class="offers-primary" @click="saveOffers" :disabled="offersSaving">
-            {{ offersSaving ? 'Saving...' : 'Save Offers' }}
+            {{ offersSaving ? 'Saving…' : 'Save choices' }}
           </button>
         </div>
       </div>
@@ -400,6 +439,7 @@ const offersExpanded = ref(false)
 const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
+const offersEditorTab = ref('uniguide') // 'uniguide' | 'manual'
 
 // UCAS Application modal state (student edits; staff read + comment)
 const ucasModalOpen = ref(false)
@@ -654,11 +694,13 @@ const openOffersEditor = () => {
       ranking: 1
     }]
   }
+  offersEditorTab.value = 'uniguide'
   offersEditorOpen.value = true
 }
 
 const closeOffersEditor = () => {
   offersEditorOpen.value = false
+  offersEditorTab.value = 'uniguide'
   offersDraft.value = []
 }
 
@@ -1346,16 +1388,21 @@ const showTemporaryMessage = (message, type) => {
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.06);
   color: #ffffff;
-  padding: 6px 10px;
-  border-radius: 8px;
+  padding: 9px 14px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .offers-ucasapp-btn {
   background: rgba(62, 50, 133, 0.35);
   border-color: rgba(62, 50, 133, 0.70);
+}
+
+.offers-edit-btn {
+  background: rgba(232, 119, 34, 0.22);
+  border-color: rgba(232, 119, 34, 0.55);
 }
 
 .offers-ucasapp-btn:disabled {
@@ -1513,12 +1560,15 @@ const showTemporaryMessage = (message, type) => {
 
 .offers-modal {
   width: 100%;
-  max-width: 980px;
+  max-width: 1100px;
+  max-height: 90vh;
   background: #14224a;
   border: 2px solid rgba(7, 155, 170, 0.6);
   border-radius: 12px;
   box-shadow: 0 12px 40px rgba(0,0,0,0.6);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .offers-modal-header {
@@ -1562,6 +1612,55 @@ const showTemporaryMessage = (message, type) => {
 
 .offers-modal-body {
   padding: 14px 16px;
+  overflow: auto;
+  flex: 1;
+}
+
+.offers-modal-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.offers-modal-tab {
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.offers-modal-tab.active {
+  border-color: rgba(7, 155, 170, 0.9);
+  background: rgba(7, 155, 170, 0.35);
+  color: #ffffff;
+}
+
+.uniguide-shell {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.uniguide-shell-title {
+  font-size: 16px;
+  font-weight: 950;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.uniguide-shell-sub {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.55;
+}
+
+.uniguide-shell-actions {
+  margin-top: 14px;
 }
 
 .offers-help {
