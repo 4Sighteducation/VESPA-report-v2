@@ -721,6 +721,15 @@ const formatPercentage = (decimal) => {
   }
 }
 
+/* Mobile: don't "shrink-wrap" the grade grid */
+@media (max-width: 640px) {
+  .grades-cols-3,
+  .grades-cols-2 {
+    width: 100%;
+    margin: 0;
+  }
+}
+
 /* Qualification-specific borders */
 .qual-a-level { border-left: 5px solid #FF6347; }
 .qual-btec-2016 { border-left: 5px solid #4682B4; }

@@ -329,5 +329,29 @@ onMounted(() => {
   background-color: #00c5c0;
   transform: translateY(-2px);
 }
+
+/* Mobile-first tightening (profile above report + homepage embed) */
+@media (max-width: 640px) {
+  .academic-profile-container {
+    margin: 10px auto;
+    padding: 0 10px;
+  }
+
+  .profile-toggle-bar {
+    margin-top: 10px;
+  }
+
+  .toggle-button {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 14px;
+  }
+
+  .profile-loading,
+  .profile-error,
+  .profile-empty {
+    padding: 18px;
+  }
+}
 </style>
 

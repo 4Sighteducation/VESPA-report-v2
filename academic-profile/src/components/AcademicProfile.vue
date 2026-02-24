@@ -1277,6 +1277,13 @@ const showTemporaryMessage = (message, type) => {
   }
 }
 
+@media (max-width: 640px) {
+  /* Phone: prioritize readability over density */
+  .subjects-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 400px) {
   .subjects-grid {
     grid-template-columns: 1fr;
@@ -1525,6 +1532,66 @@ const showTemporaryMessage = (message, type) => {
   flex-wrap: wrap;
   color: rgba(255,255,255,0.85);
   font-weight: 600;
+}
+
+/* Mobile: make University Choices header stack (avoid title/buttons overlap) */
+@media (max-width: 640px) {
+  .vespa-section {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .profile-header {
+    padding: 14px 14px 12px;
+    margin: -12px -12px 12px;
+  }
+
+  .university-offers {
+    padding: 14px;
+  }
+
+  .university-offers-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .offers-header-left {
+    width: 100%;
+  }
+
+  .university-offers-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .offers-toggle-btn {
+    grid-column: 1 / -1;
+  }
+
+  .offers-ucasapp-btn,
+  .offers-edit-btn,
+  .offers-toggle-btn,
+  .offers-add-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .university-offers-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .offers-toggle-btn {
+    grid-column: auto;
+  }
 }
 
 .university-offers-list {
