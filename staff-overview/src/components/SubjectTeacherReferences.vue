@@ -5,6 +5,10 @@
         <h3>Subject teacher</h3>
         <div class="strefs-sub">
           Review VESPA scores and open student reports. Submit short subject references (UCAS Section 3) when requested.
+          <div class="strefs-subnote">
+            If a student emails you a reference link, you can still complete it that way (no VESPA account needed).
+            If you do have a VESPA account, you can also <a class="strefs-login" href="https://vespaacademy.knack.com/vespa-academy" target="_blank" rel="noopener">log in here</a>.
+          </div>
         </div>
       </div>
       <div class="strefs-badges">
@@ -387,6 +391,23 @@ watch(
   margin-top: 4px;
   font-size: 12px;
   color: #6b7280;
+}
+
+.strefs-subnote {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.strefs-login {
+  color: #4338ca;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.strefs-login:hover {
+  text-decoration: underline;
 }
 
 .strefs-badges {

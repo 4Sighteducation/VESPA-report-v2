@@ -1,44 +1,47 @@
 <template>
-  <div v-if="isOpen" class="stref-overlay" @click.self="handleClose">
-    <div class="stref-modal">
-      <div class="stref-header">
-        <div class="stref-title">
-          <h3>{{ student?.name || 'Student' }} — Subject teacher reference</h3>
-          <div class="stref-sub">{{ student?.email || '' }}</div>
-        </div>
-        <button class="stref-close" @click="handleClose">&times;</button>
-      </div>
-
-      <div class="stref-body">
-        <div v-if="loading" class="stref-loading">
-          <div class="spinner"></div>
-          <div>Loading…</div>
+  <!-- Teleport prevents Knack containers from clipping the modal (overflow/transform issues). -->
+  <teleport to="body">
+    <div v-if="isOpen" class="stref-overlay" @click.self="handleClose">
+      <div class="stref-modal" role="dialog" aria-modal="true">
+        <div class="stref-header">
+          <div class="stref-title">
+            <h3>{{ student?.name || 'Student' }} — Subject teacher reference</h3>
+            <div class="stref-sub">{{ student?.email || '' }}</div>
+          </div>
+          <button class="stref-close" @click="handleClose">&times;</button>
         </div>
 
-        <div v-else-if="error" class="stref-error">
-          <div class="stref-error-title">Could not load student profile</div>
-          <div class="stref-error-msg">{{ error }}</div>
-          <button class="stref-btn" @click="load">Try again</button>
-        </div>
+        <div class="stref-body">
+          <div v-if="loading" class="stref-loading">
+            <div class="spinner"></div>
+            <div>Loading…</div>
+          </div>
 
-        <div v-else class="stref-content">
-          <UcasApplicationModal
-            embedded
-            :studentEmail="student?.email || ''"
-            :academicYear="resolvedAcademicYear"
-            :subjects="subjects"
-            :offers="offers"
-            :topOffer="topOffer"
-            :apiUrl="apiUrl"
-            :canEdit="false"
-            :staffEmail="staffEmail"
-            initialPanel="reference"
-            @close="handleClose"
-          />
+          <div v-else-if="error" class="stref-error">
+            <div class="stref-error-title">Could not load student profile</div>
+            <div class="stref-error-msg">{{ error }}</div>
+            <button class="stref-btn" @click="load">Try again</button>
+          </div>
+
+          <div v-else class="stref-content">
+            <UcasApplicationModal
+              embedded
+              :studentEmail="student?.email || ''"
+              :academicYear="resolvedAcademicYear"
+              :subjects="subjects"
+              :offers="offers"
+              :topOffer="topOffer"
+              :apiUrl="apiUrl"
+              :canEdit="false"
+              :staffEmail="staffEmail"
+              initialPanel="reference"
+              @close="handleClose"
+            />
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script setup>
