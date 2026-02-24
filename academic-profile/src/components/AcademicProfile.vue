@@ -120,7 +120,7 @@
             No subjects available
           </div>
 
-          <!-- University Offers (KS5 / Level 3 only) -->
+          <!-- University Choices (KS5 / Level 3 only) -->
           <div v-if="!isKs4" class="university-offers">
             <div class="university-offers-header">
               <div class="offers-header-left">
@@ -130,7 +130,7 @@
                   </svg>
                 </div>
                 <div class="offers-title-group">
-                  <div class="university-offers-title">University Offers</div>
+                  <div class="university-offers-title">University Choices</div>
                   <div class="offers-count">{{ offers.length }} {{ offers.length === 1 ? 'university' : 'universities' }} saved</div>
                 </div>
               </div>
@@ -140,15 +140,15 @@
                   type="button"
                   @click="openUcasApplication"
                   :disabled="offers.length === 0"
-                  :title="offers.length ? 'Write your UCAS 3-question statement' : 'Add a University Offer first'">
+                  :title="offers.length ? 'Write your UCAS 3-question statement' : 'Add a University Choice first'">
                   {{ isStudent ? '📝 UCAS Application' : '👀 View UCAS Application' }}
                 </button>
                 <button
                   v-if="offersEditable"
                   class="offers-edit-btn"
                   @click="openOffersEditor"
-                  title="Add or edit up to 5 university offers">
-                  ✏️ Edit Offers
+                  title="Add or edit up to 5 university choices">
+                  ✏️ Edit Choices
                 </button>
                 <button
                   v-if="offers.length > 0"
@@ -156,7 +156,7 @@
                   :disabled="offers.length <= 1"
                   @click="toggleOffersExpanded">
                   <span class="offers-chevron" :class="{ open: offersExpanded }">▾</span>
-                  {{ offersExpanded ? 'Hide offers' : `View offers (${offers.length})` }}
+                  {{ offersExpanded ? 'Hide choices' : `View choices (${offers.length})` }}
                 </button>
               </div>
             </div>
@@ -195,11 +195,11 @@
             </button>
 
             <div v-else class="university-offers-empty">
-              <span>No offers added yet.</span>
-              <button v-if="offersEditable" class="offers-add-btn" @click="openOffersEditor">➕ Add offers</button>
+              <span>No choices added yet.</span>
+              <button v-if="offersEditable" class="offers-add-btn" @click="openOffersEditor">➕ Add choices</button>
             </div>
 
-            <div v-if="offersExpanded && offers.length" class="university-offers-list" aria-label="All university offers">
+            <div v-if="offersExpanded && offers.length" class="university-offers-list" aria-label="All university choices">
               <div v-for="o in sortedOffers" :key="o._key" class="offer-item">
                 <div class="offer-line">
                   <span class="offer-rank">#{{ o.ranking }}</span>
@@ -265,11 +265,11 @@
       <p>Saving changes...</p>
     </div>
 
-    <!-- University Offers Editor Modal -->
+    <!-- University Choices Editor Modal -->
     <div v-if="offersEditorOpen" class="offers-modal-overlay" @click.self="closeOffersEditor">
       <div class="offers-modal">
         <div class="offers-modal-header">
-          <div class="offers-modal-title">University Offers (max 5)</div>
+          <div class="offers-modal-title">University Choices (max 5)</div>
           <a
             class="offers-ucas-link"
             href="https://www.ucas.com/"
@@ -282,7 +282,7 @@
         </div>
         <div class="offers-modal-body">
           <div class="offers-help">
-            Add up to 5 offers. The profile displays your <strong>#1 ranked</strong> offer by default.
+            Add up to 5 choices. The profile displays your <strong>#1 ranked</strong> choice by default.
           </div>
 
           <div class="offers-grid">
@@ -320,7 +320,7 @@
               class="offers-secondary"
               @click="addOfferRow"
               :disabled="offersDraft.length >= 5">
-              ➕ Add Offer
+              ➕ Add Choice
             </button>
           </div>
         </div>
