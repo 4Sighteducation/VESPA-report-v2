@@ -11,12 +11,26 @@
           </div>
           <div class="sub" v-else>Loading…</div>
         </div>
-        <div class="pill" v-if="loaded">
-          {{ filteredInvites.length }} students
+        <div class="headerRight" v-if="loaded">
+          <a
+            class="portalBtn"
+            href="https://vespaacademy.knack.com/vespa-academy"
+            target="_blank"
+            rel="noopener"
+            title="Open the VESPA portal (if you have an account)"
+          >
+            Open VESPA portal
+          </a>
+          <div class="pill">
+            {{ filteredInvites.length }} students
+          </div>
         </div>
       </div>
 
       <div class="content">
+        <div v-if="loaded" class="portalNote">
+          If you have a VESPA staff account, you can complete references in the VESPA portal too (recommended). Otherwise, use this inbox.
+        </div>
         <div v-if="loading" class="alert" style="display:flex;gap:10px;align-items:center;justify-content:center;">
           <span class="spinner"></span>
           Loading your inbox…
