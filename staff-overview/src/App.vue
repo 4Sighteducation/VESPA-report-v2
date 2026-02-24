@@ -26,7 +26,7 @@
           :aria-selected="activeTab === 'coaching'"
           @click="activeTab = 'coaching'"
         >
-          Coaching
+          My Tutor Group(s)
         </button>
         <button
           v-if="hasSubjectTeacherTab"
@@ -37,7 +37,7 @@
           :aria-selected="activeTab === 'subject_teacher'"
           @click="activeTab = 'subject_teacher'"
         >
-          Subject teacher
+          My Teaching Group(s)
         </button>
       </div>
       
@@ -129,6 +129,40 @@ const initialLoadDone = ref(false) // Prevent unnecessary reload on FilterBar mo
 // Smart filters for VESPA score filtering
 const smartFilters = ref([])
 
+// Fast tab switching: cache overview payload per (staffEmail, cycle, connectionRole)
+const OVERVIEW_CACHE_TTL_MS = 5 * 60 * 1000
+const overviewCache = new Map()
+
+function overviewCacheKey(params) {
+  const email = String(params?.email || '').trim().toLowerCase()
+  const cycle = String(params?.cycle ?? '').trim()
+  const role = String(params?.connectionRole || 'any').trim().toLowerCase()
+  return `${email}|${cycle}|${role}`
+}
+
+function readOverviewCache(key) {
+  if (overviewCache.has(key)) return overviewCache.get(key)
+  try {
+    const raw = localStorage.getItem(`staff_overview_cache_v1:${key}`)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object') return null
+    overviewCache.set(key, parsed)
+    return parsed
+  } catch (_) {
+    return null
+  }
+}
+
+function writeOverviewCache(key, entry) {
+  overviewCache.set(key, entry)
+  try {
+    localStorage.setItem(`staff_overview_cache_v1:${key}`, JSON.stringify(entry))
+  } catch (_) {
+    // ignore storage quota / privacy mode
+  }
+}
+
 const staffRoles = computed(() => overviewData.value?.staffMember?.roles || [])
 const hasSubjectTeacherTab = computed(() => staffRoles.value.includes('subject_teacher'))
 const hasCoachingTab = computed(() => staffRoles.value.some(r => r !== 'subject_teacher'))
@@ -145,16 +179,54 @@ watch(
 )
 
 // Methods
-const loadOverviewData = async (cycleFilter = 1) => {
+const loadOverviewData = async (cycleFilter = 1, options = null) => {
   // Store cycle for comparison (default to Cycle 1)
   previousCycle.value = cycleFilter
+  const optsIn = options && typeof options === 'object' ? options : {}
+  const force = !!optsIn.force
+  const allowCache = optsIn.useCache !== false
+  const backgroundRefresh = optsIn.backgroundRefresh !== false
+
+  // Get logged-in user (needed for cache key)
+  user.value = knackAuth.getUser()
+  const staffEmail = user.value?.email ? String(user.value.email).trim().toLowerCase() : ''
+  const connectionRole = activeTab.value === 'subject_teacher' ? 'subject_teacher' : null
+  const cacheKey = overviewCacheKey({ email: staffEmail, cycle: cycleFilter, connectionRole: connectionRole || 'any' })
+
+  if (!force && allowCache && staffEmail) {
+    const cached = readOverviewCache(cacheKey)
+    const cachedTs = Number(cached?.ts || 0)
+    const isFresh = cached && cachedTs && (Date.now() - cachedTs) < OVERVIEW_CACHE_TTL_MS
+    if (isFresh && cached?.data?.success) {
+      // Instant render from cache
+      overviewData.value = cached.data
+      initialLoadDone.value = true
+      loading.value = false
+      error.value = null
+
+      // Quiet background refresh to keep things current
+      if (backgroundRefresh) {
+        ;(async () => {
+          try {
+            const apiOpts = connectionRole ? { connectionRole } : null
+            const fresh = await staffAPI.getStaffOverview(staffEmail, cycleFilter, apiOpts)
+            if (fresh?.success) {
+              overviewData.value = fresh
+              writeOverviewCache(cacheKey, { ts: Date.now(), data: fresh })
+            }
+          } catch (_) {
+            // ignore background refresh errors
+          }
+        })()
+      }
+      return
+    }
+  }
+
   loading.value = true
   error.value = null
   
   try {
-    // Get logged-in user
-    user.value = knackAuth.getUser()
-    
     if (!user.value || !user.value.email) {
       throw new Error('Please log in to view the staff overview')
     }
@@ -167,14 +239,15 @@ const loadOverviewData = async (cycleFilter = 1) => {
     
     // Fetch overview data from API with cycle filter.
     // When the Subject Teacher tab is active, restrict to subject-teacher-linked students only.
-    const opts = activeTab.value === 'subject_teacher' ? { connectionRole: 'subject_teacher' } : null
-    const data = await staffAPI.getStaffOverview(user.value.email, cycleFilter, opts)
+    const apiOpts = connectionRole ? { connectionRole } : null
+    const data = await staffAPI.getStaffOverview(user.value.email, cycleFilter, apiOpts)
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to load staff overview')
     }
     
     overviewData.value = data
+    if (staffEmail) writeOverviewCache(cacheKey, { ts: Date.now(), data })
     console.log('[Staff Overview] Data loaded successfully:', data)
     initialLoadDone.value = true // Mark initial load as complete
     
@@ -275,25 +348,25 @@ const closeReportModal = () => {
   
   // Refresh data to show any changes made in the report
   console.log('[Staff Overview] Refreshing data after report modal closed')
-  loadOverviewData(previousCycle.value)
+  loadOverviewData(previousCycle.value, { force: true, useCache: true, backgroundRefresh: false })
 }
 
 const handleDataUpdated = () => {
   // Refresh data when student table emits update (after inline edits)
   console.log('[Staff Overview] Data updated, refreshing from Knack')
-  loadOverviewData(previousCycle.value)
+  loadOverviewData(previousCycle.value, { force: true, useCache: true, backgroundRefresh: false })
 }
 
 // Lifecycle
 onMounted(() => {
-  loadOverviewData(1) // Default to Cycle 1
+  loadOverviewData(1, { useCache: true, backgroundRefresh: true }) // Default to Cycle 1
 })
 
 watch(
   () => activeTab.value,
   () => {
-    // Switching tabs should re-fetch using the correct connection_role filter.
-    loadOverviewData(previousCycle.value || 1)
+    // Switching tabs should feel instant: use cache (and refresh quietly).
+    loadOverviewData(previousCycle.value || 1, { useCache: true, backgroundRefresh: true })
   }
 )
 </script>
