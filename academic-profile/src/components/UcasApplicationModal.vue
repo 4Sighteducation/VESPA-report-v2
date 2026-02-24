@@ -765,8 +765,8 @@
                     :class="{ submitted: inv.status === 'submitted' }"
                     role="button"
                     tabindex="0"
-                    @click="inv.status === 'submitted' && inviteReferenceText(inv) ? openInviteReference(inv) : null"
-                    @keydown.enter="inv.status === 'submitted' && inviteReferenceText(inv) ? openInviteReference(inv) : null"
+                    @click="inv.status === 'submitted' ? openInviteReference(inv) : null"
+                    @keydown.enter="inv.status === 'submitted' ? openInviteReference(inv) : null"
                   >
                     <div class="ucas-ref-invite-left">
                       <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
@@ -787,8 +787,7 @@
                         class="ucas-ref-invite-action"
                         type="button"
                         @click.stop="openInviteReference(inv)"
-                        :title="inviteReferenceText(inv) ? 'View submitted reference' : 'Reference text unavailable in this response'"
-                        :disabled="!inviteReferenceText(inv)"
+                        :title="inviteReferenceText(inv) ? 'View submitted reference' : 'View (loads submitted text)'"
                       >
                         View
                       </button>
@@ -1414,16 +1413,43 @@ function inviteReferenceText(inv) {
   return safeText(candidate).trim()
 }
 
-function openInviteReference(inv) {
-  const text = inviteReferenceText(inv)
+async function openInviteReference(inv) {
+  let invRow = inv
+  let text = inviteReferenceText(invRow)
+
+  // Student reference-status endpoint is intentionally "light"; it may not include submitted text.
+  // If we don't have text yet, try a one-off fetch of the full reference and re-hydrate the invite.
+  if (!text && props.apiUrl && props.studentEmail) {
+    try {
+      const roleHint = props.canEdit ? 'student' : 'staff'
+      const resp = await fetchReferenceFull(props.studentEmail, props.apiUrl, props.academicYear || null, { roleHint })
+      if (resp?.success) {
+        const invites = Array.isArray(resp?.data?.invites) ? resp.data.invites : []
+        if (invites.length) {
+          referenceInvites.value = invites
+          const wantId = safeText(invRow?.id).trim()
+          const wantTeacher = safeText(invRow?.teacherEmail).trim().toLowerCase()
+          const wantSubject = safeText(invRow?.subjectKey).trim().toLowerCase()
+          const match =
+            (wantId ? invites.find((i) => safeText(i?.id).trim() === wantId) : null) ||
+            invites.find((i) => safeText(i?.teacherEmail).trim().toLowerCase() === wantTeacher && safeText(i?.subjectKey).trim().toLowerCase() === wantSubject) ||
+            null
+          if (match) invRow = match
+          text = inviteReferenceText(invRow)
+        }
+      }
+    } catch (_) {}
+  }
+
   if (!text) {
     showToast('Reference text is not available yet.')
     return
   }
+
   invitePreview.value = {
-    teacher: safeText(inv?.teacherName || inv?.teacherEmail || ''),
-    subject: safeText(inv?.subjectKey || ''),
-    submittedAt: inviteSubmittedAt(inv),
+    teacher: safeText(invRow?.teacherName || invRow?.teacherEmail || ''),
+    subject: safeText(invRow?.subjectKey || ''),
+    submittedAt: inviteSubmittedAt(invRow),
     text
   }
   invitePreviewOpen.value = true
@@ -1783,8 +1809,10 @@ function copyCombined() {
 
 function formatDate(iso) {
   try {
+    if (iso === 0 || iso === '0') return ''
     const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return ''
+    const t = d.getTime()
+    if (Number.isNaN(t) || t === 0) return ''
     return d.toLocaleString()
   } catch (_) {
     return ''
