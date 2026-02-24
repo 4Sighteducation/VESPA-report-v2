@@ -458,7 +458,8 @@ export async function fetchReferenceStatus(studentEmail, apiUrl, academicYear = 
   try {
     const qs = academicYear ? `?academic_year=${encodeURIComponent(academicYear)}` : ''
     const url = `${apiUrl}/api/academic-profile/${encodeURIComponent(studentEmail)}/reference/status${qs}`
-    const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } })
+    // Student flow: hint role so backend can include student-visible fields.
+    const response = await fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json', 'X-User-Role': 'student' } })
     const data = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(data?.error || data?.message || `API error: ${response.status}`)
     return data

@@ -1386,6 +1386,8 @@ function inviteSubmittedAt(inv) {
   return (
     inv?.submittedAt ||
     inv?.submitted_at ||
+    inv?.usedAt ||
+    inv?.used_at ||
     inv?.respondedAt ||
     inv?.responded_at ||
     inv?.completedAt ||
@@ -1419,7 +1421,7 @@ async function openInviteReference(inv) {
 
   // Student reference-status endpoint is intentionally "light"; it may not include submitted text.
   // If we don't have text yet, try a one-off fetch of the full reference and re-hydrate the invite.
-  if (!text && props.apiUrl && props.studentEmail) {
+  if (!text && !props.canEdit && props.apiUrl && props.studentEmail) {
     try {
       const roleHint = props.canEdit ? 'student' : 'staff'
       const resp = await fetchReferenceFull(props.studentEmail, props.apiUrl, props.academicYear || null, { roleHint })
