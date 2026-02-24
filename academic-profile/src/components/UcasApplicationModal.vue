@@ -757,8 +757,17 @@
                   </div>
                 </div>
 
-                <div v-else class="ucas-ref-invite-list">
-                  <div v-for="inv in visibleReferenceInvites" :key="inv.id" class="ucas-ref-invite" :class="{ submitted: inv.status === 'submitted' }">
+                  <div v-else class="ucas-ref-invite-list">
+                  <div
+                    v-for="inv in visibleReferenceInvites"
+                    :key="inv.id"
+                    class="ucas-ref-invite"
+                    :class="{ submitted: inv.status === 'submitted' }"
+                    role="button"
+                    tabindex="0"
+                    @click="inv.status === 'submitted' && inviteReferenceText(inv) ? openInviteReference(inv) : null"
+                    @keydown.enter="inv.status === 'submitted' && inviteReferenceText(inv) ? openInviteReference(inv) : null"
+                  >
                     <div class="ucas-ref-invite-left">
                       <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
                         {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
@@ -766,13 +775,27 @@
                       <div class="ucas-ref-invite-meta">
                         <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
                         <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
+                        <div class="ucas-ref-invite-dates">
+                          <span>Sent: {{ formatDate(inviteSentAt(inv)) || '—' }}</span>
+                          <span>Submitted: {{ formatDate(inviteSubmittedAt(inv)) || '—' }}</span>
+                        </div>
                       </div>
                     </div>
                     <div class="ucas-ref-invite-actions">
-                      <button class="ucas-ref-invite-action" type="button" @click="reinvite(inv)" :disabled="refInviteSending">
+                      <button
+                        v-if="inv.status === 'submitted'"
+                        class="ucas-ref-invite-action"
+                        type="button"
+                        @click.stop="openInviteReference(inv)"
+                        :title="inviteReferenceText(inv) ? 'View submitted reference' : 'Reference text unavailable in this response'"
+                        :disabled="!inviteReferenceText(inv)"
+                      >
+                        View
+                      </button>
+                      <button class="ucas-ref-invite-action" type="button" @click.stop="reinvite(inv)" :disabled="refInviteSending">
                         Reinvite
                       </button>
-                      <button class="ucas-ref-invite-action ucas-ref-invite-action--danger" type="button" @click="hideInvite(inv)">
+                      <button class="ucas-ref-invite-action ucas-ref-invite-action--danger" type="button" @click.stop="hideInvite(inv)">
                         Remove
                       </button>
                     </div>
@@ -870,6 +893,54 @@
               <div v-if="refFullLoading" class="ucas-empty ucas-empty--small"><span>Loading reference…</span></div>
               <div v-else-if="!refFull" class="ucas-empty ucas-empty--small"><span>No reference data found.</span></div>
               <div v-else class="ucas-ref-staff-body">
+                <div v-if="staffSubmittedInvites.length" class="ucas-ref-section" style="margin-bottom: 16px;">
+                  <div class="ucas-ref-section-head">
+                    <div>
+                      <div class="ucas-ref-section-title">Submitted teacher references</div>
+                      <div class="ucas-ref-section-subtitle">Submitted via emailed link (read-only)</div>
+                    </div>
+                    <div class="ucas-ref-section-pill">{{ staffSubmittedInvites.length }} submitted</div>
+                  </div>
+
+                  <div class="ucas-ref-invite-list">
+                    <div
+                      v-for="inv in staffSubmittedInvites"
+                      :key="inv.id"
+                      class="ucas-ref-invite submitted"
+                      role="button"
+                      tabindex="0"
+                      @click="openInviteReference(inv)"
+                      @keydown.enter="openInviteReference(inv)"
+                    >
+                      <div class="ucas-ref-invite-left">
+                        <div class="ucas-ref-invite-avatar" :class="commentAvatarClass(inv.teacherEmail)">
+                          {{ commentInitialsFromText(inv.teacherName || inv.teacherEmail) }}
+                        </div>
+                        <div class="ucas-ref-invite-meta">
+                          <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
+                          <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
+                          <div class="ucas-ref-invite-dates">
+                            <span>Sent: {{ formatDate(inviteSentAt(inv)) || '—' }}</span>
+                            <span>Submitted: {{ formatDate(inviteSubmittedAt(inv)) || '—' }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="ucas-ref-invite-actions">
+                        <button class="ucas-ref-invite-action" type="button" @click.stop="openInviteReference(inv)">
+                          View
+                        </button>
+                      </div>
+                      <div class="ucas-ref-invite-status ok">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                        Submitted
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Editors -->
                 <div class="ucas-ref-contrib">
                   <div class="ucas-ref-contrib-head">
@@ -1002,6 +1073,10 @@
                         <div class="ucas-ref-invite-meta">
                           <div class="ucas-ref-invite-name">{{ inv.teacherName || inv.teacherEmail }}</div>
                           <div class="ucas-ref-invite-sub">{{ inv.subjectKey || 'No subject' }}</div>
+                          <div class="ucas-ref-invite-dates">
+                            <span>Sent: {{ formatDate(inviteSentAt(inv)) || '—' }}</span>
+                            <span>Submitted: {{ formatDate(inviteSubmittedAt(inv)) || '—' }}</span>
+                          </div>
                         </div>
                       </div>
                       <div class="ucas-ref-invite-actions">
@@ -1029,6 +1104,21 @@
           <div class="ucas-ref-footer">
             <button class="ucas-btn ucas-btn-primary" type="button" @click="refPanelOpen = false">Done</button>
           </div>
+        </div>
+      </div>
+
+      <div v-if="invitePreviewOpen" class="ucas-feedback-overlay" @click.self="closeInviteReference">
+        <div class="ucas-feedback-modal ucas-ref-preview-modal" role="dialog" aria-modal="true" aria-label="Submitted reference">
+          <div class="ucas-ref-preview-head">
+            <div class="ucas-ref-preview-title">Submitted reference</div>
+            <button class="ucas-btn ucas-btn-outline" type="button" @click="closeInviteReference">Close</button>
+          </div>
+          <div class="ucas-ref-preview-meta" v-if="invitePreview">
+            <span>{{ invitePreview.teacher || 'Teacher' }}</span>
+            <span v-if="invitePreview.subject">• {{ invitePreview.subject }}</span>
+            <span v-if="invitePreview.submittedAt">• Submitted {{ formatDate(invitePreview.submittedAt) }}</span>
+          </div>
+          <div class="ucas-ref-preview-body">{{ invitePreview?.text || 'No reference text is available for this entry.' }}</div>
         </div>
       </div>
     </div>
@@ -1059,7 +1149,9 @@ const props = defineProps({
   canAddComment: { type: Boolean, default: false },
   staffEmail: { type: String, default: '' },
   // When embedded, render as a normal container (no fixed overlay / no corner chrome)
-  embedded: { type: Boolean, default: false }
+  embedded: { type: Boolean, default: false },
+  // Optional: open a specific panel on load ('application' | 'reference')
+  initialPanel: { type: String, default: 'application' }
 })
 
 const emit = defineEmits(['close'])
@@ -1240,6 +1332,8 @@ const inviteEmail = ref('')
 const inviteSubjectKey = ref('')
 const refInviteSending = ref(false)
 const lastInviteUrl = ref('')
+const invitePreviewOpen = ref(false)
+const invitePreview = ref(null)
 
 const inviteStorageKey = computed(() => {
   const email = safeText(props.studentEmail).trim().toLowerCase()
@@ -1285,6 +1379,61 @@ function restoreAllInvites() {
   showToast('Restored hidden invites')
 }
 
+function inviteSentAt(inv) {
+  return inv?.sentAt || inv?.sent_at || inv?.createdAt || inv?.created_at || null
+}
+
+function inviteSubmittedAt(inv) {
+  return (
+    inv?.submittedAt ||
+    inv?.submitted_at ||
+    inv?.respondedAt ||
+    inv?.responded_at ||
+    inv?.completedAt ||
+    inv?.completed_at ||
+    inv?.existing?.['3']?.updatedAt ||
+    inv?.existing?.[3]?.updatedAt ||
+    inv?.existing?.['3']?.createdAt ||
+    inv?.existing?.[3]?.createdAt ||
+    null
+  )
+}
+
+function inviteReferenceText(inv) {
+  const candidate =
+    inv?.referenceText ||
+    inv?.reference_text ||
+    inv?.submittedText ||
+    inv?.submitted_text ||
+    inv?.section3Text ||
+    inv?.section_3_text ||
+    inv?.latestContribution?.text ||
+    inv?.existing?.['3']?.text ||
+    inv?.existing?.[3]?.text ||
+    ''
+  return safeText(candidate).trim()
+}
+
+function openInviteReference(inv) {
+  const text = inviteReferenceText(inv)
+  if (!text) {
+    showToast('Reference text is not available yet.')
+    return
+  }
+  invitePreview.value = {
+    teacher: safeText(inv?.teacherName || inv?.teacherEmail || ''),
+    subject: safeText(inv?.subjectKey || ''),
+    submittedAt: inviteSubmittedAt(inv),
+    text
+  }
+  invitePreviewOpen.value = true
+}
+
+function closeInviteReference() {
+  invitePreviewOpen.value = false
+  invitePreview.value = null
+}
+
 const visibleReferenceInvites = computed(() => {
   const list = Array.isArray(referenceInvites.value) ? referenceInvites.value : []
   const hidden = hiddenInviteIds.value
@@ -1307,6 +1456,12 @@ const visibleReferenceInvites = computed(() => {
     if (invTs > curTs) byKey.set(key, inv)
   }
   return Array.from(byKey.values())
+})
+
+const staffSubmittedInvites = computed(() => {
+  if (props.canEdit) return []
+  const list = Array.isArray(referenceInvites.value) ? referenceInvites.value : []
+  return list.filter((inv) => inv && inv.status === 'submitted' && !!inviteReferenceText(inv))
 })
 
 const referenceStatusLabel = computed(() => {
@@ -1968,6 +2123,9 @@ async function submitComment() {
 }
 
 onMounted(async () => {
+  if (safeText(props.initialPanel).trim().toLowerCase() === 'reference') {
+    refPanelOpen.value = true
+  }
   // default selection: server → local → topOffer → first offer
   const top = props.topOffer || (props.offers && props.offers.length ? props.offers[0] : null)
   if (top) selectedCourseKey.value = courseKeyForOffer(top)
@@ -2362,11 +2520,16 @@ onMounted(async () => {
 .ucas-ref-invite-list{display:flex;flex-direction:column;gap:10px}
 .ucas-ref-invite{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px;background:var(--ucas-gray-50);border:1px solid var(--ucas-gray-200);border-radius:var(--ucas-radius);transition:border-color .15s}
 .ucas-ref-invite.submitted{background:var(--ucas-success-light);border-color:#a7f3d0}
+.ucas-ref-invite.submitted{cursor:pointer}
+.ucas-ref-invite.submitted:hover{border-color:#6ee7b7}
+.ucas-ref-invite:focus{outline:none}
+.ucas-ref-invite.submitted:focus{box-shadow:0 0 0 3px rgba(16, 185, 129, 0.18)}
 .ucas-ref-invite-left{display:flex;align-items:center;gap:12px;min-width:0}
 .ucas-ref-invite-avatar{width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:var(--ucas-white);flex-shrink:0}
 .ucas-ref-invite-meta{min-width:0}
 .ucas-ref-invite-name{font-size:13px;font-weight:900;color:var(--ucas-gray-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ucas-ref-invite-sub{font-size:12px;color:var(--ucas-gray-500);font-weight:700;margin-top:2px}
+.ucas-ref-invite-dates{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ucas-gray-500);font-weight:700;margin-top:4px}
 .ucas-ref-invite-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
 .ucas-ref-invite-status.ok{background:var(--ucas-success-light);color:var(--ucas-success);border:1px solid #a7f3d0}
 .ucas-ref-invite-status.wait{background:var(--ucas-warning-light);color:var(--ucas-warning);border:1px solid #fcd34d}
@@ -2378,6 +2541,12 @@ onMounted(async () => {
 .ucas-ref-invite-action--danger{border-color:#fecaca;color:var(--ucas-danger);background:var(--ucas-danger-light)}
 .ucas-ref-invite-action--danger:hover{background:#fee2e2}
 .ucas-ref-hidden-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}
+
+.ucas-ref-preview-modal{width:min(760px, 100%);max-height:min(80vh, 760px)}
+.ucas-ref-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--ucas-gray-200);background:var(--ucas-white)}
+.ucas-ref-preview-title{font-size:16px;font-weight:900;color:var(--ucas-gray-900)}
+.ucas-ref-preview-meta{display:flex;gap:8px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--ucas-gray-200);font-size:12px;color:var(--ucas-gray-500);font-weight:700}
+.ucas-ref-preview-body{padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.6;color:var(--ucas-gray-800);overflow:auto;max-height:calc(min(80vh, 760px) - 120px)}
 
 .ucas-ref-contrib--accordion{padding:0}
 .ucas-ref-accordion-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:none;background:var(--ucas-gray-50);cursor:pointer;border-radius:var(--ucas-radius-xl)}

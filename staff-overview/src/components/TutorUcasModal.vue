@@ -76,10 +76,10 @@
           <div class="tutor-ucas-section">
             <div class="tutor-ucas-section-head">
               <h4>Incoming subject teacher references</h4>
-              <div class="muted">{{ (refFull?.section3 || []).length }} contributions</div>
+              <div class="muted">{{ incomingAllSection3.length }} submitted</div>
             </div>
 
-            <div v-if="(refFull?.section3 || []).length === 0" class="tutor-ucas-empty">
+            <div v-if="incomingAllSection3.length === 0" class="tutor-ucas-empty">
               No subject teacher contributions yet.
             </div>
 
@@ -95,7 +95,11 @@
                 <div v-for="c in group.items" :key="c.id" class="tutor-ucas-contrib">
                   <div class="tutor-ucas-contrib-meta">
                     <div class="name">{{ c.authorName || c.authorEmail || 'Teacher' }}</div>
-                    <div class="muted">{{ formatDate(c.updatedAt || c.createdAt) }}</div>
+                    <div class="muted">
+                      <span v-if="c.submittedAt">Submitted: {{ formatDate(c.submittedAt) }}</span>
+                      <span v-else>{{ formatDate(c.updatedAt || c.createdAt) }}</span>
+                      <span v-if="c.sentAt"> · Sent: {{ formatDate(c.sentAt) }}</span>
+                    </div>
                   </div>
                   <div class="tutor-ucas-contrib-text">{{ c.text }}</div>
                   <div class="tutor-ucas-contrib-actions">
@@ -279,8 +283,99 @@ const compiledTextTrimmed = computed(() => (compiledText.value || '').trim())
 const compiledHasText = computed(() => compiledTextTrimmed.value.length > 0)
 const hasChanges = computed(() => compiledText.value.trim() !== (compiledOriginal.value || '').trim())
 
+const incomingSection3 = computed(() => {
+  const listA = refFull.value?.data?.section3
+  const listB = refFull.value?.section3
+  const raw = Array.isArray(listA) ? listA : (Array.isArray(listB) ? listB : [])
+  return raw.map((c, idx) => ({
+    id: c?.id ?? `contrib_${idx}`,
+    subjectKey: c?.subjectKey ?? c?.subject_key ?? '',
+    authorName: c?.authorName ?? c?.author_name ?? '',
+    authorEmail: c?.authorEmail ?? c?.author_email ?? '',
+    text: c?.text ?? '',
+    createdAt: c?.createdAt ?? c?.created_at ?? null,
+    updatedAt: c?.updatedAt ?? c?.updated_at ?? null
+  }))
+})
+
+function inviteSentAt(inv) {
+  return inv?.sentAt || inv?.sent_at || inv?.createdAt || inv?.created_at || null
+}
+
+function inviteSubmittedAt(inv) {
+  return (
+    inv?.submittedAt ||
+    inv?.submitted_at ||
+    inv?.respondedAt ||
+    inv?.responded_at ||
+    inv?.completedAt ||
+    inv?.completed_at ||
+    inv?.existing?.['3']?.updatedAt ||
+    inv?.existing?.[3]?.updatedAt ||
+    inv?.existing?.['3']?.createdAt ||
+    inv?.existing?.[3]?.createdAt ||
+    null
+  )
+}
+
+function inviteReferenceText(inv) {
+  const candidate =
+    inv?.referenceText ||
+    inv?.reference_text ||
+    inv?.submittedText ||
+    inv?.submitted_text ||
+    inv?.section3Text ||
+    inv?.section_3_text ||
+    inv?.latestContribution?.text ||
+    inv?.existing?.['3']?.text ||
+    inv?.existing?.[3]?.text ||
+    ''
+  return String(candidate || '').trim()
+}
+
+const incomingInvitesSection3 = computed(() => {
+  const listA = refFull.value?.data?.invites
+  const listB = refFull.value?.invites
+  const raw = Array.isArray(listA) ? listA : (Array.isArray(listB) ? listB : [])
+  return raw
+    .filter((inv) => inv && inv.status === 'submitted' && !!inviteReferenceText(inv))
+    .map((inv, idx) => ({
+      id: inv?.id ?? `invite_${idx}`,
+      subjectKey: String(inv?.subjectKey || '').trim(),
+      authorName: String(inv?.teacherName || '').trim(),
+      authorEmail: String(inv?.teacherEmail || inv?.email || '').trim(),
+      text: inviteReferenceText(inv),
+      sentAt: inviteSentAt(inv),
+      submittedAt: inviteSubmittedAt(inv),
+      source: 'invite'
+    }))
+})
+
+const incomingAllSection3 = computed(() => {
+  const out = []
+  const seen = new Set()
+
+  // Prefer contributions (if backend already materializes them)
+  for (const c of incomingSection3.value) {
+    const key = `${String(c.authorEmail || '').trim().toLowerCase()}__${String(c.subjectKey || '').trim().toLowerCase()}__${String(c.text || '').trim().slice(0, 64)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push({ ...c, source: 'contribution' })
+  }
+
+  // Add submitted invites (teacher-link submissions) if not already present
+  for (const inv of incomingInvitesSection3.value) {
+    const key = `${String(inv.authorEmail || '').trim().toLowerCase()}__${String(inv.subjectKey || '').trim().toLowerCase()}__${String(inv.text || '').trim().slice(0, 64)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(inv)
+  }
+
+  return out
+})
+
 const groupedSection3 = computed(() => {
-  const items = refFull.value?.data?.section3 || []
+  const items = incomingAllSection3.value
   const bySubject = new Map()
   for (const c of items) {
     const subjectKey = (c.subjectKey || 'General').trim() || 'General'
@@ -292,7 +387,11 @@ const groupedSection3 = computed(() => {
   for (const [subjectKey, arr] of bySubject.entries()) {
     out.push({
       subjectKey,
-      items: [...arr].sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')))
+      items: [...arr].sort((a, b) =>
+        String(b.submittedAt || b.updatedAt || b.createdAt || '').localeCompare(
+          String(a.submittedAt || a.updatedAt || a.createdAt || '')
+        )
+      )
     })
   }
   out.sort((a, b) => a.subjectKey.localeCompare(b.subjectKey))

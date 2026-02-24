@@ -14,6 +14,32 @@
         :staffMember="overviewData.staffMember"
         :totalStudents="overviewData.students.length"
       />
+
+      <!-- Role-aware tabs (prevents tutor vs subject-teacher confusion) -->
+      <div v-if="showTabs" class="overview-tabs" role="tablist" aria-label="Staff tabs">
+        <button
+          v-if="hasCoachingTab"
+          class="overview-tab"
+          :class="{ active: activeTab === 'coaching' }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'coaching'"
+          @click="activeTab = 'coaching'"
+        >
+          Coaching
+        </button>
+        <button
+          v-if="hasSubjectTeacherTab"
+          class="overview-tab"
+          :class="{ active: activeTab === 'subject_teacher' }"
+          type="button"
+          role="tab"
+          :aria-selected="activeTab === 'subject_teacher'"
+          @click="activeTab = 'subject_teacher'"
+        >
+          Subject teacher
+        </button>
+      </div>
       
       <!-- Filter bar -->
       <FilterBar
@@ -27,13 +53,24 @@
       <!-- Smart Filters (VESPA Score filtering) -->
       <SmartFilters v-model="smartFilters" />
       
-      <!-- Student table -->
+      <!-- Coaching (tutor/HOY/admin) -->
       <StudentTable
+        v-if="activeTab === 'coaching'"
         :students="overviewData.students"
         :activeFilters="activeFilters"
         :smartFilters="smartFilters"
         @view-report="handleViewReport"
         @data-updated="handleDataUpdated"
+      />
+
+      <!-- Subject teacher (references only) -->
+      <SubjectTeacherReferences
+        v-else
+        :students="overviewData.students"
+        :activeFilters="activeFilters"
+        :smartFilters="smartFilters"
+        :staffEmail="user?.email || ''"
+        @view-report="handleViewReport"
       />
     </div>
     
@@ -48,13 +85,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import LoadingState from './components/LoadingState.vue'
 import ErrorState from './components/ErrorState.vue'
 import StaffOverviewHeader from './components/StaffOverviewHeader.vue'
 import FilterBar from './components/FilterBar.vue'
 import SmartFilters from './components/SmartFilters.vue'
 import StudentTable from './components/StudentTable.vue'
+import SubjectTeacherReferences from './components/SubjectTeacherReferences.vue'
 import StudentReportModal from './components/StudentReportModal.vue'
 import { staffAPI } from './services/api.js'
 import { knackAuth } from './services/knackAuth.js'
@@ -68,6 +106,9 @@ const user = ref(null)
 const reportModalOpen = ref(false)
 const selectedStudentEmail = ref(null)
 const selectedStudentName = ref(null)
+
+// Tabs: coaching vs subject teacher
+const activeTab = ref('coaching') // 'coaching' | 'subject_teacher'
 
 // Filter lock state
 const lockedFilters = ref({
@@ -87,6 +128,21 @@ const initialLoadDone = ref(false) // Prevent unnecessary reload on FilterBar mo
 
 // Smart filters for VESPA score filtering
 const smartFilters = ref([])
+
+const staffRoles = computed(() => overviewData.value?.staffMember?.roles || [])
+const hasSubjectTeacherTab = computed(() => staffRoles.value.includes('subject_teacher'))
+const hasCoachingTab = computed(() => staffRoles.value.some(r => r !== 'subject_teacher'))
+const showTabs = computed(() => hasSubjectTeacherTab.value && hasCoachingTab.value)
+
+watch(
+  () => staffRoles.value.join(','),
+  () => {
+    // Default: coaching if available, otherwise subject teacher.
+    if (hasCoachingTab.value) activeTab.value = 'coaching'
+    else if (hasSubjectTeacherTab.value) activeTab.value = 'subject_teacher'
+  },
+  { immediate: true }
+)
 
 // Methods
 const loadOverviewData = async (cycleFilter = 1) => {
@@ -109,8 +165,10 @@ const loadOverviewData = async (cycleFilter = 1) => {
     
     console.log('[Staff Overview] Loading data for:', user.value.email, 'cycle filter:', cycleFilter)
     
-    // Fetch overview data from API with cycle filter
-    const data = await staffAPI.getStaffOverview(user.value.email, cycleFilter)
+    // Fetch overview data from API with cycle filter.
+    // When the Subject Teacher tab is active, restrict to subject-teacher-linked students only.
+    const opts = activeTab.value === 'subject_teacher' ? { connectionRole: 'subject_teacher' } : null
+    const data = await staffAPI.getStaffOverview(user.value.email, cycleFilter, opts)
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to load staff overview')
@@ -230,6 +288,14 @@ const handleDataUpdated = () => {
 onMounted(() => {
   loadOverviewData(1) // Default to Cycle 1
 })
+
+watch(
+  () => activeTab.value,
+  () => {
+    // Switching tabs should re-fetch using the correct connection_role filter.
+    loadOverviewData(previousCycle.value || 1)
+  }
+)
 </script>
 
 <style scoped>
@@ -244,6 +310,35 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.overview-tabs {
+  display: inline-flex;
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+}
+
+.overview-tab {
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-weight: 900;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.overview-tab:hover {
+  background: #f3f4f6;
+}
+
+.overview-tab.active {
+  background: #111827;
+  color: #fff;
 }
 
 @media (max-width: 768px) {
