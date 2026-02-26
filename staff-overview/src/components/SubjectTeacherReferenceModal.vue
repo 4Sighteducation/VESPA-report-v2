@@ -41,6 +41,9 @@
                     <div class="stref-card-sub">
                       Add a short subject reference for UCAS Section 3. This is visible to the tutor who compiles the final narrative.
                     </div>
+                    <div v-if="requestDatesLine" class="stref-card-dates">
+                      {{ requestDatesLine }}
+                    </div>
                   </div>
                   <div class="stref-status">
                     <div class="stref-status-pill" :class="statusPillClass" :title="statusTitle">
@@ -313,6 +316,15 @@ const statusTitle = computed(() => {
   if (r.sentAt) parts.push(`Sent: ${formatDate(r.sentAt)}`)
   if (r.submittedAt) parts.push(`Submitted: ${formatDate(r.submittedAt)}`)
   return parts.join(' · ') || statusLabel.value
+})
+
+const requestDatesLine = computed(() => {
+  const r = latestRequest.value
+  if (!r) return ''
+  const sent = r.sentAt ? `Sent: ${formatDate(r.sentAt)}` : ''
+  const submitted = r.submittedAt ? `Submitted: ${formatDate(r.submittedAt)}` : ''
+  const out = [sent, submitted].filter(Boolean).join(' • ')
+  return out || ''
 })
 
 const mySubmissions = computed(() => {
@@ -642,6 +654,13 @@ function formatDate(v) {
   margin-top: 4px;
   color: #6b7280;
   font-size: 12px;
+}
+
+.stref-card-dates {
+  margin-top: 6px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .stref-status-pill {
