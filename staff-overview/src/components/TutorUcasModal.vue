@@ -1,29 +1,31 @@
 <template>
-  <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
-    <div class="tutor-ucas-modal">
-      <div class="tutor-ucas-header">
-        <div class="tutor-ucas-title">
-          <h3>{{ student?.name || 'Student' }} — UCAS</h3>
-          <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
-        </div>
-        <button class="tutor-ucas-close" @click="handleClose">&times;</button>
-      </div>
-
-      <div class="tutor-ucas-body">
-        <div v-if="loading" class="tutor-ucas-loading">
-          <div class="spinner"></div>
-          <div>Loading UCAS data…</div>
+  <!-- Teleport prevents Knack containers from clipping the modal (overflow/transform issues). -->
+  <teleport to="body">
+    <div v-if="isOpen" class="tutor-ucas-overlay" @click.self="handleClose">
+      <div class="tutor-ucas-modal" role="dialog" aria-modal="true">
+        <div class="tutor-ucas-header">
+          <div class="tutor-ucas-title">
+            <h3>{{ student?.name || 'Student' }} — UCAS</h3>
+            <div class="tutor-ucas-sub">{{ student?.email || '' }}</div>
+          </div>
+          <button class="tutor-ucas-close" @click="handleClose">&times;</button>
         </div>
 
-        <div v-else-if="error" class="tutor-ucas-error">
-          <div class="tutor-ucas-error-title">Could not load UCAS data</div>
-          <div class="tutor-ucas-error-msg">{{ error }}</div>
-          <button class="tutor-ucas-btn" @click="reload">Try again</button>
-        </div>
+        <div class="tutor-ucas-body">
+          <div v-if="loading" class="tutor-ucas-loading">
+            <div class="spinner"></div>
+            <div>Loading UCAS data…</div>
+          </div>
 
-        <div v-else class="tutor-ucas-split" :class="{ 'tutor-ucas-split--app-open': ucasAppOpen }">
-          <!-- Left: tutor reference + statuses -->
-          <div class="tutor-ucas-pane tutor-ucas-pane--left">
+          <div v-else-if="error" class="tutor-ucas-error">
+            <div class="tutor-ucas-error-title">Could not load UCAS data</div>
+            <div class="tutor-ucas-error-msg">{{ error }}</div>
+            <button class="tutor-ucas-btn" @click="reload">Try again</button>
+          </div>
+
+          <div v-else class="tutor-ucas-split" :class="{ 'tutor-ucas-split--app-open': ucasAppOpen }">
+            <!-- Left: tutor reference + statuses -->
+            <div class="tutor-ucas-pane tutor-ucas-pane--left">
           <!-- Status row -->
           <div class="tutor-ucas-status-row">
             <div class="tutor-ucas-status-card">
@@ -163,42 +165,43 @@
           </div>
           </div>
 
-          <!-- Right: student UCAS application (slide-in) -->
-          <div class="tutor-ucas-pane tutor-ucas-pane--right" :class="{ 'is-open': ucasAppOpen }">
-            <div class="tutor-ucas-app-head">
-              <div class="tutor-ucas-app-title">Student UCAS application</div>
-              <button class="tutor-ucas-btn tutor-ucas-btn--sm tutor-ucas-btn--ghost" type="button" @click="closeUcasApp">
-                Close
-              </button>
-            </div>
+            <!-- Right: student UCAS application (slide-in) -->
+            <div class="tutor-ucas-pane tutor-ucas-pane--right" :class="{ 'is-open': ucasAppOpen }">
+              <div class="tutor-ucas-app-head">
+                <div class="tutor-ucas-app-title">Student UCAS application</div>
+                <button class="tutor-ucas-btn tutor-ucas-btn--sm tutor-ucas-btn--ghost" type="button" @click="closeUcasApp">
+                  Close
+                </button>
+              </div>
 
-            <div v-if="ucasAppError" class="tutor-ucas-app-error">
-              {{ ucasAppError }}
-            </div>
+              <div v-if="ucasAppError" class="tutor-ucas-app-error">
+                {{ ucasAppError }}
+              </div>
 
-            <div v-else class="tutor-ucas-app-body">
-              <UcasApplicationModal
-                v-if="ucasAppOpen"
-                embedded
-                :studentEmail="student?.email || ''"
-                :academicYear="ucasAcademicYear"
-                :subjects="ucasSubjects"
-                :offers="ucasOffers"
-                :apiUrl="apiUrl"
-                :canEdit="false"
-                :staffEmail="staffEmail"
-                @close="closeUcasApp"
-              />
+              <div v-else class="tutor-ucas-app-body">
+                <UcasApplicationModal
+                  v-if="ucasAppOpen"
+                  embedded
+                  :studentEmail="student?.email || ''"
+                  :academicYear="ucasAcademicYear"
+                  :subjects="ucasSubjects"
+                  :offers="ucasOffers"
+                  :apiUrl="apiUrl"
+                  :canEdit="false"
+                  :staffEmail="staffEmail"
+                  @close="closeUcasApp"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
+  </teleport>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { staffAPI, API_BASE_URL } from '../services/api.js'
 import UcasApplicationModal from '../../../academic-profile/src/components/UcasApplicationModal.vue'
 
@@ -434,6 +437,28 @@ watch(
   }
 )
 
+// Lock background scroll when this modal is open (prevents "scrolling the page behind")
+const prevBodyOverflow = ref('')
+watch(
+  () => props.isOpen,
+  (open) => {
+    try {
+      if (open) {
+        prevBodyOverflow.value = document.body.style.overflow || ''
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = prevBodyOverflow.value || ''
+      }
+    } catch (_) {}
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => {
+  try {
+    document.body.style.overflow = prevBodyOverflow.value || ''
+  } catch (_) {}
+})
+
 function normalizeAy(v) {
   const s = (v ?? '').toString().trim()
   if (!s) return 'current'
@@ -627,15 +652,15 @@ function formatDate(v) {
   align-items: center;
   justify-content: center;
   z-index: 10050;
-  padding: 18px;
+  padding: 8px;
 }
 
 .tutor-ucas-modal {
   /* Fill far more of the viewport (Knack embedded pages often feel cramped) */
-  width: min(1800px, 92vw);
-  max-width: 92vw;
-  height: min(94vh, 980px);
-  max-height: 94vh;
+  width: 98vw;
+  max-width: 98vw;
+  height: 96vh;
+  max-height: 96vh;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
@@ -703,6 +728,8 @@ function formatDate(v) {
   min-width: 0;
   overflow: auto;
   min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tutor-ucas-pane--left {
@@ -749,6 +776,28 @@ function formatDate(v) {
 .tutor-ucas-app-body {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
+}
+
+.tutor-ucas-app-body :deep(.ucas-overlay--embedded) {
+  height: 100%;
+}
+
+/* Fix: embedded UCAS modal uses transform scaling which breaks fixed overlays in split-panel context */
+.tutor-ucas-app-body :deep(.ucas-overlay--embedded .ucas-modal) {
+  transform: none !important;
+  transform-origin: initial !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.tutor-ucas-app-body :deep(.ucas-overlay--embedded .ucas-body) {
+  padding: 14px !important;
+}
+
+/* Fix: expanded panels must scroll within the expanded view (not the background pane) */
+.tutor-ucas-app-body :deep(.ucas-expand-body) {
+  overflow: auto !important;
 }
 
 .tutor-ucas-app-error {
@@ -1049,6 +1098,18 @@ function formatDate(v) {
     width: 100%;
     opacity: 1;
     pointer-events: auto;
+  }
+
+  .tutor-ucas-overlay {
+    padding: 0;
+  }
+
+  .tutor-ucas-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
   }
 }
 </style>

@@ -23,20 +23,62 @@
             <button class="stref-btn" @click="load">Try again</button>
           </div>
 
-          <div v-else class="stref-content">
-            <UcasApplicationModal
-              embedded
-              :studentEmail="student?.email || ''"
-              :academicYear="resolvedAcademicYear"
-              :subjects="subjects"
-              :offers="offers"
-              :topOffer="topOffer"
-              :apiUrl="apiUrl"
-              :canEdit="false"
-              :staffEmail="staffEmail"
-              initialPanel="reference"
-              @close="handleClose"
-            />
+          <div v-else class="stref-split" :class="{ 'stref-split--app-open': ucasAppOpen }">
+            <!-- Left: reference writing -->
+            <div class="stref-pane stref-pane--left">
+              <div class="stref-actions">
+                <button class="stref-btn stref-btn--primary" type="button" @click="toggleUcasPanel">
+                  {{ ucasAppOpen ? 'Back to reference' : 'View student application' }}
+                </button>
+                <div class="stref-actions-spacer"></div>
+                <button class="stref-btn stref-btn--ghost" type="button" @click="load">Reload</button>
+              </div>
+
+              <div class="stref-reference-shell">
+                <UcasApplicationModal
+                  embedded
+                  :studentEmail="student?.email || ''"
+                  :academicYear="resolvedAcademicYear"
+                  :subjects="subjects"
+                  :offers="offers"
+                  :topOffer="topOffer"
+                  :apiUrl="apiUrl"
+                  :canEdit="false"
+                  :staffEmail="staffEmail"
+                  initialPanel="reference"
+                />
+              </div>
+            </div>
+
+            <!-- Right: student UCAS application (slide-in) -->
+            <div class="stref-pane stref-pane--right" :class="{ 'is-open': ucasAppOpen }">
+              <div class="stref-app-head">
+                <div class="stref-app-title">Student UCAS application</div>
+                <button class="stref-btn stref-btn--sm stref-btn--ghost" type="button" @click="closeUcasApp">
+                  Close
+                </button>
+              </div>
+
+              <div v-if="ucasAppError" class="stref-app-error">
+                {{ ucasAppError }}
+              </div>
+
+              <div v-else class="stref-app-body">
+                <UcasApplicationModal
+                  v-if="ucasAppOpen"
+                  embedded
+                  :studentEmail="student?.email || ''"
+                  :academicYear="resolvedAcademicYear"
+                  :subjects="subjects"
+                  :offers="offers"
+                  :topOffer="topOffer"
+                  :apiUrl="apiUrl"
+                  :canEdit="false"
+                  :staffEmail="staffEmail"
+                  initialPanel="application"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -45,7 +87,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { staffAPI, API_BASE_URL } from '../services/api.js'
 import UcasApplicationModal from '../../../academic-profile/src/components/UcasApplicationModal.vue'
 
@@ -62,6 +104,10 @@ const apiUrl = API_BASE_URL
 const loading = ref(false)
 const error = ref('')
 const profile = ref(null)
+
+// Slide-in application panel
+const ucasAppOpen = ref(false)
+const ucasAppError = ref('')
 
 function normalizeAy(v) {
   const s = (v ?? '').toString().trim()
@@ -98,6 +144,7 @@ async function load() {
   if (!email) return
   loading.value = true
   error.value = ''
+  ucasAppError.value = ''
   try {
     // Ask backend to resolve 'current' into a concrete academic year for this student.
     profile.value = await staffAPI.getAcademicProfile(email, desiredAcademicYear.value)
@@ -117,8 +164,40 @@ watch(
 )
 
 function handleClose() {
+  closeUcasApp()
   emit('close')
 }
+
+function toggleUcasPanel() {
+  ucasAppOpen.value = !ucasAppOpen.value
+}
+
+function closeUcasApp() {
+  ucasAppOpen.value = false
+  ucasAppError.value = ''
+}
+
+// Lock background scroll when this modal is open (prevents "scrolling the page behind")
+const prevBodyOverflow = ref('')
+watch(
+  () => props.isOpen,
+  (open) => {
+    try {
+      if (open) {
+        prevBodyOverflow.value = document.body.style.overflow || ''
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = prevBodyOverflow.value || ''
+      }
+    } catch (_) {}
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => {
+  try {
+    document.body.style.overflow = prevBodyOverflow.value || ''
+  } catch (_) {}
+})
 </script>
 
 <style scoped>
@@ -130,14 +209,14 @@ function handleClose() {
   align-items: center;
   justify-content: center;
   z-index: 10050;
-  padding: 18px;
+  padding: 8px;
 }
 
 .stref-modal {
-  width: min(1600px, 94vw);
-  max-width: 94vw;
-  height: min(92vh, 980px);
-  max-height: 92vh;
+  width: 98vw;
+  max-width: 98vw;
+  height: 96vh;
+  max-height: 96vh;
   background: #fff;
   border-radius: 14px;
   overflow: hidden;
@@ -191,8 +270,113 @@ function handleClose() {
   min-height: 0;
 }
 
-.stref-content {
+.stref-split {
+  display: flex;
+  gap: 12px;
   height: 100%;
+  padding: 14px 16px 18px;
+  box-sizing: border-box;
+}
+
+.stref-pane {
+  min-width: 0;
+  min-height: 0;
+}
+
+.stref-pane--left {
+  flex: 1 1 auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.stref-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.stref-actions-spacer {
+  flex: 1;
+}
+
+.stref-reference-shell {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+}
+
+.stref-pane--right {
+  flex: 0 0 0;
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: #fff;
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: width 0.22s ease, flex-basis 0.22s ease, opacity 0.18s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.stref-pane--right.is-open {
+  flex: 0 0 60%;
+  width: 60%;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.stref-app-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ececec;
+  background: #f8fafc;
+}
+
+.stref-app-title {
+  font-weight: 900;
+  color: #111827;
+  font-size: 14px;
+}
+
+.stref-app-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.stref-app-error {
+  padding: 12px;
+  color: #991b1b;
+  font-weight: 800;
+  background: #fff5f5;
+}
+
+/* Fix: embedded UCAS modal uses transform scaling which breaks fixed overlays in split-panel context */
+.stref-reference-shell :deep(.ucas-overlay--embedded .ucas-modal),
+.stref-app-body :deep(.ucas-overlay--embedded .ucas-modal) {
+  transform: none !important;
+  transform-origin: initial !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.stref-reference-shell :deep(.ucas-overlay--embedded .ucas-body),
+.stref-app-body :deep(.ucas-overlay--embedded .ucas-body) {
+  padding: 14px !important;
+}
+
+.stref-reference-shell :deep(.ucas-expand-body),
+.stref-app-body :deep(.ucas-expand-body) {
+  overflow: auto !important;
 }
 
 .stref-loading {
@@ -249,8 +433,54 @@ function handleClose() {
   cursor: pointer;
 }
 
+.stref-btn--primary {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.stref-btn--primary:hover {
+  background: #0b1220;
+}
+
+.stref-btn--ghost {
+  background: #fff;
+}
+
+.stref-btn--sm {
+  padding: 7px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
 .stref-btn:hover {
   background: #e9edf2;
+}
+
+@media (max-width: 900px) {
+  .stref-split {
+    flex-direction: column;
+  }
+
+  .stref-pane--right,
+  .stref-pane--right.is-open {
+    flex: 0 0 auto;
+    width: 100%;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .stref-overlay {
+    padding: 0;
+  }
+
+  .stref-modal {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
 }
 </style>
 
