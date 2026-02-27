@@ -286,17 +286,17 @@
                   {{ displayYearGroup || '—' }}
                 </div>
               </div>
-              <a
-                class="offers-ucas-link"
-                href="https://www.ucas.com/"
-                target="_blank"
-                rel="noopener noreferrer"
+          <a
+            class="offers-ucas-link"
+            href="https://www.ucas.com/"
+            target="_blank"
+            rel="noopener noreferrer"
                 title="Open UCAS in a new tab"
               >
-                🔎 UCAS search
-              </a>
+            🔎 UCAS search
+          </a>
               <button class="close-btn" type="button" @click="closeOffersEditor" aria-label="Close UniGuide">×</button>
-            </div>
+        </div>
           </div>
 
           <div class="tabs" role="tablist" aria-label="UniGuide tabs">
@@ -355,11 +355,11 @@
           <div class="tab-content" :class="{ active: offersEditorTab === 'prefs' }" role="tabpanel">
             <div class="prefs-layout">
               <div class="prefs-header">
-                <div>
+              <div>
                   <div class="prefs-title">My university preferences</div>
                   <div class="prefs-subtitle">
                     This helps UniGuide personalise your AI conversation and course results. You can update it any time during the year.
-                  </div>
+              </div>
                 </div>
                 <button class="offers-secondary" type="button" @click="resetUniGuidePrefs">
                   Reset
@@ -376,6 +376,7 @@
               <div class="prefs-body">
                 <!-- Step 1 -->
                 <div v-if="uniguidePrefsStep === 1" class="prefs-panel">
+                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
                   <div class="prefs-panel-title">What genuinely interests you?</div>
                   <div class="prefs-panel-desc">Select everything that feels true.</div>
                   <div class="prefs-card-grid cols-3">
@@ -391,6 +392,7 @@
 
                 <!-- Step 2 -->
                 <div v-else-if="uniguidePrefsStep === 2" class="prefs-panel">
+                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
                   <div class="prefs-panel-title">Career direction</div>
                   <div class="prefs-panel-desc">No pressure — being honest helps UniGuide suggest the right kind of course.</div>
                   <div class="prefs-card-grid cols-3">
@@ -414,10 +416,11 @@
 
                 <!-- Step 3 -->
                 <div v-else-if="uniguidePrefsStep === 3" class="prefs-panel">
+                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
                   <div class="prefs-panel-title">University life</div>
                   <div class="prefs-panel-desc">The right environment matters as much as the right course.</div>
                   <div class="prefs-grid-2">
-                    <div>
+              <div>
                       <div class="prefs-small-title">City or campus?</div>
                       <div class="prefs-card-grid cols-3">
                         <button v-for="opt in prefsCampusType" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.campus_type === opt.val }" @click="uniguideIntake.campus_type = opt.val">
@@ -455,6 +458,7 @@
 
                 <!-- Step 4 -->
                 <div v-else-if="uniguidePrefsStep === 4" class="prefs-panel">
+                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
                   <div class="prefs-panel-title">Practicalities</div>
                   <div class="prefs-panel-desc">There are no wrong answers — this stays private and helps UniGuide be realistic.</div>
                   <div class="prefs-small-title">Debt attitude</div>
@@ -491,6 +495,7 @@
 
                 <!-- Step 5 -->
                 <div v-else class="prefs-panel">
+                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
                   <div class="prefs-panel-title">Study style</div>
                   <div class="prefs-panel-desc">Different universities have very different teaching cultures.</div>
                   <div class="prefs-small-title">Learning style</div>
@@ -846,9 +851,9 @@
                       <div style="font-weight:700;">Add choice {{ rank }}</div>
                       <div style="font-size:12px; opacity:0.85;">Click to add a course, then save.</div>
                     </div>
-                  </div>
-                </template>
               </div>
+            </template>
+          </div>
 
               <div class="ucas-summary">
                 <div class="ucas-text">
@@ -857,9 +862,9 @@
                 </div>
                 <button class="ucas-btn" type="button" @click="openUcasApplication" :disabled="nonEmptyOffersDraftCount === 0">
                   📝 UCAS Application
-                </button>
-              </div>
-            </div>
+            </button>
+          </div>
+        </div>
           </div>
         </div>
 
@@ -2701,6 +2706,9 @@ const showTemporaryMessage = (message, type) => {
   --radius-sm: 8px;
   --shadow: 0 4px 24px rgba(13,43,78,0.12), 0 1px 4px rgba(13,43,78,0.08);
   --shadow-lg: 0 20px 60px rgba(13,43,78,0.25), 0 4px 16px rgba(13,43,78,0.12);
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   width: 100vw;
   height: 100vh;
@@ -2710,9 +2718,9 @@ const showTemporaryMessage = (message, type) => {
   flex-direction: column;
   overflow: hidden;
   box-shadow: none;
-  font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-size: 16.5px;
-  line-height: 1.4;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -2752,7 +2760,7 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .brand-text h2 {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   color: white;
@@ -2855,6 +2863,7 @@ const showTemporaryMessage = (message, type) => {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
+  font-family: var(--font-body);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2901,15 +2910,15 @@ const showTemporaryMessage = (message, type) => {
   margin-bottom:12px;
 }
 .prefs-title{
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: 26px;
   font-weight: 700;
   color: var(--navy);
   margin-bottom: 2px;
 }
 .prefs-subtitle{
   color: var(--muted);
-  font-size: 14.5px;
+  font-size: 13.5px;
 }
 .prefs-progress{
   display:flex;
@@ -2931,8 +2940,8 @@ const showTemporaryMessage = (message, type) => {
   padding: 8px 10px;
   background: var(--cream);
   color: var(--navy);
-  font-weight: 700;
-  font-size: 13.5px;
+  font-weight: 600;
+  font-size: 13px;
 }
 .prefs-step.active{
   background: rgba(232,119,34,0.12);
@@ -2963,20 +2972,34 @@ const showTemporaryMessage = (message, type) => {
   padding: 14px 14px 10px;
   box-shadow: 0 2px 12px rgba(13,43,78,0.06);
 }
+.prefs-eyebrow{
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--navy-mid);
+  margin-bottom: 10px;
+}
 .prefs-panel-title{
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
   color: var(--navy);
   margin-bottom: 2px;
 }
 .prefs-panel-desc{
   color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-style: italic;
   margin-bottom: 12px;
 }
 .prefs-divider{ height: 1px; background: var(--cream-border); margin: 14px 0; }
 .prefs-small-title{
   font-weight: 800;
   color: var(--navy);
+  font-size: 13.5px;
   margin: 10px 0 8px;
 }
 .prefs-card-grid{
@@ -3013,17 +3036,23 @@ const showTemporaryMessage = (message, type) => {
   margin-bottom: 6px;
 }
 .prefs-card-title{
-  font-weight: 900;
+  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 13.5px;
   color: var(--navy);
   margin-bottom: 2px;
 }
 .prefs-card-sub{
   color: var(--muted);
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 400;
 }
 .prefs-label{
   display:block;
-  font-weight: 800;
+  font-weight: 600;
+  font-size: 13.5px;
+  font-family: var(--font-body);
   color: var(--navy);
   margin: 8px 0 6px;
 }
@@ -3076,6 +3105,12 @@ const showTemporaryMessage = (message, type) => {
   padding: 14px 2px 6px;
 }
 .prefs-nav-mid{ color: var(--muted); font-weight: 800; }
+.prefs-nav-mid{
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
 
 @media (max-width: 980px){
   .prefs-card-grid.cols-4{ grid-template-columns: repeat(2, minmax(0,1fr)); }
@@ -3126,7 +3161,8 @@ const showTemporaryMessage = (message, type) => {
 
 .sidebar-label {
   font-size: 10px;
-  font-weight: 800;
+  font-family: var(--font-body);
+  font-weight: 700;
   letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--muted);
@@ -3539,13 +3575,13 @@ const showTemporaryMessage = (message, type) => {
 
 .course-name {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
   margin-bottom: 2px;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
 }
 
-.uni-name { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.uni-name { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
 
 .course-tags { display: flex; gap: 5px; flex-wrap: wrap; }
 
@@ -3554,7 +3590,7 @@ const showTemporaryMessage = (message, type) => {
   background: var(--cream);
   border: 1px solid var(--cream-border);
   border-radius: 10px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--muted);
   font-weight: 600;
 }
@@ -3563,8 +3599,9 @@ const showTemporaryMessage = (message, type) => {
   background: var(--blue-bg);
   border-color: #C5D8F5;
   color: var(--navy-mid);
-  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .save-btn {
@@ -3594,15 +3631,17 @@ const showTemporaryMessage = (message, type) => {
   color: var(--navy);
   line-height: 1.55;
   font-style: italic;
+  font-family: var(--font-body);
 }
 
 .ai-reason-label {
   font-style: normal;
-  font-size: 9px;
-  letter-spacing: 1px;
+  font-family: var(--font-body);
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--navy-mid);
-  font-weight: 900;
+  font-weight: 600;
   margin-bottom: 3px;
 }
 
@@ -3626,9 +3665,9 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .shortlist-title {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text);
 }
 
@@ -3692,9 +3731,9 @@ const showTemporaryMessage = (message, type) => {
 
 .shortlist-course {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text);
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
   margin-bottom: 2px;
 }
 
