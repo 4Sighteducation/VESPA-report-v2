@@ -633,3 +633,97 @@ export async function uniguideSearchCourses(params, apiUrl) {
   }
 }
 
+/**
+ * UniGuide: get student intake profile
+ */
+export async function uniguideGetProfile(params, apiUrl) {
+  try {
+    const qs = new URLSearchParams()
+    qs.append('student_email', params?.studentEmail || '')
+    if (params?.academicYear) qs.append('academic_year', params.academicYear)
+
+    const response = await fetch(`${apiUrl}/api/uniguide/profile?${qs.toString()}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] uniguideGetProfile error:', error)
+    return { success: false, error: error.message || 'Failed to load UniGuide profile' }
+  }
+}
+
+/**
+ * UniGuide: save student intake profile
+ */
+export async function uniguideSaveProfile(params, apiUrl) {
+  try {
+    const response = await fetch(`${apiUrl}/api/uniguide/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_email: params?.studentEmail,
+        academic_year: params?.academicYear || 'current',
+        intake: params?.intake || {}
+      })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] uniguideSaveProfile error:', error)
+    return { success: false, error: error.message || 'Failed to save UniGuide profile' }
+  }
+}
+
+/**
+ * UniGuide: AI chat (RAG via server)
+ */
+export async function uniguideChat(params, apiUrl) {
+  try {
+    const response = await fetch(`${apiUrl}/api/uniguide/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_email: params?.studentEmail,
+        academic_year: params?.academicYear || 'current',
+        session_id: params?.sessionId || null,
+        message: params?.message || '',
+        dataset_release_id: params?.datasetReleaseId || null
+      })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] uniguideChat error:', error)
+    return { success: false, error: error.message || 'Failed to chat with UniGuide' }
+  }
+}
+

@@ -284,13 +284,23 @@
           <div class="offers-modal-tabs" role="tablist" aria-label="UniGuide tabs">
             <button
               class="offers-modal-tab"
-              :class="{ active: offersEditorTab === 'uniguide' }"
+              :class="{ active: offersEditorTab === 'ai' }"
               type="button"
               role="tab"
-              :aria-selected="offersEditorTab === 'uniguide'"
-              @click="offersEditorTab = 'uniguide'"
+              :aria-selected="offersEditorTab === 'ai'"
+              @click="offersEditorTab = 'ai'"
             >
-              UniGuide
+              AI Advisor
+            </button>
+            <button
+              class="offers-modal-tab"
+              :class="{ active: offersEditorTab === 'search' }"
+              type="button"
+              role="tab"
+              :aria-selected="offersEditorTab === 'search'"
+              @click="offersEditorTab = 'search'"
+            >
+              Search
             </button>
             <button
               class="offers-modal-tab"
@@ -304,7 +314,97 @@
             </button>
           </div>
 
-          <div v-if="offersEditorTab === 'uniguide'" class="uniguide-shell" role="tabpanel">
+          <!-- AI Advisor -->
+          <div v-if="offersEditorTab === 'ai'" class="uniguide-shell" role="tabpanel">
+            <div class="uniguide-hero">
+              <div class="uniguide-hero-title">UniGuide AI</div>
+              <div class="uniguide-hero-sub">
+                Tell us what you want — we’ll shortlist courses using official Discover Uni data, then help you narrow down to your top choices.
+              </div>
+            </div>
+
+            <div class="uniguide-grid">
+              <div class="uniguide-left">
+                <div class="uniguide-section-title">Chat</div>
+                <div class="uniguide-chat">
+                  <div v-if="uniguideChatMessages.length === 0" class="uniguide-chat-empty">
+                    <strong>Try:</strong> “I’m interested in psychology and criminology. I want a friendly city, not too expensive, and I’d rather stay in the North.”
+                  </div>
+                  <div v-for="(m, idx) in uniguideChatMessages" :key="idx" class="uniguide-chat-msg" :class="m.role">
+                    <div class="uniguide-chat-bubble">{{ m.content }}</div>
+                  </div>
+                </div>
+
+                <div v-if="uniguideChatError" class="uniguide-error">{{ uniguideChatError }}</div>
+
+                <div class="uniguide-chat-inputrow">
+                  <input
+                    v-model="uniguideChatInput"
+                    class="uniguide-search-input"
+                    type="text"
+                    placeholder="Ask UniGuide…"
+                    @keydown.enter.prevent="sendUniGuideChat"
+                  />
+                  <button class="offers-primary" type="button" @click="sendUniGuideChat" :disabled="uniguideChatLoading">
+                    {{ uniguideChatLoading ? 'Thinking…' : 'Send' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="uniguide-right">
+                <div class="uniguide-section-title">Your preferences</div>
+
+                <div v-if="uniguideProfileError" class="uniguide-error">{{ uniguideProfileError }}</div>
+                <div v-else-if="uniguideProfileLoading" class="uniguide-empty">Loading your intake…</div>
+
+                <div class="uniguide-intake">
+                  <label class="uniguide-label">What subjects/careers interest you?</label>
+                  <textarea v-model="uniguideIntake.interests" class="uniguide-textarea" rows="3" placeholder="e.g. Medicine, Psychology, Engineering…"></textarea>
+
+                  <label class="uniguide-label">What matters most to you? (pick a few)</label>
+                  <div class="uniguide-chips">
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('outcomes')}" @click="toggleChip('priorities','outcomes')">Outcomes</button>
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('student_experience')}" @click="toggleChip('priorities','student_experience')">Student experience</button>
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('cost')}" @click="toggleChip('priorities','cost')">Cost</button>
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('distance')}" @click="toggleChip('priorities','distance')">Distance</button>
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('campus')}" @click="toggleChip('priorities','campus')">Campus</button>
+                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('city')}" @click="toggleChip('priorities','city')">City</button>
+                  </div>
+
+                  <label class="uniguide-label">Anything else we should know?</label>
+                  <textarea v-model="uniguideIntake.extras" class="uniguide-textarea" rows="2" placeholder="e.g. stay at home, part-time job, sports…"></textarea>
+
+                  <div class="uniguide-intake-actions">
+                    <button class="offers-secondary" type="button" @click="saveUniGuideProfile" :disabled="uniguideProfileSaving">
+                      {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences' }}
+                    </button>
+                  </div>
+                </div>
+
+                <div class="uniguide-section-title" style="margin-top:12px;">Shortlist</div>
+                <div v-if="uniguideSuggestions.length === 0" class="uniguide-empty">
+                  Ask the AI and it’ll add a shortlist here.
+                </div>
+                <div v-else class="uniguide-choice-list">
+                  <div v-for="s in uniguideSuggestions" :key="s.course_key" class="uniguide-choice-row">
+                    <div class="uniguide-choice-rank">{{ (s.band || 'other').slice(0,1).toUpperCase() }}</div>
+                    <div class="uniguide-choice-text">
+                      <div class="uniguide-choice-uni">{{ s.institution_name || s.course_key }}</div>
+                      <div class="uniguide-choice-course">{{ s.title || s.reason_short || '' }}</div>
+                      <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+                        <a v-if="s.course_url" class="offers-secondary" :href="s.course_url" target="_blank" rel="noopener noreferrer">🔗 Course page</a>
+                        <button class="offers-primary" type="button" @click="addUniGuideCourseToDraft(s)">➕ Add to choices</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div v-else-if="offersEditorTab === 'search'" class="uniguide-shell" role="tabpanel">
             <div class="uniguide-grid">
               <div class="uniguide-left">
                 <div class="uniguide-shell-title">Search courses (Discover Uni dataset)</div>
@@ -454,7 +554,7 @@ import SubjectCard from './SubjectCard.vue'
 import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
 import UcasApplicationModal from './UcasApplicationModal.vue'
-import { updateSubjectGrade, updateUniversityOffers, uniguideSearchCourses } from '../services/api.js'
+import { updateSubjectGrade, updateUniversityOffers, uniguideSearchCourses, uniguideGetProfile, uniguideSaveProfile, uniguideChat } from '../services/api.js'
 
 const props = defineProps({
   student: {
@@ -513,7 +613,7 @@ const offersExpanded = ref(false)
 const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
-const offersEditorTab = ref('uniguide') // 'uniguide' | 'manual'
+const offersEditorTab = ref('ai') // 'ai' | 'search' | 'manual'
 
 // UniGuide search state (Discover Uni dataset)
 const uniguideQuery = ref('')
@@ -523,6 +623,134 @@ const uniguideMaxTariff = ref(null)
 const uniguideLoading = ref(false)
 const uniguideError = ref('')
 const uniguideResults = ref([])
+
+// UniGuide intake + AI chat state
+const uniguideProfileLoading = ref(false)
+const uniguideProfileSaving = ref(false)
+const uniguideProfileError = ref('')
+const uniguideIntake = ref({
+  interests: '',
+  preferred_regions: [],
+  stay_local: null,
+  max_distance_minutes: null,
+  campus_preference: '',
+  vibe: '',
+  priorities: [],
+  budget_notes: '',
+  accommodation_notes: '',
+  career_direction: '',
+  extras: ''
+})
+
+const uniguideSessionId = ref(null)
+const uniguideChatInput = ref('')
+const uniguideChatLoading = ref(false)
+const uniguideChatError = ref('')
+const uniguideChatMessages = ref([]) // {role:'user'|'assistant', content:string}
+const uniguideSuggestions = ref([])  // {course_key,title,institution_name,course_url,band,reason_short,tariff_typical,tef_overall_rating}
+
+const uniguideStudentEmail = computed(() => (props.student?.email || '').toString().trim().toLowerCase())
+const uniguideAcademicYear = computed(() => (props.academicYear || 'current').toString().trim() || 'current')
+
+const intakeLooksEmpty = computed(() => {
+  const i = uniguideIntake.value || {}
+  const hasText = ['interests', 'vibe', 'campus_preference', 'career_direction'].some(k => String(i[k] || '').trim())
+  const hasAnyArray = Array.isArray(i.preferred_regions) && i.preferred_regions.length
+  return !(hasText || hasAnyArray)
+})
+
+const loadUniGuideProfile = async () => {
+  const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+  if (!apiUrl) return
+  if (!uniguideStudentEmail.value) return
+
+  uniguideProfileLoading.value = true
+  uniguideProfileError.value = ''
+  try {
+    const resp = await uniguideGetProfile({
+      studentEmail: uniguideStudentEmail.value,
+      academicYear: uniguideAcademicYear.value
+    }, apiUrl)
+
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Failed to load profile')
+    const intake = resp.intake || resp.data?.intake || {}
+    if (intake && typeof intake === 'object') {
+      uniguideIntake.value = { ...uniguideIntake.value, ...intake }
+    }
+  } catch (e) {
+    console.error('[UniGuide] load profile error:', e)
+    uniguideProfileError.value = e?.message || 'Failed to load intake'
+  } finally {
+    uniguideProfileLoading.value = false
+  }
+}
+
+const saveUniGuideProfile = async () => {
+  const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+  if (!apiUrl) return
+  if (!uniguideStudentEmail.value) return
+
+  uniguideProfileSaving.value = true
+  uniguideProfileError.value = ''
+  try {
+    const resp = await uniguideSaveProfile({
+      studentEmail: uniguideStudentEmail.value,
+      academicYear: uniguideAcademicYear.value,
+      intake: uniguideIntake.value || {}
+    }, apiUrl)
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Failed to save intake')
+    showTemporaryMessage('UniGuide preferences saved.', 'success')
+  } catch (e) {
+    console.error('[UniGuide] save profile error:', e)
+    showTemporaryMessage(e?.message || 'Failed to save UniGuide preferences', 'error')
+  } finally {
+    uniguideProfileSaving.value = false
+  }
+}
+
+const sendUniGuideChat = async () => {
+  const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+  if (!apiUrl) return
+  const text = (uniguideChatInput.value || '').toString().trim()
+  if (!text) return
+
+  uniguideChatLoading.value = true
+  uniguideChatError.value = ''
+  uniguideChatMessages.value = [...uniguideChatMessages.value, { role: 'user', content: text }]
+  uniguideChatInput.value = ''
+  try {
+    const resp = await uniguideChat({
+      studentEmail: uniguideStudentEmail.value,
+      academicYear: uniguideAcademicYear.value,
+      sessionId: uniguideSessionId.value,
+      message: text,
+      datasetReleaseId: null
+    }, apiUrl)
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Chat failed')
+
+    if (resp.session_id) uniguideSessionId.value = resp.session_id
+    if (resp.assistant_message) {
+      uniguideChatMessages.value = [...uniguideChatMessages.value, { role: 'assistant', content: resp.assistant_message }]
+    }
+    if (Array.isArray(resp.suggestions)) {
+      // merge new suggestions into right panel
+      const merged = [...uniguideSuggestions.value]
+      for (const s of resp.suggestions) {
+        if (!s) continue
+        const key = s.course_key || s.courseKey
+        if (!key) continue
+        if (merged.some(x => x && x.course_key === key)) continue
+        merged.push({ course_key: key, ...s })
+      }
+      uniguideSuggestions.value = merged
+    }
+  } catch (e) {
+    console.error('[UniGuide] chat error:', e)
+    uniguideChatError.value = e?.message || 'Chat failed'
+  } finally {
+    uniguideChatLoading.value = false
+  }
+}
 
 const nonEmptyOffersDraftCount = computed(() => {
   const rows = offersDraft.value || []
@@ -573,14 +801,15 @@ const runUniGuideSearch = async () => {
 const addUniGuideCourseToDraft = (r) => {
   if (!r) return
 
-  const uni = (r.institution_name || '').toString().trim()
-  const title = (r.title || '').toString().trim()
-  const link = safeCourseLink(r.course_url) || (r.course_url || '').toString().trim()
+  const uniFinal = (r.institution_name || r.institutionName || r.universityName || '').toString().trim()
+  const titleFinal = (r.title || r.courseTitle || r.course_title || '').toString().trim()
+  const urlRaw = r.course_url || r.courseUrl || r.course_link || r.courseLink || ''
+  const link = safeCourseLink(urlRaw) || (urlRaw || '').toString().trim()
 
   const existing = (offersDraft.value || []).some(row => {
     const sameLink = link && safeCourseLink(row.courseLink) === link
-    const sameText = uni && title && (String(row.universityName || '').trim().toLowerCase() === uni.toLowerCase()) &&
-      (String(row.courseTitle || '').trim().toLowerCase() === title.toLowerCase())
+    const sameText = uniFinal && titleFinal && (String(row.universityName || '').trim().toLowerCase() === uniFinal.toLowerCase()) &&
+      (String(row.courseTitle || '').trim().toLowerCase() === titleFinal.toLowerCase())
     return sameLink || sameText
   })
 
@@ -625,12 +854,21 @@ const addUniGuideCourseToDraft = (r) => {
     rows.push(targetRow)
   }
 
-  targetRow.universityName = uni
-  targetRow.courseTitle = title
+  targetRow.universityName = uniFinal
+  targetRow.courseTitle = titleFinal
   targetRow.courseLink = link
 
   offersDraft.value = [...rows]
   showTemporaryMessage('Added to your choices (remember to Save choices).', 'success')
+}
+
+const toggleChip = (field, value) => {
+  const intake = uniguideIntake.value || {}
+  const arr = Array.isArray(intake[field]) ? [...intake[field]] : []
+  const idx = arr.indexOf(value)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(value)
+  uniguideIntake.value = { ...intake, [field]: arr }
 }
 
 // UCAS Application modal state (student edits; staff read + comment)
@@ -886,14 +1124,20 @@ const openOffersEditor = () => {
       ranking: 1
     }]
   }
-  offersEditorTab.value = 'uniguide'
+  offersEditorTab.value = 'ai'
   offersEditorOpen.value = true
+  // hydrate intake on open
+  try { loadUniGuideProfile() } catch (_) {}
 }
 
 const closeOffersEditor = () => {
   offersEditorOpen.value = false
-  offersEditorTab.value = 'uniguide'
+  offersEditorTab.value = 'ai'
   offersDraft.value = []
+  uniguideChatMessages.value = []
+  uniguideChatError.value = ''
+  uniguideChatInput.value = ''
+  uniguideSessionId.value = null
 }
 
 const addOfferRow = () => {
