@@ -472,6 +472,20 @@
                     <div class="msg-avatar" aria-hidden="true">{{ m.role === 'user' ? studentInitials : 'UG' }}</div>
                     <div>
                       <div class="msg-bubble">{{ m.content }}</div>
+                      <div v-if="m.role !== 'user' && (m.suggestions || []).length" class="chat-suggestions">
+                        <a
+                          v-for="s in m.suggestions"
+                          :key="s.course_key"
+                          class="suggestion-chip"
+                          :href="s.course_url || '#'"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          @click.stop
+                        >
+                          <span class="suggestion-title">{{ s.title || 'View course' }}</span>
+                          <span v-if="s.institution_name" class="suggestion-sub">{{ s.institution_name }}</span>
+                        </a>
+                      </div>
                       <div class="msg-meta">{{ m.role === 'user' ? 'You' : 'UniGuide' }}</div>
                     </div>
                   </div>
@@ -1397,7 +1411,11 @@ const sendUniGuideChat = async () => {
 
     if (resp.session_id) uniguideSessionId.value = resp.session_id
     if (resp.assistant_message) {
-      uniguideChatMessages.value = [...uniguideChatMessages.value, { role: 'assistant', content: resp.assistant_message }]
+      const assistantMsg = { role: 'assistant', content: resp.assistant_message }
+      if (Array.isArray(resp.suggestions) && resp.suggestions.length) {
+        assistantMsg.suggestions = resp.suggestions.map(s => ({ ...(s || {}) }))
+      }
+      uniguideChatMessages.value = [...uniguideChatMessages.value, assistantMsg]
     }
     if (Array.isArray(resp.suggestions)) {
       // merge new suggestions into right panel
@@ -3725,6 +3743,43 @@ const closeToast = () => {
   padding: 0 4px;
 }
 .msg.user .msg-meta { text-align: right; }
+
+.chat-suggestions{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 78%;
+}
+.msg.user .chat-suggestions{ display:none; }
+
+.suggestion-chip{
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid var(--cream-border);
+  padding: 8px 10px;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.suggestion-chip:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+.suggestion-title{
+  color: var(--text);
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.suggestion-sub{
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: .2px;
+}
 
 .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 14px 16px; }
 .typing-dot {
