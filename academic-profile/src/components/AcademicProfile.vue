@@ -314,6 +314,18 @@
             </button>
             <button
               class="tab"
+              :class="{ active: offersEditorTab === 'prefs' }"
+              type="button"
+              role="tab"
+              :aria-selected="offersEditorTab === 'prefs'"
+              @click="offersEditorTab = 'prefs'"
+            >
+              <span class="tab-icon" aria-hidden="true">🧾</span>
+              Preferences
+              <span v-if="!uniguidePrefsCompleted" class="tab-badge">SETUP</span>
+            </button>
+            <button
+              class="tab"
               :class="{ active: offersEditorTab === 'search' }"
               type="button"
               role="tab"
@@ -339,6 +351,192 @@
         </div>
 
         <div class="modal-body">
+          <!-- ── TAB: PREFERENCES (wizard) ──────────────────────────────── -->
+          <div class="tab-content" :class="{ active: offersEditorTab === 'prefs' }" role="tabpanel">
+            <div class="prefs-layout">
+              <div class="prefs-header">
+                <div>
+                  <div class="prefs-title">My university preferences</div>
+                  <div class="prefs-subtitle">
+                    This helps UniGuide personalise your AI conversation and course results. You can update it any time during the year.
+                  </div>
+                </div>
+                <button class="offers-secondary" type="button" @click="resetUniGuidePrefs">
+                  Reset
+                </button>
+              </div>
+
+              <div class="prefs-progress" role="navigation" aria-label="Preferences steps">
+                <button v-for="s in prefsSteps" :key="s.n" class="prefs-step" :class="{ active: uniguidePrefsStep === s.n, done: uniguidePrefsStep > s.n }" type="button" @click="goPrefsStep(s.n)">
+                  <span class="prefs-dot">{{ s.n }}</span>
+                  <span class="prefs-name">{{ s.label }}</span>
+                </button>
+              </div>
+
+              <div class="prefs-body">
+                <!-- Step 1 -->
+                <div v-if="uniguidePrefsStep === 1" class="prefs-panel">
+                  <div class="prefs-panel-title">What genuinely interests you?</div>
+                  <div class="prefs-panel-desc">Select everything that feels true.</div>
+                  <div class="prefs-card-grid cols-3">
+                    <button v-for="opt in prefsInterests" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.interests||[]).includes(opt.val) }" @click="togglePrefsMulti('interests', opt.val)">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <label class="prefs-label">Beyond school (optional)</label>
+                  <textarea v-model="uniguideIntake.passion_text" class="prefs-textarea" rows="3" placeholder="e.g. volunteering, hobbies, topics you love…"></textarea>
+                </div>
+
+                <!-- Step 2 -->
+                <div v-else-if="uniguidePrefsStep === 2" class="prefs-panel">
+                  <div class="prefs-panel-title">Career direction</div>
+                  <div class="prefs-panel-desc">No pressure — being honest helps UniGuide suggest the right kind of course.</div>
+                  <div class="prefs-card-grid cols-3">
+                    <button v-for="opt in prefsCareerClarity" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.career_clarity === opt.val }" @click="uniguideIntake.career_clarity = opt.val">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <div class="prefs-divider"></div>
+                  <div class="prefs-panel-title" style="font-size:16px;">Sectors that interest you</div>
+                  <div class="prefs-card-grid cols-4">
+                    <button v-for="opt in prefsCareerSectors" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.career_sectors||[]).includes(opt.val) }" @click="togglePrefsMulti('career_sectors', opt.val)">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                    </button>
+                  </div>
+                  <label class="prefs-label">Postgraduate routes (optional)</label>
+                  <input v-model="uniguideIntake.postgrad_plans" class="prefs-input" type="text" placeholder="e.g. medicine, law conversion, teacher training…" />
+                </div>
+
+                <!-- Step 3 -->
+                <div v-else-if="uniguidePrefsStep === 3" class="prefs-panel">
+                  <div class="prefs-panel-title">University life</div>
+                  <div class="prefs-panel-desc">The right environment matters as much as the right course.</div>
+                  <div class="prefs-grid-2">
+                    <div>
+                      <div class="prefs-small-title">City or campus?</div>
+                      <div class="prefs-card-grid cols-3">
+                        <button v-for="opt in prefsCampusType" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.campus_type === opt.val }" @click="uniguideIntake.campus_type = opt.val">
+                          <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                          <div class="prefs-card-title">{{ opt.title }}</div>
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="prefs-small-title">University size</div>
+                      <div class="prefs-card-grid cols-3">
+                        <button v-for="opt in prefsUniSize" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.uni_size === opt.val }" @click="uniguideIntake.uni_size = opt.val">
+                          <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                          <div class="prefs-card-title">{{ opt.title }}</div>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="prefs-small-title">Distance from home</div>
+                  <div class="prefs-card-grid cols-2">
+                    <button v-for="opt in prefsDistance" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.distance === opt.val }" @click="uniguideIntake.distance = opt.val">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <div class="prefs-small-title">Social priorities</div>
+                  <div class="prefs-card-grid cols-4">
+                    <button v-for="opt in prefsSocial" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.social_priorities||[]).includes(opt.val) }" @click="togglePrefsMulti('social_priorities', opt.val)">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 4 -->
+                <div v-else-if="uniguidePrefsStep === 4" class="prefs-panel">
+                  <div class="prefs-panel-title">Practicalities</div>
+                  <div class="prefs-panel-desc">There are no wrong answers — this stays private and helps UniGuide be realistic.</div>
+                  <div class="prefs-small-title">Debt attitude</div>
+                  <div class="prefs-card-grid cols-3">
+                    <button v-for="opt in prefsDebt" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.debt_attitude === opt.val }" @click="uniguideIntake.debt_attitude = opt.val">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <div class="prefs-grid-2">
+                    <div>
+                      <div class="prefs-small-title">Accommodation</div>
+                      <div class="prefs-chip-row">
+                        <button v-for="opt in prefsAccommodation" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.accommodation === opt.val }" @click="uniguideIntake.accommodation = opt.val">{{ opt.label }}</button>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="prefs-small-title">Part-time work</div>
+                      <div class="prefs-chip-row">
+                        <button v-for="opt in prefsWork" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.part_time_work === opt.val }" @click="uniguideIntake.part_time_work = opt.val">{{ opt.label }}</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="prefs-small-title">Context (optional)</div>
+                  <div class="prefs-card-grid cols-2">
+                    <button v-for="opt in prefsContextFlags" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.context_flags||[]).includes(opt.val) }" @click="togglePrefsMulti('context_flags', opt.val)">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Step 5 -->
+                <div v-else class="prefs-panel">
+                  <div class="prefs-panel-title">Study style</div>
+                  <div class="prefs-panel-desc">Different universities have very different teaching cultures.</div>
+                  <div class="prefs-small-title">Learning style</div>
+                  <div class="prefs-card-grid cols-2">
+                    <button v-for="opt in prefsLearning" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.learning_style === opt.val }" @click="uniguideIntake.learning_style = opt.val">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <div class="prefs-small-title">Assessment preference</div>
+                  <div class="prefs-chip-row">
+                    <button v-for="opt in prefsAssessment" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.assessment_pref === opt.val }" @click="uniguideIntake.assessment_pref = opt.val">{{ opt.label }}</button>
+                  </div>
+                  <div class="prefs-small-title">Course features</div>
+                  <div class="prefs-card-grid cols-3">
+                    <button v-for="opt in prefsCourseFeatures" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.course_features||[]).includes(opt.val) }" @click="togglePrefsMulti('course_features', opt.val)">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <div class="prefs-small-title">Aspiration level</div>
+                  <div class="prefs-card-grid cols-3">
+                    <button v-for="opt in prefsAspiration" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.aspiration_level === opt.val }" @click="uniguideIntake.aspiration_level = opt.val">
+                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                      <div class="prefs-card-title">{{ opt.title }}</div>
+                      <div class="prefs-card-sub">{{ opt.sub }}</div>
+                    </button>
+                  </div>
+                  <label class="prefs-label">Anything else the AI should know? (optional)</label>
+                  <textarea v-model="uniguideIntake.additional_notes" class="prefs-textarea" rows="3" placeholder="e.g. joint honours ideas, wellbeing support, specific needs…"></textarea>
+                </div>
+              </div>
+
+              <div class="prefs-nav">
+                <button class="offers-secondary" type="button" :disabled="uniguidePrefsStep === 1" @click="goPrefsStep(uniguidePrefsStep - 1)">← Back</button>
+                <div class="prefs-nav-mid">{{ uniguidePrefsStep }} / 5</div>
+                <button v-if="uniguidePrefsStep < 5" class="offers-primary" type="button" @click="goPrefsStep(uniguidePrefsStep + 1)">Continue →</button>
+                <button v-else class="offers-primary" type="button" @click="completePrefsAndSave" :disabled="uniguideProfileSaving">
+                  {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences ✓' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- ── TAB: AI ADVISOR ──────────────────────────────────────────── -->
           <div class="tab-content" :class="{ active: offersEditorTab === 'ai' }" role="tabpanel">
             <div class="ai-layout">
@@ -741,7 +939,7 @@ const offersExpanded = ref(false)
 const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
-const offersEditorTab = ref('ai') // 'ai' | 'search' | 'manual'
+const offersEditorTab = ref('ai') // 'ai' | 'prefs' | 'search' | 'manual'
 
 // UniGuide search state (Discover Uni dataset)
 const uniguideQuery = ref('')
@@ -757,17 +955,25 @@ const uniguideProfileLoading = ref(false)
 const uniguideProfileSaving = ref(false)
 const uniguideProfileError = ref('')
 const uniguideIntake = ref({
-  interests: '',
-  preferred_regions: [],
-  stay_local: null,
-  max_distance_minutes: null,
-  campus_preference: '',
-  vibe: '',
-  priorities: [],
-  budget_notes: '',
-  accommodation_notes: '',
-  career_direction: '',
-  extras: ''
+  interests: [],
+  passion_text: '',
+  career_clarity: 'exploring',
+  career_sectors: [],
+  postgrad_plans: '',
+  campus_type: '',
+  uni_size: '',
+  distance: '',
+  social_priorities: [],
+  debt_attitude: 'unconcerned',
+  accommodation: 'halls',
+  part_time_work: 'no',
+  context_flags: [],
+  learning_style: '',
+  assessment_pref: 'mixed',
+  course_features: [],
+  aspiration_level: 'balanced',
+  additional_notes: '',
+  priorities: [] // legacy quick chips (still supported)
 })
 
 const uniguideSessionId = ref(null)
@@ -789,10 +995,187 @@ const uniguideAcademicYear = computed(() => (props.academicYear || 'current').to
 
 const intakeLooksEmpty = computed(() => {
   const i = uniguideIntake.value || {}
-  const hasText = ['interests', 'vibe', 'campus_preference', 'career_direction'].some(k => String(i[k] || '').trim())
-  const hasAnyArray = Array.isArray(i.preferred_regions) && i.preferred_regions.length
-  return !(hasText || hasAnyArray)
+  const hasAnyArray = Array.isArray(i.interests) && i.interests.length
+  const hasAnyText = ['passion_text', 'postgrad_plans', 'additional_notes'].some(k => String(i[k] || '').trim())
+  return !(hasAnyArray || hasAnyText)
 })
+
+const uniguidePrefsStep = ref(1)
+const prefsSteps = [
+  { n: 1, label: 'Interests' },
+  { n: 2, label: 'Career' },
+  { n: 3, label: 'University life' },
+  { n: 4, label: 'Practicalities' },
+  { n: 5, label: 'Study style' }
+]
+
+const uniguidePrefsCompleted = computed(() => Boolean((uniguideIntake.value || {}).preferences_completed))
+
+const goPrefsStep = (n) => {
+  const nn = Math.max(1, Math.min(5, Number(n) || 1))
+  uniguidePrefsStep.value = nn
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch (_) {}
+}
+
+const resetUniGuidePrefs = () => {
+  uniguideIntake.value = {
+    ...uniguideIntake.value,
+    interests: [],
+    passion_text: '',
+    career_clarity: 'exploring',
+    career_sectors: [],
+    postgrad_plans: '',
+    campus_type: '',
+    uni_size: '',
+    distance: '',
+    social_priorities: [],
+    debt_attitude: 'unconcerned',
+    accommodation: 'halls',
+    part_time_work: 'no',
+    context_flags: [],
+    learning_style: '',
+    assessment_pref: 'mixed',
+    course_features: [],
+    aspiration_level: 'balanced',
+    additional_notes: '',
+    preferences_completed: false
+  }
+  uniguidePrefsStep.value = 1
+}
+
+const togglePrefsMulti = (field, value) => {
+  const intake = uniguideIntake.value || {}
+  const arr = Array.isArray(intake[field]) ? [...intake[field]] : []
+  const idx = arr.indexOf(value)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(value)
+  uniguideIntake.value = { ...intake, [field]: arr }
+}
+
+const completePrefsAndSave = async () => {
+  uniguideIntake.value = { ...(uniguideIntake.value || {}), preferences_completed: true }
+  await saveUniGuideProfile()
+  offersEditorTab.value = 'ai'
+}
+
+const prefsInterests = [
+  { val: 'people-behaviour', ico: '🧠', title: 'People & behaviour', sub: 'Why people think, feel, and act the way they do' },
+  { val: 'science-medicine', ico: '🔬', title: 'Science & medicine', sub: 'Biology, health, research, discovery' },
+  { val: 'society-justice', ico: '⚖️', title: 'Society & justice', sub: 'Law, politics, inequality, change' },
+  { val: 'technology-digital', ico: '💻', title: 'Technology & digital', sub: 'Computing, AI, engineering, systems' },
+  { val: 'business-enterprise', ico: '📈', title: 'Business & enterprise', sub: 'Organisations, economics, entrepreneurship' },
+  { val: 'arts-creative', ico: '🎨', title: 'Arts & creative', sub: 'Design, music, film, writing, performance' },
+  { val: 'environment-nature', ico: '🌍', title: 'Environment & nature', sub: 'Climate, ecology, sustainability' },
+  { val: 'history-culture', ico: '🏛️', title: 'History & culture', sub: 'The past, languages, global perspectives' },
+  { val: 'maths-logic', ico: '∑', title: 'Maths & logic', sub: 'Patterns, proofs, abstract thinking' }
+]
+
+const prefsCareerClarity = [
+  { val: 'exploring', ico: '🔭', title: 'Exploring', sub: "I genuinely don't know yet — I want to discover" },
+  { val: 'leaning', ico: '🧭', title: 'Leaning', sub: "I have a rough direction but it's not fixed" },
+  { val: 'focused', ico: '🎯', title: 'Focused', sub: 'I have a specific career or field in mind' }
+]
+
+const prefsCareerSectors = [
+  { val: 'healthcare', ico: '🏥', title: 'Healthcare' },
+  { val: 'education', ico: '📚', title: 'Education' },
+  { val: 'law', ico: '⚖️', title: 'Law' },
+  { val: 'tech', ico: '💻', title: 'Tech' },
+  { val: 'finance', ico: '💹', title: 'Finance' },
+  { val: 'media-creative', ico: '🎬', title: 'Media' },
+  { val: 'environment', ico: '🌿', title: 'Environment' },
+  { val: 'public-sector', ico: '🏛️', title: 'Public sector' },
+  { val: 'research', ico: '🔬', title: 'Research' },
+  { val: 'sport-health', ico: '⚽', title: 'Sport' },
+  { val: 'social-work', ico: '🤝', title: 'Social work' },
+  { val: 'unsure', ico: '🤷', title: 'Not sure yet' }
+]
+
+const prefsCampusType = [
+  { val: 'city', ico: '🌆', title: 'City' },
+  { val: 'campus', ico: '🏫', title: 'Campus' },
+  { val: 'no_preference', ico: '🤷', title: 'No preference' }
+]
+
+const prefsUniSize = [
+  { val: 'small', ico: '🏡', title: 'Small' },
+  { val: 'medium', ico: '🏢', title: 'Medium' },
+  { val: 'large', ico: '🏙️', title: 'Large' }
+]
+
+const prefsDistance = [
+  { val: 'local', ico: '🏠', title: 'Close to home', sub: 'Within an hour — easy to get back' },
+  { val: 'regional', ico: '🚆', title: 'Same region', sub: 'Happy to be 1–2 hours away' },
+  { val: 'uk_wide', ico: '🗺️', title: 'Anywhere in the UK', sub: 'Best course wins — travel is fine' },
+  { val: 'international', ico: '✈️', title: 'Open to abroad', sub: 'Would consider international study' }
+]
+
+const prefsSocial = [
+  { val: 'sports', ico: '⚽', title: 'Sports' },
+  { val: 'societies', ico: '🎭', title: 'Societies' },
+  { val: 'nightlife', ico: '🎉', title: 'Social life' },
+  { val: 'volunteering', ico: '🤝', title: 'Volunteering' },
+  { val: 'research-culture', ico: '🔭', title: 'Research culture' },
+  { val: 'employability', ico: '💼', title: 'Employability' },
+  { val: 'diversity', ico: '🌍', title: 'Diversity' },
+  { val: 'wellbeing', ico: '💚', title: 'Wellbeing support' }
+]
+
+const prefsDebt = [
+  { val: 'unconcerned', ico: '😌', title: 'Unconcerned', sub: "It's an investment — I'm not worried" },
+  { val: 'mindful', ico: '🤔', title: 'Mindful', sub: "I want to be sensible about costs" },
+  { val: 'concerned', ico: '😟', title: 'Concerned', sub: 'Cost is a real factor in my decisions' }
+]
+
+const prefsAccommodation = [
+  { val: 'halls', label: 'University halls' },
+  { val: 'private', label: 'Private rented' },
+  { val: 'home', label: 'Living at home' },
+  { val: 'flexible', label: 'Flexible / not sure' }
+]
+
+const prefsWork = [
+  { val: 'yes_needed', label: 'Yes — financially needed' },
+  { val: 'yes_optional', label: 'Yes — to stay busy' },
+  { val: 'maybe', label: 'Maybe' },
+  { val: 'no', label: 'No — focus on studies' }
+]
+
+const prefsContextFlags = [
+  { val: 'first_gen', ico: '🌟', title: 'First in family', sub: "I'd benefit from extra guidance and context" },
+  { val: 'gap_year', ico: '🌏', title: 'Considering a gap year', sub: 'I might defer entry or take time before starting' },
+  { val: 'disability_support', ico: '♿', title: 'Disability / additional needs', sub: 'Student support services matter to my choice' },
+  { val: 'care_responsibilities', ico: '🏠', title: 'Care/family responsibilities', sub: 'I need flexibility around commitments at home' }
+]
+
+const prefsLearning = [
+  { val: 'lectures', ico: '🎤', title: 'Large lectures', sub: 'Absorb, take notes, work independently' },
+  { val: 'seminars', ico: '💬', title: 'Small seminars', sub: 'Discussion, debate, small groups' },
+  { val: 'practical', ico: '🔬', title: 'Practical & lab-based', sub: 'Do, make, build — not just listen' },
+  { val: 'mixed', ico: '🔀', title: 'Mix of everything', sub: 'Variety keeps me engaged' }
+]
+
+const prefsAssessment = [
+  { val: 'exams', label: 'Mainly exams' },
+  { val: 'coursework', label: 'Mainly coursework' },
+  { val: 'mixed', label: 'Mix of both' },
+  { val: 'no_preference', label: 'No preference' }
+]
+
+const prefsCourseFeatures = [
+  { val: 'placement_year', ico: '💼', title: 'Placement year', sub: 'Work in industry before final year' },
+  { val: 'year_abroad', ico: '✈️', title: 'Year abroad', sub: 'Study at an international partner' },
+  { val: 'integrated_masters', ico: '🎓', title: 'Integrated Masters', sub: '4-year programme ending in MSc/MEng' },
+  { val: 'research_project', ico: '🔭', title: 'Research project', sub: 'Dissertation or independent research' },
+  { val: 'clinical_experience', ico: '🏥', title: 'Clinical placements', sub: 'Hands-on practice experience' },
+  { val: 'accreditation', ico: '📜', title: 'Accreditation', sub: 'Course accredited by a professional body' }
+]
+
+const prefsAspiration = [
+  { val: 'stretch', ico: '🚀', title: 'Stretch', sub: 'Most prestigious I can realistically get' },
+  { val: 'balanced', ico: '⚖️', title: 'Balanced', sub: 'Mix of ambitious and realistic options' },
+  { val: 'safe', ico: '🛡️', title: 'Safe', sub: "I want to feel confident I'll get in" }
+]
 
 const uniguideSubjectsSummary = computed(() => {
   const rows = Array.isArray(props.subjects) ? props.subjects : []
@@ -1345,7 +1728,7 @@ const openOffersEditor = () => {
     ucasPoints: (o.ucasPoints === null || o.ucasPoints === undefined) ? '' : String(o.ucasPoints),
     ranking: o.ranking || 1
   }))
-  offersEditorTab.value = 'ai'
+  offersEditorTab.value = uniguidePrefsCompleted.value ? 'ai' : 'prefs'
   offersEditorOpen.value = true
   // hydrate intake on open
   try { loadUniGuideProfile() } catch (_) {}
@@ -2327,6 +2710,8 @@ const showTemporaryMessage = (message, type) => {
   overflow: hidden;
   box-shadow: none;
   font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-size: 15.5px;
+  line-height: 1.35;
 }
 
 .modal-header {
@@ -2495,6 +2880,209 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .tab-badge-blue { background: var(--navy-light); }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Preferences wizard (UniGuide intake)
+   ──────────────────────────────────────────────────────────────────────────── */
+.prefs-layout{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 18px 18px 10px;
+}
+.prefs-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:12px;
+}
+.prefs-title{
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+.prefs-subtitle{
+  color: var(--muted);
+  font-size: 14.5px;
+}
+.prefs-progress{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  background: white;
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  box-shadow: 0 2px 10px rgba(13,43,78,0.06);
+  margin-bottom: 14px;
+}
+.prefs-step{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border: 1px solid var(--cream-border);
+  border-radius: 999px;
+  padding: 8px 10px;
+  background: var(--cream);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.prefs-step.active{
+  background: rgba(232,119,34,0.12);
+  border-color: rgba(232,119,34,0.35);
+}
+.prefs-step.done{
+  background: rgba(27,122,74,0.10);
+  border-color: rgba(27,122,74,0.25);
+}
+.prefs-dot{
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background: white;
+  border: 1px solid var(--cream-border);
+  font-weight: 900;
+  font-size: 13px;
+}
+.prefs-step.active .prefs-dot{ border-color: rgba(232,119,34,0.45); }
+.prefs-step.done .prefs-dot{ border-color: rgba(27,122,74,0.35); }
+.prefs-body{
+  background: white;
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius);
+  padding: 14px 14px 10px;
+  box-shadow: 0 2px 12px rgba(13,43,78,0.06);
+}
+.prefs-panel-title{
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+.prefs-panel-desc{
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.prefs-divider{ height: 1px; background: var(--cream-border); margin: 14px 0; }
+.prefs-small-title{
+  font-weight: 800;
+  color: var(--navy);
+  margin: 10px 0 8px;
+}
+.prefs-card-grid{
+  display:grid;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.prefs-card-grid.cols-2{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+.prefs-card-grid.cols-3{ grid-template-columns: repeat(3, minmax(0,1fr)); }
+.prefs-card-grid.cols-4{ grid-template-columns: repeat(4, minmax(0,1fr)); }
+.prefs-grid-2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.prefs-card{
+  text-align:left;
+  background: var(--cream);
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius);
+  padding: 12px 12px 10px;
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(13,43,78,0.03);
+  transition: transform .08s ease, border-color .12s ease, background .12s ease;
+}
+.prefs-card:hover{ transform: translateY(-1px); border-color: rgba(13,43,78,0.22); }
+.prefs-card.selected{
+  background: rgba(232,119,34,0.12);
+  border-color: rgba(232,119,34,0.35);
+}
+.prefs-card.compact{ padding: 10px 10px 8px; }
+.prefs-ico{
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+.prefs-card-title{
+  font-weight: 900;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+.prefs-card-sub{
+  color: var(--muted);
+  font-size: 13px;
+}
+.prefs-label{
+  display:block;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 8px 0 6px;
+}
+.prefs-input{
+  width: 100%;
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 15px;
+}
+.prefs-textarea{
+  width: 100%;
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 15px;
+  resize: vertical;
+  min-height: 90px;
+}
+.prefs-input:focus,
+.prefs-textarea:focus{
+  outline: none;
+  border-color: rgba(13,43,78,0.35);
+  box-shadow: 0 0 0 3px rgba(13,43,78,0.08);
+  background: white;
+}
+.prefs-chip-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.prefs-chip{
+  border: 1px solid var(--cream-border);
+  background: var(--cream);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.prefs-chip.selected{
+  background: rgba(232,119,34,0.12);
+  border-color: rgba(232,119,34,0.35);
+}
+.prefs-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  padding: 14px 2px 6px;
+}
+.prefs-nav-mid{ color: var(--muted); font-weight: 800; }
+
+@media (max-width: 980px){
+  .prefs-card-grid.cols-4{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .prefs-card-grid.cols-3{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .prefs-grid-2{ grid-template-columns: 1fr; }
+}
+@media (max-width: 560px){
+  .prefs-card-grid.cols-2,
+  .prefs-card-grid.cols-3,
+  .prefs-card-grid.cols-4{ grid-template-columns: 1fr; }
+}
 
 .modal-body {
   flex: 1;
