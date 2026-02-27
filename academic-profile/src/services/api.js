@@ -588,3 +588,48 @@ export async function checkAcademicProfileHealth(apiUrl) {
   }
 }
 
+/**
+ * UniGuide: search courses (server-side proxy to Supabase RPC)
+ * @param {Object} params
+ * @param {string} params.q
+ * @param {string|null} params.subjectCode
+ * @param {number|null} params.minTariff
+ * @param {number|null} params.maxTariff
+ * @param {number|null} params.limit
+ * @param {number|null} params.offset
+ * @param {string|null} params.datasetReleaseId
+ * @param {string} apiUrl
+ * @returns {Promise<{success: boolean, data?: any, error?: string}>}
+ */
+export async function uniguideSearchCourses(params, apiUrl) {
+  try {
+    const response = await fetch(`${apiUrl}/api/uniguide/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        q: params?.q ?? null,
+        subject_code: params?.subjectCode ?? null,
+        min_tariff: params?.minTariff ?? null,
+        max_tariff: params?.maxTariff ?? null,
+        lim: params?.limit ?? 20,
+        off: params?.offset ?? 0,
+        dataset_release_id: params?.datasetReleaseId ?? null
+      })
+    })
+
+    if (!response.ok) {
+      let msg = `API error: ${response.status}`
+      try {
+        const errJson = await response.json()
+        if (errJson && (errJson.error || errJson.message)) msg = errJson.error || errJson.message
+      } catch (_) {}
+      throw new Error(msg)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('[Academic Profile API] uniguideSearchCourses error:', error)
+    return { success: false, error: error.message || 'Failed to search UniGuide courses' }
+  }
+}
+

@@ -305,15 +305,89 @@
           </div>
 
           <div v-if="offersEditorTab === 'uniguide'" class="uniguide-shell" role="tabpanel">
-            <div class="uniguide-shell-title">Find and build your 5 university choices</div>
-            <div class="uniguide-shell-sub">
-              This is where the Discover Uni dataset search and the AI advisor chat will live.
-              For now, use <strong>Manual edit</strong> to set your 5 choices.
-            </div>
-            <div class="uniguide-shell-actions">
-              <button class="offers-secondary" type="button" @click="offersEditorTab = 'manual'">
-                ✏️ Open manual editor
-              </button>
+            <div class="uniguide-grid">
+              <div class="uniguide-left">
+                <div class="uniguide-shell-title">Search courses (Discover Uni dataset)</div>
+                <div class="uniguide-shell-sub">
+                  Search, then add anything you like into your choices (max 5). You can reorder and edit details in <strong>Manual edit</strong>.
+                </div>
+
+                <div class="uniguide-search">
+                  <input
+                    v-model="uniguideQuery"
+                    class="uniguide-search-input"
+                    type="text"
+                    placeholder="Search e.g. Psychology, Computer Science, Criminology…"
+                    @keydown.enter.prevent="runUniGuideSearch"
+                  />
+                  <button class="offers-primary" type="button" @click="runUniGuideSearch" :disabled="uniguideLoading">
+                    {{ uniguideLoading ? 'Searching…' : 'Search' }}
+                  </button>
+                </div>
+
+                <div class="uniguide-filters">
+                  <input v-model="uniguideSubjectCode" class="uniguide-filter-input" type="text" placeholder="Subject code (optional)" />
+                  <input v-model.number="uniguideMinTariff" class="uniguide-filter-input" type="number" inputmode="numeric" placeholder="Min tariff" />
+                  <input v-model.number="uniguideMaxTariff" class="uniguide-filter-input" type="number" inputmode="numeric" placeholder="Max tariff" />
+                </div>
+
+                <div v-if="uniguideError" class="uniguide-error">{{ uniguideError }}</div>
+                <div v-else-if="!uniguideLoading && uniguideResults.length === 0" class="uniguide-empty">
+                  Try a search to get started.
+                </div>
+
+                <div v-if="uniguideResults.length" class="uniguide-results" aria-label="UniGuide search results">
+                  <div v-for="r in uniguideResults" :key="r.course_key" class="uniguide-card">
+                    <div class="uniguide-card-title">{{ r.title || 'Course' }}</div>
+                    <div class="uniguide-card-sub">
+                      <span class="uniguide-card-uni">{{ r.institution_name || 'Institution' }}</span>
+                      <span v-if="r.tariff_typical !== null && r.tariff_typical !== undefined" class="uniguide-pill">
+                        Typical tariff: {{ r.tariff_typical }}
+                      </span>
+                      <span v-if="r.tef_overall_rating" class="uniguide-pill">
+                        TEF: {{ r.tef_overall_rating }}
+                      </span>
+                    </div>
+                    <div class="uniguide-card-actions">
+                      <a
+                        v-if="r.course_url"
+                        class="offers-secondary"
+                        :href="r.course_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        🔗 Course page
+                      </a>
+                      <button class="offers-primary" type="button" @click="addUniGuideCourseToDraft(r)">
+                        ➕ Add to choices
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="uniguide-right">
+                <div class="uniguide-right-title">Your choices</div>
+                <div class="uniguide-right-sub">
+                  {{ nonEmptyOffersDraftCount }} / 5
+                </div>
+
+                <div class="uniguide-choice-list">
+                  <div v-for="row in offersDraft" :key="row._key" class="uniguide-choice-row">
+                    <div class="uniguide-choice-rank">#{{ row.ranking }}</div>
+                    <div class="uniguide-choice-text">
+                      <div class="uniguide-choice-uni">{{ row.universityName || '—' }}</div>
+                      <div class="uniguide-choice-course">{{ row.courseTitle || '' }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="uniguide-shell-actions">
+                  <button class="offers-secondary" type="button" @click="offersEditorTab = 'manual'">
+                    ✏️ Open manual editor
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -380,7 +454,7 @@ import SubjectCard from './SubjectCard.vue'
 import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
 import UcasApplicationModal from './UcasApplicationModal.vue'
-import { updateSubjectGrade, updateUniversityOffers } from '../services/api.js'
+import { updateSubjectGrade, updateUniversityOffers, uniguideSearchCourses } from '../services/api.js'
 
 const props = defineProps({
   student: {
@@ -440,6 +514,124 @@ const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
 const offersEditorTab = ref('uniguide') // 'uniguide' | 'manual'
+
+// UniGuide search state (Discover Uni dataset)
+const uniguideQuery = ref('')
+const uniguideSubjectCode = ref('')
+const uniguideMinTariff = ref(null)
+const uniguideMaxTariff = ref(null)
+const uniguideLoading = ref(false)
+const uniguideError = ref('')
+const uniguideResults = ref([])
+
+const nonEmptyOffersDraftCount = computed(() => {
+  const rows = offersDraft.value || []
+  return rows.filter(r =>
+    (r && (
+      String(r.universityName || '').trim() ||
+      String(r.courseTitle || '').trim() ||
+      String(r.courseLink || '').trim() ||
+      String(r.offer || '').trim() ||
+      String(r.ucasPoints || '').trim()
+    ))
+  ).length
+})
+
+const runUniGuideSearch = async () => {
+  const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+  if (!apiUrl) {
+    uniguideError.value = 'UniGuide search is not configured (missing apiUrl).'
+    return
+  }
+
+  uniguideLoading.value = true
+  uniguideError.value = ''
+  try {
+    const resp = await uniguideSearchCourses({
+      q: (uniguideQuery.value || '').trim(),
+      subjectCode: (uniguideSubjectCode.value || '').trim() || null,
+      minTariff: Number.isFinite(uniguideMinTariff.value) ? uniguideMinTariff.value : null,
+      maxTariff: Number.isFinite(uniguideMaxTariff.value) ? uniguideMaxTariff.value : null,
+      limit: 20,
+      offset: 0,
+      datasetReleaseId: null
+    }, apiUrl)
+
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Search failed')
+
+    const rows = Array.isArray(resp.data) ? resp.data : []
+    uniguideResults.value = rows
+  } catch (e) {
+    console.error('[UniGuide] search error:', e)
+    uniguideResults.value = []
+    uniguideError.value = e?.message || 'Failed to search'
+  } finally {
+    uniguideLoading.value = false
+  }
+}
+
+const addUniGuideCourseToDraft = (r) => {
+  if (!r) return
+
+  const uni = (r.institution_name || '').toString().trim()
+  const title = (r.title || '').toString().trim()
+  const link = safeCourseLink(r.course_url) || (r.course_url || '').toString().trim()
+
+  const existing = (offersDraft.value || []).some(row => {
+    const sameLink = link && safeCourseLink(row.courseLink) === link
+    const sameText = uni && title && (String(row.universityName || '').trim().toLowerCase() === uni.toLowerCase()) &&
+      (String(row.courseTitle || '').trim().toLowerCase() === title.toLowerCase())
+    return sameLink || sameText
+  })
+
+  if (existing) {
+    showTemporaryMessage('That course is already in your choices.', 'error')
+    return
+  }
+
+  // Fill an existing empty row first (better UX), otherwise add a new one if we can.
+  const rows = offersDraft.value || []
+  const isRowEmpty = (row) => {
+    if (!row) return true
+    return !String(row.universityName || '').trim()
+      && !String(row.courseTitle || '').trim()
+      && !String(row.courseLink || '').trim()
+      && !String(row.offer || '').trim()
+      && !String(row.ucasPoints || '').trim()
+  }
+
+  let targetRow = rows.find(isRowEmpty) || null
+
+  if (!targetRow) {
+    if (rows.length >= 5) {
+      showTemporaryMessage('You can only save up to 5 choices.', 'error')
+      return
+    }
+    // Pick next available rank
+    const used = new Set(rows.map(x => Number(x.ranking)).filter(Boolean))
+    let nextRank = 1
+    for (const rr of [1, 2, 3, 4, 5]) {
+      if (!used.has(rr)) { nextRank = rr; break }
+    }
+    targetRow = {
+      _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      universityName: '',
+      courseTitle: '',
+      courseLink: '',
+      offer: '',
+      ucasPoints: '',
+      ranking: nextRank
+    }
+    rows.push(targetRow)
+  }
+
+  targetRow.universityName = uni
+  targetRow.courseTitle = title
+  targetRow.courseLink = link
+
+  offersDraft.value = [...rows]
+  showTemporaryMessage('Added to your choices (remember to Save choices).', 'success')
+}
 
 // UCAS Application modal state (student edits; staff read + comment)
 const ucasModalOpen = ref(false)
@@ -1627,8 +1819,8 @@ const showTemporaryMessage = (message, type) => {
 
 .offers-modal {
   width: 100%;
-  max-width: 1100px;
-  max-height: 90vh;
+  max-width: 1320px;
+  max-height: 94vh;
   background: #14224a;
   border: 2px solid rgba(7, 155, 170, 0.6);
   border-radius: 12px;
@@ -1648,6 +1840,7 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .offers-modal-title {
+  font-size: 20px;
   font-weight: 900;
   letter-spacing: 0.2px;
 }
@@ -1695,7 +1888,7 @@ const showTemporaryMessage = (message, type) => {
   color: rgba(255,255,255,0.92);
   border-radius: 999px;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
   cursor: pointer;
 }
@@ -1714,20 +1907,192 @@ const showTemporaryMessage = (message, type) => {
 }
 
 .uniguide-shell-title {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 950;
   color: #ffffff;
   margin-bottom: 6px;
 }
 
 .uniguide-shell-sub {
-  font-size: 13px;
+  font-size: 16px;
   color: rgba(255,255,255,0.85);
   line-height: 1.55;
 }
 
 .uniguide-shell-actions {
   margin-top: 14px;
+}
+
+.uniguide-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.uniguide-left,
+.uniguide-right {
+  min-width: 0;
+}
+
+.uniguide-search {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.uniguide-search-input {
+  flex: 1;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(0,0,0,0.20);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.uniguide-filters {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.8fr;
+  gap: 10px;
+}
+
+.uniguide-filter-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  box-sizing: border-box;
+}
+
+.uniguide-error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 80, 80, 0.35);
+  background: rgba(255, 80, 80, 0.12);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.uniguide-empty {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.85);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.uniguide-results {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.uniguide-card {
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.18);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.uniguide-card-title {
+  font-size: 18px;
+  font-weight: 950;
+  color: #fff;
+}
+
+.uniguide-card-sub {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: rgba(255,255,255,0.9);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.uniguide-pill {
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.uniguide-card-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.uniguide-right-title {
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.uniguide-right-sub {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(255,255,255,0.85);
+}
+
+.uniguide-choice-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.uniguide-choice-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 10px;
+}
+
+.uniguide-choice-rank {
+  font-weight: 950;
+  font-size: 16px;
+  color: rgba(255,255,255,0.92);
+}
+
+.uniguide-choice-uni {
+  font-weight: 950;
+  font-size: 15px;
+}
+
+.uniguide-choice-course {
+  margin-top: 2px;
+  font-weight: 700;
+  font-size: 13px;
+  color: rgba(255,255,255,0.78);
+}
+
+@media (max-width: 900px) {
+  .offers-modal-overlay { padding: 10px; }
+  .offers-modal { max-height: 96vh; border-radius: 12px; }
+  .uniguide-grid { grid-template-columns: 1fr; }
+  .uniguide-search { flex-direction: column; align-items: stretch; }
+  .uniguide-filters { grid-template-columns: 1fr; }
 }
 
 .offers-help {
