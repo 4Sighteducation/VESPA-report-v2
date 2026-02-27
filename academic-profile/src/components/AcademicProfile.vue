@@ -314,18 +314,6 @@
             </button>
             <button
               class="tab"
-              :class="{ active: offersEditorTab === 'prefs' }"
-              type="button"
-              role="tab"
-              :aria-selected="offersEditorTab === 'prefs'"
-              @click="offersEditorTab = 'prefs'"
-            >
-              <span class="tab-icon" aria-hidden="true">🧾</span>
-              Preferences
-              <span v-if="!uniguidePrefsCompleted" class="tab-badge">SETUP</span>
-            </button>
-            <button
-              class="tab"
               :class="{ active: offersEditorTab === 'search' }"
               type="button"
               role="tab"
@@ -351,197 +339,6 @@
         </div>
 
         <div class="modal-body">
-          <!-- ── TAB: PREFERENCES (wizard) ──────────────────────────────── -->
-          <div class="tab-content" :class="{ active: offersEditorTab === 'prefs' }" role="tabpanel">
-            <div class="prefs-layout">
-              <div class="prefs-header">
-              <div>
-                  <div class="prefs-title">My university preferences</div>
-                  <div class="prefs-subtitle">
-                    This helps UniGuide personalise your AI conversation and course results. You can update it any time during the year.
-              </div>
-                </div>
-                <button class="offers-secondary" type="button" @click="resetUniGuidePrefs">
-                  Reset
-                </button>
-              </div>
-
-              <div class="prefs-progress" role="navigation" aria-label="Preferences steps">
-                <button v-for="s in prefsSteps" :key="s.n" class="prefs-step" :class="{ active: uniguidePrefsStep === s.n, done: uniguidePrefsStep > s.n }" type="button" @click="goPrefsStep(s.n)">
-                  <span class="prefs-dot">{{ s.n }}</span>
-                  <span class="prefs-name">{{ s.label }}</span>
-                </button>
-              </div>
-
-              <div class="prefs-body">
-                <!-- Step 1 -->
-                <div v-if="uniguidePrefsStep === 1" class="prefs-panel">
-                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
-                  <div class="prefs-panel-title">What genuinely interests you?</div>
-                  <div class="prefs-panel-desc">Select everything that feels true.</div>
-                  <div class="prefs-card-grid cols-3">
-                    <button v-for="opt in prefsInterests" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.interests||[]).includes(opt.val) }" @click="togglePrefsMulti('interests', opt.val)">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <label class="prefs-label">Beyond school (optional)</label>
-                  <textarea v-model="uniguideIntake.passion_text" class="prefs-textarea" rows="3" placeholder="e.g. volunteering, hobbies, topics you love…"></textarea>
-                </div>
-
-                <!-- Step 2 -->
-                <div v-else-if="uniguidePrefsStep === 2" class="prefs-panel">
-                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
-                  <div class="prefs-panel-title">Career direction</div>
-                  <div class="prefs-panel-desc">No pressure — being honest helps UniGuide suggest the right kind of course.</div>
-                  <div class="prefs-card-grid cols-3">
-                    <button v-for="opt in prefsCareerClarity" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.career_clarity === opt.val }" @click="uniguideIntake.career_clarity = opt.val">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <div class="prefs-divider"></div>
-                  <div class="prefs-panel-title" style="font-size:16px;">Sectors that interest you</div>
-                  <div class="prefs-card-grid cols-4">
-                    <button v-for="opt in prefsCareerSectors" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.career_sectors||[]).includes(opt.val) }" @click="togglePrefsMulti('career_sectors', opt.val)">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                    </button>
-                  </div>
-                  <label class="prefs-label">Postgraduate routes (optional)</label>
-                  <input v-model="uniguideIntake.postgrad_plans" class="prefs-input" type="text" placeholder="e.g. medicine, law conversion, teacher training…" />
-                </div>
-
-                <!-- Step 3 -->
-                <div v-else-if="uniguidePrefsStep === 3" class="prefs-panel">
-                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
-                  <div class="prefs-panel-title">University life</div>
-                  <div class="prefs-panel-desc">The right environment matters as much as the right course.</div>
-                  <div class="prefs-grid-2">
-              <div>
-                      <div class="prefs-small-title">City or campus?</div>
-                      <div class="prefs-card-grid cols-3">
-                        <button v-for="opt in prefsCampusType" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.campus_type === opt.val }" @click="uniguideIntake.campus_type = opt.val">
-                          <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                          <div class="prefs-card-title">{{ opt.title }}</div>
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="prefs-small-title">University size</div>
-                      <div class="prefs-card-grid cols-3">
-                        <button v-for="opt in prefsUniSize" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.uni_size === opt.val }" @click="uniguideIntake.uni_size = opt.val">
-                          <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                          <div class="prefs-card-title">{{ opt.title }}</div>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="prefs-small-title">Distance from home</div>
-                  <div class="prefs-card-grid cols-2">
-                    <button v-for="opt in prefsDistance" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.distance === opt.val }" @click="uniguideIntake.distance = opt.val">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <div class="prefs-small-title">Social priorities</div>
-                  <div class="prefs-card-grid cols-4">
-                    <button v-for="opt in prefsSocial" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.social_priorities||[]).includes(opt.val) }" @click="togglePrefsMulti('social_priorities', opt.val)">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Step 4 -->
-                <div v-else-if="uniguidePrefsStep === 4" class="prefs-panel">
-                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
-                  <div class="prefs-panel-title">Practicalities</div>
-                  <div class="prefs-panel-desc">There are no wrong answers — this stays private and helps UniGuide be realistic.</div>
-                  <div class="prefs-small-title">Debt attitude</div>
-                  <div class="prefs-card-grid cols-3">
-                    <button v-for="opt in prefsDebt" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.debt_attitude === opt.val }" @click="uniguideIntake.debt_attitude = opt.val">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <div class="prefs-grid-2">
-                    <div>
-                      <div class="prefs-small-title">Accommodation</div>
-                      <div class="prefs-chip-row">
-                        <button v-for="opt in prefsAccommodation" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.accommodation === opt.val }" @click="uniguideIntake.accommodation = opt.val">{{ opt.label }}</button>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="prefs-small-title">Part-time work</div>
-                      <div class="prefs-chip-row">
-                        <button v-for="opt in prefsWork" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.part_time_work === opt.val }" @click="uniguideIntake.part_time_work = opt.val">{{ opt.label }}</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="prefs-small-title">Context (optional)</div>
-                  <div class="prefs-card-grid cols-2">
-                    <button v-for="opt in prefsContextFlags" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.context_flags||[]).includes(opt.val) }" @click="togglePrefsMulti('context_flags', opt.val)">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Step 5 -->
-                <div v-else class="prefs-panel">
-                  <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
-                  <div class="prefs-panel-title">Study style</div>
-                  <div class="prefs-panel-desc">Different universities have very different teaching cultures.</div>
-                  <div class="prefs-small-title">Learning style</div>
-                  <div class="prefs-card-grid cols-2">
-                    <button v-for="opt in prefsLearning" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.learning_style === opt.val }" @click="uniguideIntake.learning_style = opt.val">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <div class="prefs-small-title">Assessment preference</div>
-                  <div class="prefs-chip-row">
-                    <button v-for="opt in prefsAssessment" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.assessment_pref === opt.val }" @click="uniguideIntake.assessment_pref = opt.val">{{ opt.label }}</button>
-                  </div>
-                  <div class="prefs-small-title">Course features</div>
-                  <div class="prefs-card-grid cols-3">
-                    <button v-for="opt in prefsCourseFeatures" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.course_features||[]).includes(opt.val) }" @click="togglePrefsMulti('course_features', opt.val)">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <div class="prefs-small-title">Aspiration level</div>
-                  <div class="prefs-card-grid cols-3">
-                    <button v-for="opt in prefsAspiration" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.aspiration_level === opt.val }" @click="uniguideIntake.aspiration_level = opt.val">
-                      <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
-                      <div class="prefs-card-title">{{ opt.title }}</div>
-                      <div class="prefs-card-sub">{{ opt.sub }}</div>
-                    </button>
-                  </div>
-                  <label class="prefs-label">Anything else the AI should know? (optional)</label>
-                  <textarea v-model="uniguideIntake.additional_notes" class="prefs-textarea" rows="3" placeholder="e.g. joint honours ideas, wellbeing support, specific needs…"></textarea>
-                </div>
-              </div>
-
-              <div class="prefs-nav">
-                <button class="offers-secondary" type="button" :disabled="uniguidePrefsStep === 1" @click="goPrefsStep(uniguidePrefsStep - 1)">← Back</button>
-                <div class="prefs-nav-mid">{{ uniguidePrefsStep }} / 5</div>
-                <button v-if="uniguidePrefsStep < 5" class="offers-primary" type="button" @click="goPrefsStep(uniguidePrefsStep + 1)">Continue →</button>
-                <button v-else class="offers-primary" type="button" @click="completePrefsAndSave" :disabled="uniguideProfileSaving">
-                  {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences ✓' }}
-                </button>
-              </div>
-            </div>
-          </div>
-
           <!-- ── TAB: AI ADVISOR ──────────────────────────────────────────── -->
           <div class="tab-content" :class="{ active: offersEditorTab === 'ai' }" role="tabpanel">
             <div class="ai-layout">
@@ -598,29 +395,33 @@
                   </div>
                 </div>
 
-                <div class="sidebar-label">Your Preferences</div>
+                <div class="sidebar-label">Preferences</div>
                 <div v-if="uniguideProfileError" class="inline-error">{{ uniguideProfileError }}</div>
                 <div v-else-if="uniguideProfileLoading" class="inline-muted">Loading…</div>
-
-                <label class="form-label">Interests</label>
-                <textarea v-model="uniguideIntake.interests" class="form-textarea" rows="2" placeholder="e.g. Psychology, Engineering, Medicine…"></textarea>
-
-                <label class="form-label">Priorities</label>
-                <div class="chips">
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('outcomes') }" @click="toggleChip('priorities','outcomes')">Outcomes</button>
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('student_experience') }" @click="toggleChip('priorities','student_experience')">Student experience</button>
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('cost') }" @click="toggleChip('priorities','cost')">Cost</button>
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('distance') }" @click="toggleChip('priorities','distance')">Distance</button>
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('campus') }" @click="toggleChip('priorities','campus')">Campus</button>
-                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('city') }" @click="toggleChip('priorities','city')">City</button>
+                <div v-else class="prefs-summary">
+                  <div class="prefs-summary-row">
+                    <div class="prefs-summary-label">Completed</div>
+                    <div class="prefs-summary-value">
+                      <span class="status-pill" :class="{ ok: uniguidePrefsCompleted }">{{ uniguidePrefsCompleted ? 'Yes' : 'No' }}</span>
+                    </div>
+                  </div>
+                  <div class="prefs-summary-row" v-if="(uniguideIntake.interests || []).length">
+                    <div class="prefs-summary-label">Interests</div>
+                    <div class="prefs-summary-value">{{ (uniguideIntake.interests || []).slice(0, 3).join(', ') }}<span v-if="(uniguideIntake.interests || []).length > 3">…</span></div>
+                  </div>
+                  <div class="prefs-summary-row" v-if="uniguideIntake.distance">
+                    <div class="prefs-summary-label">Distance</div>
+                    <div class="prefs-summary-value">{{ uniguideIntake.distance }}</div>
+                  </div>
+                  <div class="prefs-summary-row" v-if="uniguideIntake.campus_type">
+                    <div class="prefs-summary-label">Campus</div>
+                    <div class="prefs-summary-value">{{ uniguideIntake.campus_type }}</div>
+                  </div>
                 </div>
 
-                <label class="form-label">Notes</label>
-                <textarea v-model="uniguideIntake.extras" class="form-textarea" rows="2" placeholder="e.g. want to stay local, budget, vibe…"></textarea>
-
                 <div class="sidebar-actions">
-                  <button class="side-btn" type="button" @click="saveUniGuideProfile" :disabled="uniguideProfileSaving">
-                    {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences' }}
+                  <button class="side-btn primary" type="button" @click="openUniGuidePrefs">
+                    {{ uniguidePrefsCompleted ? 'Edit preferences' : 'Complete preferences' }}
                   </button>
                 </div>
 
@@ -868,6 +669,191 @@
           </div>
         </div>
 
+        <!-- Preferences modal (forced on first use) -->
+        <div v-if="uniguidePrefsOpen" class="prefs-modal-overlay" @click.self="closeUniGuidePrefs">
+          <div class="prefs-modal" role="dialog" aria-modal="true" aria-label="UniGuide preferences">
+            <div class="prefs-modal-top">
+              <div>
+                <div class="prefs-title">My university preferences</div>
+                <div class="prefs-subtitle">
+                  This helps UniGuide personalise your AI conversation and course results. You can update it any time during the year.
+                </div>
+              </div>
+              <button v-if="!uniguidePrefsRequired" class="close-btn" type="button" @click="closeUniGuidePrefs" aria-label="Close preferences">×</button>
+            </div>
+
+            <div class="prefs-progress" role="navigation" aria-label="Preferences steps">
+              <button v-for="s in prefsSteps" :key="s.n" class="prefs-step" :class="{ active: uniguidePrefsStep === s.n, done: uniguidePrefsStep > s.n }" type="button" @click="goPrefsStep(s.n)">
+                <span class="prefs-dot">{{ s.n }}</span>
+                <span class="prefs-name">{{ s.label }}</span>
+              </button>
+            </div>
+
+            <div class="prefs-body">
+              <div v-if="uniguidePrefsStep === 1" class="prefs-panel">
+                <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
+                <div class="prefs-panel-title">What genuinely interests you?</div>
+                <div class="prefs-panel-desc">Select everything that feels true.</div>
+                <div class="prefs-card-grid cols-3">
+                  <button v-for="opt in prefsInterests" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.interests||[]).includes(opt.val) }" @click="togglePrefsMulti('interests', opt.val)">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <label class="prefs-label">Beyond school (optional)</label>
+                <textarea v-model="uniguideIntake.passion_text" class="prefs-textarea" rows="3" placeholder="e.g. volunteering, hobbies, topics you love…"></textarea>
+              </div>
+
+              <div v-else-if="uniguidePrefsStep === 2" class="prefs-panel">
+                <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
+                <div class="prefs-panel-title">Career direction</div>
+                <div class="prefs-panel-desc">No pressure — being honest helps UniGuide suggest the right kind of course.</div>
+                <div class="prefs-card-grid cols-3">
+                  <button v-for="opt in prefsCareerClarity" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.career_clarity === opt.val }" @click="uniguideIntake.career_clarity = opt.val">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <div class="prefs-divider"></div>
+                <div class="prefs-small-title">Sectors that interest you</div>
+                <div class="prefs-card-grid cols-4">
+                  <button v-for="opt in prefsCareerSectors" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.career_sectors||[]).includes(opt.val) }" @click="togglePrefsMulti('career_sectors', opt.val)">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                  </button>
+                </div>
+                <label class="prefs-label">Postgraduate routes (optional)</label>
+                <input v-model="uniguideIntake.postgrad_plans" class="prefs-input" type="text" placeholder="e.g. medicine, law conversion, teacher training…" />
+              </div>
+
+              <div v-else-if="uniguidePrefsStep === 3" class="prefs-panel">
+                <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
+                <div class="prefs-panel-title">University life</div>
+                <div class="prefs-panel-desc">The right environment matters as much as the right course.</div>
+                <div class="prefs-grid-2">
+                  <div>
+                    <div class="prefs-small-title">City or campus?</div>
+                    <div class="prefs-card-grid cols-3">
+                      <button v-for="opt in prefsCampusType" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.campus_type === opt.val }" @click="uniguideIntake.campus_type = opt.val">
+                        <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                        <div class="prefs-card-title">{{ opt.title }}</div>
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="prefs-small-title">University size</div>
+                    <div class="prefs-card-grid cols-3">
+                      <button v-for="opt in prefsUniSize" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: uniguideIntake.uni_size === opt.val }" @click="uniguideIntake.uni_size = opt.val">
+                        <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                        <div class="prefs-card-title">{{ opt.title }}</div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="prefs-small-title">Distance from home</div>
+                <div class="prefs-card-grid cols-2">
+                  <button v-for="opt in prefsDistance" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.distance === opt.val }" @click="uniguideIntake.distance = opt.val">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <div class="prefs-small-title">Social priorities</div>
+                <div class="prefs-card-grid cols-4">
+                  <button v-for="opt in prefsSocial" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.social_priorities||[]).includes(opt.val) }" @click="togglePrefsMulti('social_priorities', opt.val)">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                  </button>
+                </div>
+              </div>
+
+              <div v-else-if="uniguidePrefsStep === 4" class="prefs-panel">
+                <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
+                <div class="prefs-panel-title">Practicalities</div>
+                <div class="prefs-panel-desc">There are no wrong answers — this stays private and helps UniGuide be realistic.</div>
+                <div class="prefs-small-title">Debt attitude</div>
+                <div class="prefs-card-grid cols-3">
+                  <button v-for="opt in prefsDebt" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.debt_attitude === opt.val }" @click="uniguideIntake.debt_attitude = opt.val">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <div class="prefs-grid-2">
+                  <div>
+                    <div class="prefs-small-title">Accommodation</div>
+                    <div class="prefs-chip-row">
+                      <button v-for="opt in prefsAccommodation" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.accommodation === opt.val }" @click="uniguideIntake.accommodation = opt.val">{{ opt.label }}</button>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="prefs-small-title">Part-time work</div>
+                    <div class="prefs-chip-row">
+                      <button v-for="opt in prefsWork" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.part_time_work === opt.val }" @click="uniguideIntake.part_time_work = opt.val">{{ opt.label }}</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="prefs-small-title">Context (optional)</div>
+                <div class="prefs-card-grid cols-2">
+                  <button v-for="opt in prefsContextFlags" :key="opt.val" type="button" class="prefs-card" :class="{ selected: (uniguideIntake.context_flags||[]).includes(opt.val) }" @click="togglePrefsMulti('context_flags', opt.val)">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+              </div>
+
+              <div v-else class="prefs-panel">
+                <div class="prefs-eyebrow">STEP {{ uniguidePrefsStep }} OF 5</div>
+                <div class="prefs-panel-title">Study style</div>
+                <div class="prefs-panel-desc">Different universities have very different teaching cultures.</div>
+                <div class="prefs-small-title">Learning style</div>
+                <div class="prefs-card-grid cols-2">
+                  <button v-for="opt in prefsLearning" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.learning_style === opt.val }" @click="uniguideIntake.learning_style = opt.val">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <div class="prefs-small-title">Assessment preference</div>
+                <div class="prefs-chip-row">
+                  <button v-for="opt in prefsAssessment" :key="opt.val" type="button" class="prefs-chip" :class="{ selected: uniguideIntake.assessment_pref === opt.val }" @click="uniguideIntake.assessment_pref = opt.val">{{ opt.label }}</button>
+                </div>
+                <div class="prefs-small-title">Course features</div>
+                <div class="prefs-card-grid cols-3">
+                  <button v-for="opt in prefsCourseFeatures" :key="opt.val" type="button" class="prefs-card compact" :class="{ selected: (uniguideIntake.course_features||[]).includes(opt.val) }" @click="togglePrefsMulti('course_features', opt.val)">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <div class="prefs-small-title">Aspiration level</div>
+                <div class="prefs-card-grid cols-3">
+                  <button v-for="opt in prefsAspiration" :key="opt.val" type="button" class="prefs-card" :class="{ selected: uniguideIntake.aspiration_level === opt.val }" @click="uniguideIntake.aspiration_level = opt.val">
+                    <div class="prefs-ico" aria-hidden="true">{{ opt.ico }}</div>
+                    <div class="prefs-card-title">{{ opt.title }}</div>
+                    <div class="prefs-card-sub">{{ opt.sub }}</div>
+                  </button>
+                </div>
+                <label class="prefs-label">Anything else the AI should know? (optional)</label>
+                <textarea v-model="uniguideIntake.additional_notes" class="prefs-textarea" rows="3" placeholder="e.g. joint honours ideas, wellbeing support, specific needs…"></textarea>
+              </div>
+            </div>
+
+            <div class="prefs-nav">
+              <button class="offers-secondary" type="button" :disabled="uniguidePrefsStep === 1" @click="goPrefsStep(uniguidePrefsStep - 1)">← Back</button>
+              <div class="prefs-nav-mid">{{ uniguidePrefsStep }} / 5</div>
+              <button v-if="uniguidePrefsStep < 5" class="offers-primary" type="button" @click="goPrefsStep(uniguidePrefsStep + 1)">Continue →</button>
+              <button v-else class="offers-primary" type="button" @click="completePrefsAndSave" :disabled="uniguideProfileSaving">
+                {{ uniguideProfileSaving ? 'Saving…' : (uniguidePrefsRequired ? 'Save & continue ✓' : 'Save preferences ✓') }}
+              </button>
+            </div>
+            <div v-if="uniguidePrefsRequired" class="prefs-required-hint">Complete this once to start using UniGuide.</div>
+          </div>
+        </div>
+
         <div class="offers-modal-footer">
           <button class="offers-secondary" type="button" @click="closeOffersEditor">Cancel</button>
           <button class="offers-primary" type="button" @click="saveOffers" :disabled="offersSaving">
@@ -944,7 +930,7 @@ const offersExpanded = ref(false)
 const offersEditorOpen = ref(false)
 const offersSaving = ref(false)
 const offersDraft = ref([])
-const offersEditorTab = ref('ai') // 'ai' | 'prefs' | 'search' | 'manual'
+const offersEditorTab = ref('ai') // 'ai' | 'search' | 'manual'
 
 // UniGuide search state (Discover Uni dataset)
 const uniguideQuery = ref('')
@@ -1015,6 +1001,22 @@ const prefsSteps = [
 ]
 
 const uniguidePrefsCompleted = computed(() => Boolean((uniguideIntake.value || {}).preferences_completed))
+const uniguidePrefsOpen = ref(false)
+const uniguidePrefsRequired = computed(() => Boolean(
+  offersEditorOpen.value &&
+  !uniguidePrefsCompleted.value &&
+  !String(uniguideProfileError.value || '').trim()
+))
+
+const openUniGuidePrefs = () => {
+  uniguidePrefsOpen.value = true
+  if (!uniguidePrefsStep.value) uniguidePrefsStep.value = 1
+}
+
+const closeUniGuidePrefs = () => {
+  if (uniguidePrefsRequired.value) return
+  uniguidePrefsOpen.value = false
+}
 
 const goPrefsStep = (n) => {
   const nn = Math.max(1, Math.min(5, Number(n) || 1))
@@ -1061,6 +1063,7 @@ const completePrefsAndSave = async () => {
   uniguideIntake.value = { ...(uniguideIntake.value || {}), preferences_completed: true }
   await saveUniGuideProfile()
   offersEditorTab.value = 'ai'
+  uniguidePrefsOpen.value = false
 }
 
 const prefsInterests = [
@@ -1322,6 +1325,11 @@ const sendUniGuideChat = async () => {
   if (!apiUrl) return
   const text = (uniguideChatInput.value || '').toString().trim()
   if (!text) return
+  if (uniguidePrefsRequired.value) {
+    openUniGuidePrefs()
+    uniguideChatError.value = 'Please complete your preferences first.'
+    return
+  }
 
   uniguideChatLoading.value = true
   uniguideChatError.value = ''
@@ -1733,13 +1741,22 @@ const openOffersEditor = () => {
     ucasPoints: (o.ucasPoints === null || o.ucasPoints === undefined) ? '' : String(o.ucasPoints),
     ranking: o.ranking || 1
   }))
-  offersEditorTab.value = uniguidePrefsCompleted.value ? 'ai' : 'prefs'
+  offersEditorTab.value = 'ai'
   offersEditorOpen.value = true
   // hydrate intake on open
-  try { loadUniGuideProfile() } catch (_) {}
+  try {
+    loadUniGuideProfile().then(() => {
+      if (!uniguidePrefsCompleted.value && !String(uniguideProfileError.value || '').trim()) openUniGuidePrefs()
+    })
+  } catch (_) {}
 }
 
 const closeOffersEditor = () => {
+  if (uniguidePrefsRequired.value) {
+    openUniGuidePrefs()
+    try { showTemporaryMessage('Please complete your UniGuide preferences first.', 'error') } catch (_) {}
+    return
+  }
   offersEditorOpen.value = false
   offersEditorTab.value = 'ai'
   offersDraft.value = []
@@ -1748,6 +1765,7 @@ const closeOffersEditor = () => {
   uniguideChatInput.value = ''
   uniguideSessionId.value = null
   uniguideManualEditRank.value = null
+  uniguidePrefsOpen.value = false
 }
 
 const uniguidePrevBodyOverflow = ref(null)
@@ -2714,6 +2732,7 @@ const showTemporaryMessage = (message, type) => {
   height: 100vh;
   background: var(--cream);
   border-radius: 0;
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2724,6 +2743,46 @@ const showTemporaryMessage = (message, type) => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+.prefs-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 43, 78, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  z-index: 5;
+}
+
+.prefs-modal {
+  width: min(1020px, 100%);
+  max-height: calc(100vh - 44px);
+  background: var(--cream);
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: auto;
+}
+
+.prefs-modal-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 18px 12px;
+  border-bottom: 1px solid var(--cream-border);
+  background: rgba(253, 249, 244, 0.94);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.prefs-required-hint {
+  padding: 10px 18px 16px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .modal-header {
@@ -2901,6 +2960,62 @@ const showTemporaryMessage = (message, type) => {
   max-width: 1100px;
   margin: 0 auto;
   padding: 18px 18px 10px;
+}
+
+/* Preferences popup overlay (inside UniGuide modal) */
+.prefs-modal-overlay{
+  position: absolute;
+  inset: 0;
+  background: rgba(7, 20, 38, 0.62);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+
+.prefs-modal{
+  width: min(980px, 100%);
+  max-height: min(82vh, 860px);
+  background: var(--cream);
+  border: 1px solid var(--cream-border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.prefs-modal-top{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 10px;
+  border-bottom: 1px solid rgba(13,43,78,0.08);
+  background: linear-gradient(180deg, rgba(238,244,255,0.55), rgba(253,249,244,0.0));
+}
+
+.prefs-modal .prefs-progress{
+  padding: 12px 18px 0;
+}
+
+.prefs-modal .prefs-body{
+  padding: 12px 18px 0;
+  overflow: auto;
+}
+
+.prefs-modal .prefs-nav{
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(13,43,78,0.08);
+  background: rgba(253,249,244,0.86);
+}
+
+.prefs-required-hint{
+  padding: 10px 18px 16px;
+  font-size: 12.5px;
+  color: rgba(13,43,78,0.75);
+  font-weight: 600;
 }
 .prefs-header{
   display:flex;
@@ -3280,6 +3395,56 @@ const showTemporaryMessage = (message, type) => {
 
 .sidebar-actions { margin-top: 6px; }
 
+.prefs-summary {
+  margin-top: 6px;
+  margin-bottom: 10px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(13, 43, 78, 0.10);
+  background: rgba(13, 43, 78, 0.04);
+}
+
+.prefs-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.prefs-summary-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.prefs-summary-value {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: right;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--red-bg);
+  color: #8A2E26;
+  border: 1px solid rgba(192, 57, 43, 0.20);
+}
+
+.status-pill.ok {
+  background: var(--green-bg);
+  color: var(--green);
+  border-color: rgba(27, 122, 74, 0.18);
+}
+
 .side-btn {
   width: 100%;
   padding: 9px 12px;
@@ -3293,6 +3458,57 @@ const showTemporaryMessage = (message, type) => {
 }
 .side-btn:hover { background: var(--navy-mid); }
 .side-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.prefs-summary{
+  border: 1px solid rgba(13,43,78,0.12);
+  background: rgba(255,255,255,0.55);
+  border-radius: 12px;
+  padding: 10px 10px;
+  margin: 6px 0 10px;
+}
+
+.prefs-summary-row{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 6px;
+  border-bottom: 1px dashed rgba(13,43,78,0.10);
+}
+.prefs-summary-row:last-child{ border-bottom: 0; }
+
+.prefs-summary-label{
+  font-size: 10.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: rgba(13,43,78,0.70);
+  font-family: var(--font-mono);
+}
+.prefs-summary-value{
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(13,43,78,0.92);
+  text-align: right;
+  max-width: 68%;
+}
+
+.status-pill{
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  border: 1px solid rgba(13,43,78,0.16);
+  background: rgba(238,244,255,0.75);
+  color: rgba(13,43,78,0.85);
+}
+.status-pill.ok{
+  border-color: rgba(27, 122, 74, 0.25);
+  background: var(--green-bg);
+  color: var(--green);
+}
 
 .inline-error {
   padding: 10px 12px;
