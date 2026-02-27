@@ -267,279 +267,407 @@
 
     <!-- UniGuide Modal (includes manual editor) -->
     <div v-if="offersEditorOpen" class="offers-modal-overlay" @click.self="closeOffersEditor">
-      <div class="offers-modal">
-        <div class="offers-modal-header">
-          <div class="offers-modal-title">UniGuide</div>
-          <a
-            class="offers-ucas-link"
-            href="https://www.ucas.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Open UCAS in a new tab">
-            🔎 UCAS search
-          </a>
-          <button class="offers-modal-close" @click="closeOffersEditor">✖</button>
-        </div>
-        <div class="offers-modal-body">
-          <div class="offers-modal-tabs" role="tablist" aria-label="UniGuide tabs">
+      <div class="offers-modal" role="dialog" aria-modal="true" aria-label="UniGuide">
+        <div class="modal-header">
+          <div class="modal-top">
+            <div class="modal-brand">
+              <div class="brand-icon" aria-hidden="true">🎓</div>
+              <div class="brand-text">
+                <h2>UniGuide</h2>
+                <p>AI-powered university discovery · VESPA Academy</p>
+              </div>
+            </div>
+
+            <div class="modal-actions-right">
+              <div class="student-pill">
+                <div class="student-avatar">{{ studentInitials }}</div>
+                <div class="student-info">
+                  <strong>{{ displayStudentName }}</strong>
+                  {{ displayYearGroup || '—' }}
+                </div>
+              </div>
+              <a
+                class="offers-ucas-link"
+                href="https://www.ucas.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open UCAS in a new tab"
+              >
+                🔎 UCAS search
+              </a>
+              <button class="close-btn" type="button" @click="closeOffersEditor" aria-label="Close UniGuide">×</button>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="UniGuide tabs">
             <button
-              class="offers-modal-tab"
+              class="tab"
               :class="{ active: offersEditorTab === 'ai' }"
               type="button"
               role="tab"
               :aria-selected="offersEditorTab === 'ai'"
               @click="offersEditorTab = 'ai'"
             >
+              <span class="tab-icon" aria-hidden="true">💬</span>
               AI Advisor
+              <span class="tab-badge">NEW</span>
             </button>
             <button
-              class="offers-modal-tab"
+              class="tab"
               :class="{ active: offersEditorTab === 'search' }"
               type="button"
               role="tab"
               :aria-selected="offersEditorTab === 'search'"
               @click="offersEditorTab = 'search'"
             >
-              Search
+              <span class="tab-icon" aria-hidden="true">🔍</span>
+              Search Courses
             </button>
             <button
-              class="offers-modal-tab"
+              class="tab"
               :class="{ active: offersEditorTab === 'manual' }"
               type="button"
               role="tab"
               :aria-selected="offersEditorTab === 'manual'"
               @click="offersEditorTab = 'manual'"
             >
-              Manual edit
+              <span class="tab-icon" aria-hidden="true">📋</span>
+              My Shortlist
+              <span class="tab-badge tab-badge-blue">{{ nonEmptyOffersDraftCount }}</span>
             </button>
           </div>
+        </div>
 
-          <!-- AI Advisor -->
-          <div v-if="offersEditorTab === 'ai'" class="uniguide-shell" role="tabpanel">
-            <div class="uniguide-hero">
-              <div class="uniguide-hero-title">UniGuide AI</div>
-              <div class="uniguide-hero-sub">
-                Tell us what you want — we’ll shortlist courses using official Discover Uni data, then help you narrow down to your top choices.
-              </div>
-            </div>
+        <div class="modal-body">
+          <!-- ── TAB: AI ADVISOR ──────────────────────────────────────────── -->
+          <div class="tab-content" :class="{ active: offersEditorTab === 'ai' }" role="tabpanel">
+            <div class="ai-layout">
+              <div class="ai-sidebar">
+                <div class="sidebar-label">Your Profile</div>
 
-            <div class="uniguide-grid">
-              <div class="uniguide-left">
-                <div class="uniguide-section-title">Chat</div>
-                <div class="uniguide-chat">
-                  <div v-if="uniguideChatMessages.length === 0" class="uniguide-chat-empty">
-                    <strong>Try:</strong> “I’m interested in psychology and criminology. I want a friendly city, not too expensive, and I’d rather stay in the North.”
-                  </div>
-                  <div v-for="(m, idx) in uniguideChatMessages" :key="idx" class="uniguide-chat-msg" :class="m.role">
-                    <div class="uniguide-chat-bubble">{{ m.content }}</div>
+                <div class="sidebar-stat">
+                  <span class="stat-icon" aria-hidden="true">👤</span>
+                  <div class="stat-body">
+                    <div class="stat-label">Student</div>
+                    <div class="stat-value">{{ displayStudentName }}</div>
                   </div>
                 </div>
 
-                <div v-if="uniguideChatError" class="uniguide-error">{{ uniguideChatError }}</div>
+                <div class="sidebar-stat">
+                  <span class="stat-icon" aria-hidden="true">📚</span>
+                  <div class="stat-body">
+                    <div class="stat-label">Subjects</div>
+                    <div class="stat-value">{{ uniguideSubjectsSummary }}</div>
+                  </div>
+                </div>
 
-                <div class="uniguide-chat-inputrow">
-                  <input
-                    v-model="uniguideChatInput"
-                    class="uniguide-search-input"
-                    type="text"
-                    placeholder="Ask UniGuide…"
-                    @keydown.enter.prevent="sendUniGuideChat"
-                  />
-                  <button class="offers-primary" type="button" @click="sendUniGuideChat" :disabled="uniguideChatLoading">
-                    {{ uniguideChatLoading ? 'Thinking…' : 'Send' }}
+                <div class="sidebar-stat">
+                  <span class="stat-icon" aria-hidden="true">✅</span>
+                  <div class="stat-body">
+                    <div class="stat-label">Draft choices</div>
+                    <div class="stat-value">{{ nonEmptyOffersDraftCount }} / 5</div>
+                  </div>
+                </div>
+
+                <div class="phase-indicator">
+                  <div class="phase-label">Conversation</div>
+                  <div class="phase-steps">
+                    <div class="phase-step" :class="{ done: uniguidePhaseIndex > 0, current: uniguidePhaseIndex === 0 }">
+                      <div class="phase-dot"></div>
+                      Opening
+                    </div>
+                    <div class="phase-step" :class="{ done: uniguidePhaseIndex > 1, current: uniguidePhaseIndex === 1 }">
+                      <div class="phase-dot"></div>
+                      Probing
+                    </div>
+                    <div class="phase-step" :class="{ done: uniguidePhaseIndex > 2, current: uniguidePhaseIndex === 2 }">
+                      <div class="phase-dot"></div>
+                      Practicalities
+                    </div>
+                    <div class="phase-step" :class="{ done: uniguidePhaseIndex > 3, current: uniguidePhaseIndex === 3 }">
+                      <div class="phase-dot"></div>
+                      Constraints
+                    </div>
+                    <div class="phase-step" :class="{ done: uniguidePhaseIndex > 4, current: uniguidePhaseIndex === 4 }">
+                      <div class="phase-dot"></div>
+                      Summary
+                    </div>
+                  </div>
+                </div>
+
+                <div class="sidebar-label">Your Preferences</div>
+                <div v-if="uniguideProfileError" class="inline-error">{{ uniguideProfileError }}</div>
+                <div v-else-if="uniguideProfileLoading" class="inline-muted">Loading…</div>
+
+                <label class="form-label">Interests</label>
+                <textarea v-model="uniguideIntake.interests" class="form-textarea" rows="2" placeholder="e.g. Psychology, Engineering, Medicine…"></textarea>
+
+                <label class="form-label">Priorities</label>
+                <div class="chips">
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('outcomes') }" @click="toggleChip('priorities','outcomes')">Outcomes</button>
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('student_experience') }" @click="toggleChip('priorities','student_experience')">Student experience</button>
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('cost') }" @click="toggleChip('priorities','cost')">Cost</button>
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('distance') }" @click="toggleChip('priorities','distance')">Distance</button>
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('campus') }" @click="toggleChip('priorities','campus')">Campus</button>
+                  <button type="button" class="option-chip" :class="{ active: (uniguideIntake.priorities||[]).includes('city') }" @click="toggleChip('priorities','city')">City</button>
+                </div>
+
+                <label class="form-label">Notes</label>
+                <textarea v-model="uniguideIntake.extras" class="form-textarea" rows="2" placeholder="e.g. want to stay local, budget, vibe…"></textarea>
+
+                <div class="sidebar-actions">
+                  <button class="side-btn" type="button" @click="saveUniGuideProfile" :disabled="uniguideProfileSaving">
+                    {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences' }}
                   </button>
                 </div>
-              </div>
 
-              <div class="uniguide-right">
-                <div class="uniguide-section-title">Your preferences</div>
-
-                <div v-if="uniguideProfileError" class="uniguide-error">{{ uniguideProfileError }}</div>
-                <div v-else-if="uniguideProfileLoading" class="uniguide-empty">Loading your intake…</div>
-
-                <div class="uniguide-intake">
-                  <label class="uniguide-label">What subjects/careers interest you?</label>
-                  <textarea v-model="uniguideIntake.interests" class="uniguide-textarea" rows="3" placeholder="e.g. Medicine, Psychology, Engineering…"></textarea>
-
-                  <label class="uniguide-label">What matters most to you? (pick a few)</label>
-                  <div class="uniguide-chips">
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('outcomes')}" @click="toggleChip('priorities','outcomes')">Outcomes</button>
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('student_experience')}" @click="toggleChip('priorities','student_experience')">Student experience</button>
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('cost')}" @click="toggleChip('priorities','cost')">Cost</button>
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('distance')}" @click="toggleChip('priorities','distance')">Distance</button>
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('campus')}" @click="toggleChip('priorities','campus')">Campus</button>
-                    <button type="button" class="uniguide-chip" :class="{on: (uniguideIntake.priorities||[]).includes('city')}" @click="toggleChip('priorities','city')">City</button>
-                  </div>
-
-                  <label class="uniguide-label">Anything else we should know?</label>
-                  <textarea v-model="uniguideIntake.extras" class="uniguide-textarea" rows="2" placeholder="e.g. stay at home, part-time job, sports…"></textarea>
-
-                  <div class="uniguide-intake-actions">
-                    <button class="offers-secondary" type="button" @click="saveUniGuideProfile" :disabled="uniguideProfileSaving">
-                      {{ uniguideProfileSaving ? 'Saving…' : 'Save preferences' }}
-                    </button>
-                  </div>
+                <div class="sidebar-label">AI Shortlist</div>
+                <div v-if="uniguideSuggestions.length === 0" class="inline-muted">
+                  Ask the AI and it’ll add suggestions here.
                 </div>
-
-                <div class="uniguide-section-title" style="margin-top:12px;">Shortlist</div>
-                <div v-if="uniguideSuggestions.length === 0" class="uniguide-empty">
-                  Ask the AI and it’ll add a shortlist here.
-                </div>
-                <div v-else class="uniguide-choice-list">
-                  <div v-for="s in uniguideSuggestions" :key="s.course_key" class="uniguide-choice-row">
-                    <div class="uniguide-choice-rank">{{ (s.band || 'other').slice(0,1).toUpperCase() }}</div>
-                    <div class="uniguide-choice-text">
-                      <div class="uniguide-choice-uni">{{ s.institution_name || s.course_key }}</div>
-                      <div class="uniguide-choice-course">{{ s.title || s.reason_short || '' }}</div>
-                      <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
-                        <a v-if="s.course_url" class="offers-secondary" :href="s.course_url" target="_blank" rel="noopener noreferrer">🔗 Course page</a>
-                        <button class="offers-primary" type="button" @click="addUniGuideCourseToDraft(s)">➕ Add to choices</button>
+                <div v-else class="sidebar-shortlist">
+                  <div v-for="s in uniguideSuggestions" :key="s.course_key" class="course-card" :class="{ saved: isUniGuideCourseSaved(s) }">
+                    <div class="uni-logo">{{ (s.institution_name || 'UNI').slice(0,3).toUpperCase() }}</div>
+                    <div class="course-info">
+                      <div class="course-name">{{ s.title || 'Course' }}</div>
+                      <div class="uni-name">{{ s.institution_name || 'Institution' }}</div>
+                      <div v-if="s.reason_short" class="ai-reason">
+                        <div class="ai-reason-label">Why this</div>
+                        {{ s.reason_short }}
+                      </div>
+                      <div class="course-tags" style="margin-top:8px;">
+                        <a v-if="s.course_url" class="save-btn" :href="s.course_url" target="_blank" rel="noopener noreferrer" @click.stop>🔗 Course</a>
+                        <button class="save-btn" type="button" :class="{ saved: isUniGuideCourseSaved(s) }" @click.stop="addUniGuideCourseToDraft(s)">
+                          {{ isUniGuideCourseSaved(s) ? 'Saved' : 'Save' }}
+                        </button>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
+              <div class="chat-area">
+                <div ref="uniguideChatScrollEl" class="chat-messages" aria-label="UniGuide chat">
+                  <div v-if="uniguideChatMessages.length === 0" class="msg ai">
+                    <div class="msg-avatar" aria-hidden="true">UG</div>
+                    <div>
+                      <div class="msg-bubble">
+                        Tell me what you’re looking for (subjects you enjoy, what matters most, and any location/budget preferences). I’ll shortlist courses using official Discover Uni data.
+                      </div>
+                      <div class="msg-meta">UniGuide</div>
+                    </div>
+                  </div>
+
+                  <div v-for="(m, idx) in uniguideChatMessages" :key="idx" class="msg" :class="m.role === 'user' ? 'user' : 'ai'">
+                    <div class="msg-avatar" aria-hidden="true">{{ m.role === 'user' ? studentInitials : 'UG' }}</div>
+                    <div>
+                      <div class="msg-bubble">{{ m.content }}</div>
+                      <div class="msg-meta">{{ m.role === 'user' ? 'You' : 'UniGuide' }}</div>
+                    </div>
+                  </div>
+
+                  <div v-if="uniguideChatLoading" class="msg ai">
+                    <div class="msg-avatar" aria-hidden="true">UG</div>
+                    <div class="msg-bubble typing-indicator" aria-label="UniGuide is typing">
+                      <div class="typing-dot"></div>
+                      <div class="typing-dot"></div>
+                      <div class="typing-dot"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="chat-options" aria-label="Quick prompts">
+                  <button v-for="p in uniguideQuickPrompts" :key="p" type="button" class="option-chip" @click="useUniGuideQuickPrompt(p)">
+                    {{ p }}
+                  </button>
+                </div>
+
+                <div v-if="uniguideChatError" class="inline-error chat-error">{{ uniguideChatError }}</div>
+
+                <div class="chat-input-row">
+                  <textarea
+                    v-model="uniguideChatInput"
+                    class="chat-input"
+                    rows="1"
+                    placeholder="Ask UniGuide…"
+                    :disabled="uniguideChatLoading"
+                    @keydown.enter.exact.prevent="sendUniGuideChat"
+                  ></textarea>
+                  <button class="send-btn" type="button" @click="sendUniGuideChat" :disabled="uniguideChatLoading" aria-label="Send message">
+                    ➤
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Search -->
-          <div v-else-if="offersEditorTab === 'search'" class="uniguide-shell" role="tabpanel">
-            <div class="uniguide-grid">
-              <div class="uniguide-left">
-                <div class="uniguide-shell-title">Search courses (Discover Uni dataset)</div>
-                <div class="uniguide-shell-sub">
-                  Search, then add anything you like into your choices (max 5). You can reorder and edit details in <strong>Manual edit</strong>.
-                </div>
-
-                <div class="uniguide-search">
-                  <input
-                    v-model="uniguideQuery"
-                    class="uniguide-search-input"
-                    type="text"
-                    placeholder="Search e.g. Psychology, Computer Science, Criminology…"
-                    @keydown.enter.prevent="runUniGuideSearch"
-                  />
-                  <button class="offers-primary" type="button" @click="runUniGuideSearch" :disabled="uniguideLoading">
+          <!-- ── TAB: SEARCH ─────────────────────────────────────────────── -->
+          <div class="tab-content" :class="{ active: offersEditorTab === 'search' }" role="tabpanel">
+            <div class="search-layout">
+              <div class="search-top">
+                <div class="search-bar-row">
+                  <div class="search-input-wrap">
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input
+                      v-model="uniguideQuery"
+                      class="search-input"
+                      type="text"
+                      placeholder="Search e.g. Psychology, Computer Science, Criminology…"
+                      @keydown.enter.prevent="runUniGuideSearch"
+                    />
+                  </div>
+                  <button class="add-btn" type="button" @click="runUniGuideSearch" :disabled="uniguideLoading">
                     {{ uniguideLoading ? 'Searching…' : 'Search' }}
                   </button>
                 </div>
 
-                <div class="uniguide-filters">
-                  <input v-model="uniguideSubjectCode" class="uniguide-filter-input" type="text" placeholder="Subject code (optional)" />
-                  <input v-model.number="uniguideMinTariff" class="uniguide-filter-input" type="number" inputmode="numeric" placeholder="Min tariff" />
-                  <input v-model.number="uniguideMaxTariff" class="uniguide-filter-input" type="number" inputmode="numeric" placeholder="Max tariff" />
+                <div class="filters-row">
+                  <label class="filter-chip" style="cursor:default;">
+                    Subject code
+                    <input v-model="uniguideSubjectCode" class="filter-input" type="text" placeholder="e.g. C8" />
+                  </label>
+                  <label class="filter-chip" style="cursor:default;">
+                    Min tariff
+                    <input v-model.number="uniguideMinTariff" class="filter-input" type="number" inputmode="numeric" placeholder="0" />
+                  </label>
+                  <label class="filter-chip" style="cursor:default;">
+                    Max tariff
+                    <input v-model.number="uniguideMaxTariff" class="filter-input" type="number" inputmode="numeric" placeholder="160" />
+                  </label>
                 </div>
 
-                <div v-if="uniguideError" class="uniguide-error">{{ uniguideError }}</div>
-                <div v-else-if="!uniguideLoading && uniguideResults.length === 0" class="uniguide-empty">
-                  Try a search to get started.
+                <div v-if="uniguideError" class="inline-error" style="margin-top:10px;">{{ uniguideError }}</div>
+              </div>
+
+              <div class="search-results" aria-label="UniGuide search results">
+                <div class="results-meta">
+                  <div class="results-count">
+                    <span v-if="uniguideLoading">Searching…</span>
+                    <span v-else-if="uniguideResults.length">{{ uniguideResults.length }} results</span>
+                    <span v-else>Try a search to get started.</span>
+                  </div>
+                  <button class="offers-secondary" type="button" @click="offersEditorTab = 'manual'">
+                    📋 View shortlist
+                  </button>
                 </div>
 
-                <div v-if="uniguideResults.length" class="uniguide-results" aria-label="UniGuide search results">
-                  <div v-for="r in uniguideResults" :key="r.course_key" class="uniguide-card">
-                    <div class="uniguide-card-title">{{ r.title || 'Course' }}</div>
-                    <div class="uniguide-card-sub">
-                      <span class="uniguide-card-uni">{{ r.institution_name || 'Institution' }}</span>
-                      <span v-if="r.tariff_typical !== null && r.tariff_typical !== undefined" class="uniguide-pill">
-                        Typical tariff: {{ r.tariff_typical }}
-                      </span>
-                      <span v-if="r.tef_overall_rating" class="uniguide-pill">
-                        TEF: {{ r.tef_overall_rating }}
-                      </span>
+                <div v-for="r in uniguideResults" :key="r.course_key" class="course-card" :class="{ saved: isUniGuideCourseSaved(r) }">
+                  <div class="uni-logo">{{ (r.institution_name || 'UNI').slice(0,3).toUpperCase() }}</div>
+                  <div class="course-info">
+                    <div class="course-name">{{ r.title || 'Course' }}</div>
+                    <div class="uni-name">{{ r.institution_name || 'Institution' }}</div>
+                    <div class="course-tags">
+                      <span v-if="r.tariff_typical !== null && r.tariff_typical !== undefined" class="tag tariff">Tariff {{ r.tariff_typical }}</span>
+                      <span v-if="r.tef_overall_rating" class="tag">TEF {{ r.tef_overall_rating }}</span>
                     </div>
-                    <div class="uniguide-card-actions">
-                      <a
-                        v-if="r.course_url"
-                        class="offers-secondary"
-                        :href="r.course_url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        🔗 Course page
-                      </a>
-                      <button class="offers-primary" type="button" @click="addUniGuideCourseToDraft(r)">
-                        ➕ Add to choices
+                    <div class="course-tags" style="margin-top:10px;">
+                      <a v-if="r.course_url" class="save-btn" :href="r.course_url" target="_blank" rel="noopener noreferrer">🔗 Course</a>
+                      <button class="save-btn" type="button" :class="{ saved: isUniGuideCourseSaved(r) }" @click="addUniGuideCourseToDraft(r)">
+                        {{ isUniGuideCourseSaved(r) ? 'Saved' : 'Save' }}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div class="uniguide-right">
-                <div class="uniguide-right-title">Your choices</div>
-                <div class="uniguide-right-sub">
-                  {{ nonEmptyOffersDraftCount }} / 5
+          <!-- ── TAB: MANUAL SHORTLIST ───────────────────────────────────── -->
+          <div class="tab-content" :class="{ active: offersEditorTab === 'manual' }" role="tabpanel">
+            <div class="manual-layout">
+              <div class="shortlist-header">
+                <div>
+                  <div class="shortlist-title">My Shortlist</div>
+                  <div class="shortlist-subtitle">Add up to 5 choices. Your #1 ranked choice is shown on the profile.</div>
                 </div>
+                <button class="add-btn" type="button" @click="addOfferRow" :disabled="offersDraft.length >= 5">
+                  ➕ Add choice
+                </button>
+              </div>
 
-                <div class="uniguide-choice-list">
-                  <div v-for="row in offersDraft" :key="row._key" class="uniguide-choice-row">
-                    <div class="uniguide-choice-rank">#{{ row.ranking }}</div>
-                    <div class="uniguide-choice-text">
-                      <div class="uniguide-choice-uni">{{ row.universityName || '—' }}</div>
-                      <div class="uniguide-choice-course">{{ row.courseTitle || '' }}</div>
+              <div class="shortlist-cards">
+                <template v-for="rank in [1,2,3,4,5]" :key="rank">
+                  <div
+                    v-if="getDraftRowForRank(rank)"
+                    class="shortlist-card"
+                    :class="{ 'first-choice': rank === 1 }"
+                  >
+                    <div class="choice-number">{{ rank }}</div>
+                    <div class="shortlist-info">
+                      <div class="shortlist-course">{{ getDraftRowForRank(rank).courseTitle || 'Course (add details)' }}</div>
+                      <div class="shortlist-uni">{{ getDraftRowForRank(rank).universityName || 'University' }}</div>
+                      <div class="shortlist-tags">
+                        <span v-if="getDraftRowForRank(rank).offer" class="status-badge offer">Offer {{ getDraftRowForRank(rank).offer }}</span>
+                        <span v-if="getDraftRowForRank(rank).ucasPoints" class="status-badge applied">UCAS {{ getDraftRowForRank(rank).ucasPoints }}</span>
+                        <a
+                          v-if="safeCourseLink(getDraftRowForRank(rank).courseLink)"
+                          class="status-badge watching"
+                          :href="safeCourseLink(getDraftRowForRank(rank).courseLink)"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          🔗 Link
+                        </a>
+                      </div>
+
+                      <div v-if="uniguideManualEditRank === rank" class="shortlist-edit">
+                        <div class="edit-grid">
+                          <label class="edit-field">
+                            <span>University</span>
+                            <input v-model="getDraftRowForRank(rank).universityName" type="text" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Course</span>
+                            <input v-model="getDraftRowForRank(rank).courseTitle" type="text" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Course link</span>
+                            <input v-model="getDraftRowForRank(rank).courseLink" type="text" placeholder="https://…" />
+                          </label>
+                          <label class="edit-field">
+                            <span>Offer</span>
+                            <input v-model="getDraftRowForRank(rank).offer" type="text" placeholder="e.g. AAB" />
+                          </label>
+                          <label class="edit-field">
+                            <span>UCAS points</span>
+                            <input v-model="getDraftRowForRank(rank).ucasPoints" type="text" inputmode="numeric" placeholder="e.g. 128" />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="shortlist-actions">
+                      <button class="icon-btn" type="button" @click="toggleManualEdit(rank)" :title="uniguideManualEditRank === rank ? 'Close edit' : 'Edit details'">✏️</button>
+                      <button class="icon-btn danger" type="button" @click="removeDraftRank(rank)" title="Remove">🗑️</button>
                     </div>
                   </div>
-                </div>
 
-                <div class="uniguide-shell-actions">
-                  <button class="offers-secondary" type="button" @click="offersEditorTab = 'manual'">
-                    ✏️ Open manual editor
-                  </button>
+                  <div v-else class="empty-slot" role="button" tabindex="0" @click="createDraftRank(rank)" @keydown.enter.prevent="createDraftRank(rank)">
+                    <div class="slot-num">{{ rank }}</div>
+                    <div>
+                      <div style="font-weight:700;">Add choice {{ rank }}</div>
+                      <div style="font-size:12px; opacity:0.85;">Click to add a course, then save.</div>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="ucas-summary">
+                <div class="ucas-text">
+                  <strong>Ready to write your UCAS application?</strong>
+                  <span>{{ nonEmptyOffersDraftCount }} choices in draft</span>
                 </div>
+                <button class="ucas-btn" type="button" @click="openUcasApplication" :disabled="nonEmptyOffersDraftCount === 0">
+                  📝 UCAS Application
+                </button>
               </div>
             </div>
           </div>
-
-          <div v-else class="uniguide-manual" role="tabpanel">
-            <div class="offers-help">
-              Add up to 5 choices. The profile displays your <strong>#1 ranked</strong> choice by default.
-            </div>
-
-            <div class="offers-grid">
-              <div class="offers-grid-head">Rank</div>
-              <div class="offers-grid-head">University</div>
-              <div class="offers-grid-head">Course</div>
-              <div class="offers-grid-head">Link</div>
-              <div class="offers-grid-head">Offer</div>
-              <div class="offers-grid-head">UCAS</div>
-              <div class="offers-grid-head"></div>
-
-              <template v-for="(row, idx) in offersDraft" :key="row._key">
-                <div>
-                  <select v-model.number="row.ranking" class="offers-input">
-                    <option :value="1">1</option>
-                    <option :value="2">2</option>
-                    <option :value="3">3</option>
-                    <option :value="4">4</option>
-                    <option :value="5">5</option>
-                  </select>
-                </div>
-                <div><input v-model="row.universityName" class="offers-input" placeholder="e.g. Manchester" /></div>
-                <div><input v-model="row.courseTitle" class="offers-input" placeholder="e.g. Computer Science" /></div>
-                <div><input v-model="row.courseLink" class="offers-input" placeholder="https://…" /></div>
-                <div><input v-model="row.offer" class="offers-input" placeholder="e.g. AAB" /></div>
-                <div><input v-model="row.ucasPoints" class="offers-input" placeholder="e.g. 128" /></div>
-                <div>
-                  <button class="offers-remove" @click="removeOfferRow(idx)" title="Remove">🗑️</button>
-                </div>
-              </template>
-            </div>
-
-            <div class="offers-modal-actions">
-              <button
-                class="offers-secondary"
-                type="button"
-                @click="addOfferRow"
-                :disabled="offersDraft.length >= 5">
-                ➕ Add Choice
-              </button>
-            </div>
-          </div>
         </div>
+
         <div class="offers-modal-footer">
-          <button class="offers-secondary" @click="closeOffersEditor">Cancel</button>
-          <button class="offers-primary" @click="saveOffers" :disabled="offersSaving">
+          <button class="offers-secondary" type="button" @click="closeOffersEditor">Cancel</button>
+          <button class="offers-primary" type="button" @click="saveOffers" :disabled="offersSaving">
             {{ offersSaving ? 'Saving…' : 'Save choices' }}
           </button>
         </div>
@@ -549,7 +677,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import SubjectCard from './SubjectCard.vue'
 import SubjectCardKs4 from './SubjectCardKs4.vue'
 import InfoModal from './InfoModal.vue'
@@ -648,6 +776,13 @@ const uniguideChatLoading = ref(false)
 const uniguideChatError = ref('')
 const uniguideChatMessages = ref([]) // {role:'user'|'assistant', content:string}
 const uniguideSuggestions = ref([])  // {course_key,title,institution_name,course_url,band,reason_short,tariff_typical,tef_overall_rating}
+const uniguideChatScrollEl = ref(null)
+
+const uniguideQuickPrompts = [
+  "I enjoy Psychology and Sociology — what courses fit?",
+  "I want a friendly city and good student experience",
+  "I’d like to stay in the North and keep costs down"
+]
 
 const uniguideStudentEmail = computed(() => (props.student?.email || '').toString().trim().toLowerCase())
 const uniguideAcademicYear = computed(() => (props.academicYear || 'current').toString().trim() || 'current')
@@ -658,6 +793,92 @@ const intakeLooksEmpty = computed(() => {
   const hasAnyArray = Array.isArray(i.preferred_regions) && i.preferred_regions.length
   return !(hasText || hasAnyArray)
 })
+
+const uniguideSubjectsSummary = computed(() => {
+  const rows = Array.isArray(props.subjects) ? props.subjects : []
+  const names = rows
+    .map(s => (s?.name || s?.subject || s?.subjectName || s?.title || '').toString().trim())
+    .filter(Boolean)
+  if (!names.length) return `${rows.length || 0} subjects`
+  return names.slice(0, 4).join(', ') + (names.length > 4 ? '…' : '')
+})
+
+const uniguidePhaseIndex = computed(() => {
+  // Lightweight heuristic: move through phases as conversation grows.
+  const n = (uniguideChatMessages.value || []).length
+  if (n <= 1) return 0
+  if (n <= 3) return 1
+  if (n <= 5) return 2
+  if (n <= 7) return 3
+  return 4
+})
+
+const useUniGuideQuickPrompt = async (text) => {
+  const t = (text || '').toString().trim()
+  if (!t) return
+  uniguideChatInput.value = t
+  await sendUniGuideChat()
+}
+
+const isUniGuideCourseSaved = (r) => {
+  if (!r) return false
+  const uniFinal = (r.institution_name || r.institutionName || r.universityName || '').toString().trim().toLowerCase()
+  const titleFinal = (r.title || r.courseTitle || r.course_title || '').toString().trim().toLowerCase()
+  const urlRaw = r.course_url || r.courseUrl || r.course_link || r.courseLink || ''
+  const link = safeCourseLink(urlRaw) || (urlRaw || '').toString().trim()
+
+  return (offersDraft.value || []).some(row => {
+    const sameLink = link && safeCourseLink(row.courseLink) === link
+    const sameText = uniFinal && titleFinal &&
+      (String(row.universityName || '').trim().toLowerCase() === uniFinal) &&
+      (String(row.courseTitle || '').trim().toLowerCase() === titleFinal)
+    return sameLink || sameText
+  })
+}
+
+const uniguideManualEditRank = ref(null)
+
+const getDraftRowForRank = (rank) => {
+  const r = Number(rank)
+  return (offersDraft.value || []).find(x => Number(x?.ranking) === r) || null
+}
+
+const createDraftRank = (rank) => {
+  const r = Number(rank)
+  if (!(r >= 1 && r <= 5)) return
+  if (getDraftRowForRank(r)) {
+    uniguideManualEditRank.value = r
+    return
+  }
+  if ((offersDraft.value || []).length >= 5) {
+    showTemporaryMessage('You can only save up to 5 choices.', 'error')
+    return
+  }
+  offersDraft.value = [
+    ...(offersDraft.value || []),
+    {
+      _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      universityName: '',
+      courseTitle: '',
+      courseLink: '',
+      offer: '',
+      ucasPoints: '',
+      ranking: r
+    }
+  ]
+  uniguideManualEditRank.value = r
+}
+
+const removeDraftRank = (rank) => {
+  const r = Number(rank)
+  offersDraft.value = (offersDraft.value || []).filter(x => Number(x?.ranking) !== r)
+  if (uniguideManualEditRank.value === r) uniguideManualEditRank.value = null
+}
+
+const toggleManualEdit = (rank) => {
+  const r = Number(rank)
+  uniguideManualEditRank.value = (uniguideManualEditRank.value === r) ? null : r
+}
 
 const loadUniGuideProfile = async () => {
   const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
@@ -751,6 +972,17 @@ const sendUniGuideChat = async () => {
     uniguideChatLoading.value = false
   }
 }
+
+watch(
+  () => uniguideChatMessages.value.length,
+  async () => {
+    await nextTick()
+    const el = uniguideChatScrollEl.value
+    if (el && typeof el.scrollTop === 'number') {
+      el.scrollTop = el.scrollHeight
+    }
+  }
+)
 
 const nonEmptyOffersDraftCount = computed(() => {
   const rows = offersDraft.value || []
@@ -1113,17 +1345,6 @@ const openOffersEditor = () => {
     ucasPoints: (o.ucasPoints === null || o.ucasPoints === undefined) ? '' : String(o.ucasPoints),
     ranking: o.ranking || 1
   }))
-  if (offersDraft.value.length === 0) {
-    offersDraft.value = [{
-      _key: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      universityName: '',
-      courseTitle: '',
-      courseLink: '',
-      offer: '',
-      ucasPoints: '',
-      ranking: 1
-    }]
-  }
   offersEditorTab.value = 'ai'
   offersEditorOpen.value = true
   // hydrate intake on open
@@ -1138,7 +1359,23 @@ const closeOffersEditor = () => {
   uniguideChatError.value = ''
   uniguideChatInput.value = ''
   uniguideSessionId.value = null
+  uniguideManualEditRank.value = null
 }
+
+const uniguidePrevBodyOverflow = ref(null)
+watch(
+  () => offersEditorOpen.value,
+  (open) => {
+    if (typeof document === 'undefined') return
+    if (open) {
+      uniguidePrevBodyOverflow.value = document.body.style.overflow || ''
+      document.body.style.overflow = 'hidden'
+      return
+    }
+    document.body.style.overflow = uniguidePrevBodyOverflow.value || ''
+    uniguidePrevBodyOverflow.value = null
+  }
+)
 
 const addOfferRow = () => {
   if (offersDraft.value.length >= 5) return
@@ -1171,7 +1408,7 @@ const safeCourseLink = (raw) => {
 
 const removeOfferRow = (idx) => {
   offersDraft.value.splice(idx, 1)
-  if (offersDraft.value.length === 0) addOfferRow()
+  if (offersDraft.value.length === 0) uniguideManualEditRank.value = null
 }
 
 const saveOffers = async () => {
@@ -2046,379 +2283,1009 @@ const showTemporaryMessage = (message, type) => {
   font-weight: 700;
 }
 
-/* Offers modal */
+/* UniGuide (full-screen modal, from uniguide-exemplar.html) */
 .offers-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
+  inset: 0;
+  background: rgba(7, 20, 38, 0.75);
+  backdrop-filter: blur(6px);
   z-index: 10001;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
 }
 
 .offers-modal {
-  width: 100%;
-  max-width: 1320px;
-  max-height: 94vh;
-  background: #14224a;
-  border: 2px solid rgba(7, 155, 170, 0.6);
-  border-radius: 12px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  /* Design tokens */
+  --navy: #0D2B4E;
+  --navy-mid: #1B4F8A;
+  --navy-light: #2A6BC2;
+  --amber: #E87722;
+  --amber-light: #F09B52;
+  --cream: #FDF9F4;
+  --cream-border: #EDE6D8;
+  --slate: #5A7A9A;
+  --text: #1A2B3C;
+  --muted: #7A8FA6;
+  --white: #FFFFFF;
+  --green: #1B7A4A;
+  --green-bg: #EAF7F0;
+  --red-bg: #FFF0EC;
+  --blue-bg: #EEF4FF;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(13,43,78,0.12), 0 1px 4px rgba(13,43,78,0.08);
+  --shadow-lg: 0 20px 60px rgba(13,43,78,0.25), 0 4px 16px rgba(13,43,78,0.12);
+
+  width: 100vw;
+  height: 100vh;
+  background: var(--cream);
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: none;
+  font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+.modal-header {
+  background: var(--navy);
+  padding: 18px 22px 0;
+  flex-shrink: 0;
+}
+
+.modal-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.modal-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--amber);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.brand-text h2 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.3px;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.brand-text p {
+  font-size: 12px;
+  color: var(--slate);
+  font-weight: 400;
+}
+
+.modal-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.student-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 30px;
+  padding: 6px 14px 6px 8px;
+}
+
+.student-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E87722, #F09B52);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: white;
+}
+
+.student-info {
+  font-size: 11.5px;
+  color: rgba(255,255,255,0.8);
+  line-height: 1.3;
+}
+
+.student-info strong {
+  display: block;
+  font-weight: 700;
+  font-size: 12px;
+  color: white;
+}
+
+.offers-ucas-link {
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.92);
+  padding: 7px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.offers-ucas-link:hover { border-color: rgba(255,255,255,0.30); }
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.close-btn:hover { background: rgba(255,255,255,0.18); color: white; }
+
+.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.tab:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
+
+.tab.active {
+  background: var(--cream);
+  color: var(--navy);
+}
+
+.tab-icon { font-size: 15px; }
+
+.tab-badge {
+  background: var(--amber);
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+  letter-spacing: 0.5px;
+}
+
+.tab-badge-blue { background: var(--navy-light); }
+
+.modal-body {
+  flex: 1;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.offers-modal-header {
+.tab-content {
+  display: none;
+  flex: 1;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.tab-content.active { display: flex; }
+
+/* AI layout */
+.ai-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: 100%;
+}
+
+.ai-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+  background: white;
+  border-right: 1px solid var(--cream-border);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 4px;
+  margin-top: 10px;
+}
+.sidebar-label:first-child { margin-top: 0; }
+
+.sidebar-stat {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #2a3c7a 0%, #079baa 100%);
-  color: #fff;
-}
-
-.offers-modal-title {
-  font-size: 20px;
-  font-weight: 900;
-  letter-spacing: 0.2px;
-}
-
-.offers-ucas-link {
-  margin-left: auto;
-  margin-right: 10px;
-  text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.20);
-  background: rgba(255,255,255,0.10);
-  color: #ffffff;
+  gap: 8px;
   padding: 8px 10px;
-  border-radius: 10px;
+  background: var(--cream);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--cream-border);
+}
+
+.stat-icon { font-size: 14px; flex-shrink: 0; }
+.stat-body { flex: 1; min-width: 0; }
+
+.stat-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+}
+
+.stat-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-indicator {
+  margin-top: 4px;
+  padding: 12px;
+  background: linear-gradient(135deg, #EEF4FF, #E8F0FB);
+  border-radius: var(--radius-sm);
+  border: 1px solid #C5D8F5;
+}
+
+.phase-label {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--navy-mid);
   font-weight: 800;
-  font-size: 12px;
+  margin-bottom: 8px;
 }
 
-.offers-ucas-link:hover {
-  background: rgba(255,255,255,0.16);
-}
+.phase-steps { display: flex; flex-direction: column; gap: 4px; }
 
-.offers-modal-close {
-  border: none;
-  background: transparent;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-.offers-modal-body {
-  padding: 14px 16px;
-  overflow: auto;
-  flex: 1;
-}
-
-.offers-modal-tabs {
+.phase-step {
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 3px 0;
 }
 
-.offers-modal-tab {
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.92);
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 14px;
-  font-weight: 900;
+.phase-step.done { color: var(--green); }
+.phase-step.current { color: var(--navy); font-weight: 800; }
+
+.phase-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D0D8E4;
+  flex-shrink: 0;
+}
+.phase-step.done .phase-dot { background: var(--green); }
+.phase-step.current .phase-dot {
+  background: var(--amber);
+  box-shadow: 0 0 0 3px rgba(232,119,34,0.2);
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 4px 4px 0;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--cream-border);
+  background: var(--cream);
+  font-size: 12.5px;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+}
+.form-textarea:focus { border-color: var(--navy-mid); background: white; }
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.option-chip.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: white;
+}
+
+.sidebar-actions { margin-top: 6px; }
+
+.side-btn {
+  width: 100%;
+  padding: 9px 12px;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 700;
   cursor: pointer;
 }
+.side-btn:hover { background: var(--navy-mid); }
+.side-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
-.offers-modal-tab.active {
-  border-color: rgba(7, 155, 170, 0.9);
-  background: rgba(7, 155, 170, 0.35);
-  color: #ffffff;
+.inline-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  background: rgba(255, 240, 236, 0.9);
+  color: #8A2E26;
+  font-size: 12.5px;
+  font-weight: 600;
 }
 
-.uniguide-shell {
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 16px;
+.inline-muted {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 4px;
 }
 
-.uniguide-shell-title {
-  font-size: 20px;
-  font-weight: 950;
-  color: #ffffff;
-  margin-bottom: 6px;
-}
+.chat-error { margin: 8px 16px 0; }
 
-.uniguide-shell-sub {
-  font-size: 16px;
-  color: rgba(255,255,255,0.85);
-  line-height: 1.55;
-}
-
-.uniguide-shell-actions {
-  margin-top: 14px;
-}
-
-.uniguide-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 0.9fr;
-  gap: 14px;
-  align-items: start;
-}
-
-.uniguide-left,
-.uniguide-right {
+/* Chat (from exemplar) */
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   min-width: 0;
 }
 
-.uniguide-search {
-  margin-top: 12px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.uniguide-search-input {
+.chat-messages {
   flex: 1;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.20);
-  color: #fff;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.uniguide-filters {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr 0.8fr;
-  gap: 10px;
-}
-
-.uniguide-filter-input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  box-sizing: border-box;
-}
-
-.uniguide-error {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 80, 80, 0.35);
-  background: rgba(255, 80, 80, 0.12);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.uniguide-empty {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px dashed rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.85);
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.uniguide-results {
-  margin-top: 12px;
-  display: grid;
-  gap: 10px;
-}
-
-.uniguide-card {
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(0,0,0,0.18);
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.uniguide-card-title {
-  font-size: 18px;
-  font-weight: 950;
-  color: #fff;
-}
-
-.uniguide-card-sub {
-  margin-top: 6px;
+  overflow-y: auto;
+  padding: 18px 22px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  color: rgba(255,255,255,0.9);
-  font-size: 15px;
-  font-weight: 800;
+  flex-direction: column;
+  gap: 16px;
+  scroll-behavior: smooth;
 }
 
-.uniguide-pill {
-  border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(255,255,255,0.06);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 13px;
-  font-weight: 900;
-}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--cream-border); border-radius: 2px; }
 
-.uniguide-card-actions {
-  margin-top: 10px;
+.msg { display: flex; gap: 10px; }
+.msg.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
   align-items: center;
-}
-
-.uniguide-right-title {
-  font-size: 18px;
-  font-weight: 950;
-}
-
-.uniguide-right-sub {
-  margin-top: 4px;
-  font-size: 15px;
-  font-weight: 800;
-  color: rgba(255,255,255,0.85);
-}
-
-.uniguide-choice-list {
-  margin-top: 10px;
-  display: grid;
-  gap: 8px;
-}
-
-.uniguide-choice-row {
-  display: grid;
-  grid-template-columns: 42px 1fr;
-  gap: 10px;
-  align-items: start;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 10px;
-}
-
-.uniguide-choice-rank {
-  font-weight: 950;
-  font-size: 16px;
-  color: rgba(255,255,255,0.92);
-}
-
-.uniguide-choice-uni {
-  font-weight: 950;
-  font-size: 15px;
-}
-
-.uniguide-choice-course {
-  margin-top: 2px;
-  font-weight: 700;
-  font-size: 13px;
-  color: rgba(255,255,255,0.78);
-}
-
-@media (max-width: 900px) {
-  .offers-modal-overlay { padding: 10px; }
-  .offers-modal { max-height: 96vh; border-radius: 12px; }
-  .uniguide-grid { grid-template-columns: 1fr; }
-  .uniguide-search { flex-direction: column; align-items: stretch; }
-  .uniguide-filters { grid-template-columns: 1fr; }
-}
-
-.offers-help {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.92);
-}
-
-.offers-grid {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: 90px 1.1fr 1.2fr 1.2fr 160px 110px 48px;
-  gap: 8px;
-  align-items: center;
-}
-
-.offers-grid-head {
-  font-weight: 900;
+  justify-content: center;
   font-size: 12px;
-  color: rgba(255,255,255,0.85);
+  font-weight: 900;
 }
 
-.offers-input {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  font-weight: 600;
-  box-sizing: border-box;
+.msg.ai .msg-avatar { background: var(--navy); color: white; }
+.msg.user .msg-avatar { background: linear-gradient(135deg, #E87722, #F09B52); color: white; }
+
+.msg-bubble {
+  max-width: 78%;
+  padding: 12px 15px;
+  border-radius: 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
 }
 
-.offers-remove {
-  width: 40px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(255,255,255,0.08);
+.msg.ai .msg-bubble {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--cream-border);
+  border-top-left-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.msg.user .msg-bubble {
+  background: var(--navy);
+  color: white;
+  border-top-right-radius: 4px;
+}
+
+.msg-meta {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  padding: 0 4px;
+}
+.msg.user .msg-meta { text-align: right; }
+
+.typing-indicator { display: flex; gap: 4px; align-items: center; padding: 14px 16px; }
+.typing-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: typing 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+.chat-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 22px 14px;
+}
+
+.option-chip {
+  padding: 7px 14px;
+  background: white;
+  border: 1.5px solid var(--cream-border);
+  border-radius: 20px;
+  font-size: 12.5px;
+  color: var(--navy-mid);
   cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 600;
+}
+.option-chip:hover { border-color: var(--amber); color: var(--amber); background: #FFF8F0; }
+
+.chat-input-row {
+  padding: 14px 18px;
+  border-top: 1px solid var(--cream-border);
+  background: white;
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
 }
 
-.offers-modal-actions {
-  margin-top: 12px;
+.chat-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid var(--cream-border);
+  border-radius: 24px;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--cream);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  max-height: 110px;
+}
+.chat-input:focus { border-color: var(--navy-mid); background: white; }
+.chat-input::placeholder { color: var(--muted); }
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  background: var(--navy);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.send-btn:hover { background: var(--navy-mid); transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* Search */
+.search-layout { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+.search-top {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--cream-border);
+  background: white;
 }
 
+.search-bar-row { display: flex; gap: 10px; margin-bottom: 14px; }
+
+.search-input-wrap { flex: 1; position: relative; }
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  background: var(--cream);
+  color: var(--text);
+  outline: none;
+}
+.search-input:focus { border-color: var(--navy-mid); background: white; }
+
+.filters-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.filter-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--cream-border);
+  border-radius: 20px;
+  background: var(--cream);
+  font-size: 12px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.filter-input {
+  width: 96px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.search-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.results-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.results-count { font-size: 12px; color: var(--muted); }
+
+/* Course card */
+.course-card {
+  background: white;
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  transition: all 0.18s;
+  position: relative;
+}
+
+.course-card:hover { border-color: var(--navy-mid); box-shadow: var(--shadow); transform: translateX(2px); }
+
+.course-card.saved { border-color: var(--amber); background: #FFFBF6; }
+
+.uni-logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: white;
+  letter-spacing: -0.5px;
+  flex-shrink: 0;
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.course-info { flex: 1; min-width: 0; }
+
+.course-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.uni-name { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+.course-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+
+.tag {
+  padding: 2px 8px;
+  background: var(--cream);
+  border: 1px solid var(--cream-border);
+  border-radius: 10px;
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.tag.tariff {
+  background: var(--blue-bg);
+  border-color: #C5D8F5;
+  color: var(--navy-mid);
+  font-family: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+}
+
+.save-btn {
+  padding: 5px 12px;
+  border: 1.5px solid var(--cream-border);
+  border-radius: 20px;
+  background: white;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.save-btn:hover { border-color: var(--amber); color: var(--amber); }
+.save-btn.saved { background: var(--amber); border-color: var(--amber); color: white; }
+
+.ai-reason {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, #EEF4FF, #F0F7FF);
+  border-left: 3px solid var(--navy-mid);
+  border-radius: 0 6px 6px 0;
+  font-size: 11.5px;
+  color: var(--navy);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.ai-reason-label {
+  font-style: normal;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--navy-mid);
+  font-weight: 900;
+  margin-bottom: 3px;
+}
+
+/* Manual shortlist */
+.manual-layout {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shortlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--cream-border);
+}
+
+.shortlist-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.shortlist-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.add-btn {
+  padding: 8px 18px;
+  background: var(--navy);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.add-btn:hover { background: var(--navy-mid); }
+.add-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.shortlist-cards { display: flex; flex-direction: column; gap: 10px; }
+
+.shortlist-card {
+  background: white;
+  border: 1.5px solid var(--cream-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  transition: all 0.15s;
+}
+.shortlist-card:hover { border-color: #C5D8F5; }
+
+.shortlist-card.first-choice { border-color: var(--amber); background: #FFFBF6; }
+
+.choice-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cream);
+  border: 1.5px solid var(--cream-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.shortlist-card.first-choice .choice-number {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: white;
+}
+
+.shortlist-info { flex: 1; min-width: 0; }
+
+.shortlist-course {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'Playfair Display', Georgia, serif;
+  margin-bottom: 2px;
+}
+
+.shortlist-uni { font-size: 12px; color: var(--muted); }
+
+.shortlist-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.status-badge.applied { background: #EEF4FF; color: var(--navy-mid); }
+.status-badge.offer { background: var(--green-bg); color: var(--green); }
+.status-badge.watching { background: var(--cream); color: var(--muted); border: 1px solid var(--cream-border); }
+
+.shortlist-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid var(--cream-border);
+  background: white;
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover { border-color: var(--navy-mid); color: var(--navy); }
+.icon-btn.danger:hover { border-color: #E55; color: #E55; }
+
+.empty-slot {
+  background: white;
+  border: 2px dashed var(--cream-border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--muted);
+}
+.empty-slot:hover { border-color: var(--navy-mid); color: var(--navy-mid); }
+
+.slot-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px dashed currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.shortlist-edit { margin-top: 10px; }
+.edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+.edit-field span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.edit-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--cream-border);
+  background: var(--cream);
+  font-size: 12.5px;
+  color: var(--text);
+  outline: none;
+}
+.edit-field input:focus { border-color: var(--navy-mid); background: white; }
+
+.ucas-summary {
+  margin-top: 4px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ucas-text { color: white; font-size: 13px; font-weight: 600; }
+.ucas-text strong { display: block; font-size: 15px; margin-bottom: 2px; }
+.ucas-text span { color: rgba(255,255,255,0.6); font-size: 12px; }
+
+.ucas-btn {
+  padding: 9px 20px;
+  background: var(--amber);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.ucas-btn:hover { background: var(--amber-light); }
+.ucas-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Footer */
 .offers-modal-footer {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(0,0,0,0.18);
-  border-top: 1px solid rgba(255,255,255,0.10);
+  background: white;
+  border-top: 1px solid var(--cream-border);
+  flex-shrink: 0;
 }
 
 .offers-secondary,
 .offers-primary {
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border: 1.5px solid var(--cream-border);
+  border-radius: 20px;
+  padding: 9px 14px;
   font-weight: 800;
   cursor: pointer;
+  font-size: 12.5px;
 }
 
 .offers-secondary {
-  background: rgba(255,255,255,0.06);
-  color: #fff;
+  background: white;
+  color: var(--navy-mid);
 }
+.offers-secondary:hover { border-color: var(--navy-mid); }
 
 .offers-primary {
-  background: rgba(7, 155, 170, 0.85);
-  color: #072b33;
-  border-color: rgba(7, 155, 170, 0.9);
+  background: var(--amber);
+  color: white;
+  border-color: var(--amber);
+}
+.offers-primary:hover { background: var(--amber-light); border-color: var(--amber-light); }
+.offers-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .ai-sidebar { width: 280px; }
+  .edit-grid { grid-template-columns: 1fr; }
 }
 
-.offers-primary:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@media (max-width: 620px) {
+  .ai-sidebar { display: none; }
+  .student-pill { display: none; }
+  .modal-header { padding: 16px 16px 0; }
+  .chat-messages { padding: 14px 16px; }
+  .chat-input-row { padding: 12px 14px; }
+  .search-top { padding: 14px 16px; }
+  .search-results { padding: 12px 16px; }
+  .manual-layout { padding: 16px; }
 }
 
 /* Data source indicator */
