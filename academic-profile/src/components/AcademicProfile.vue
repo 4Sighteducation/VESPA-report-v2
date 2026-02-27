@@ -2671,7 +2671,8 @@ const showTemporaryMessage = (message, type) => {
   position: fixed;
   inset: 0;
   background: rgba(7, 20, 38, 0.75);
-  backdrop-filter: blur(6px);
+  /* Backdrop blur looks "grainy" on Windows/Knack embeds; keep it crisp. */
+  backdrop-filter: none;
   z-index: 10001;
   display: flex;
   align-items: stretch;
@@ -2710,8 +2711,11 @@ const showTemporaryMessage = (message, type) => {
   overflow: hidden;
   box-shadow: none;
   font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  font-size: 15.5px;
-  line-height: 1.35;
+  font-size: 16.5px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 .modal-header {
