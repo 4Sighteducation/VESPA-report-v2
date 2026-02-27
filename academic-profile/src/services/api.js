@@ -707,7 +707,8 @@ export async function uniguideChat(params, apiUrl) {
         academic_year: params?.academicYear || 'current',
         session_id: params?.sessionId || null,
         message: params?.message || '',
-        dataset_release_id: params?.datasetReleaseId || null
+        dataset_release_id: params?.datasetReleaseId || null,
+        start_chat: Boolean(params?.startChat)
       })
     })
 
@@ -726,4 +727,3 @@ export async function uniguideChat(params, apiUrl) {
     return { success: false, error: error.message || 'Failed to chat with UniGuide' }
   }
 }
-

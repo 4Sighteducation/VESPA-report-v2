@@ -268,6 +268,12 @@
     <!-- UniGuide Modal (includes manual editor) -->
     <div v-if="offersEditorOpen" class="offers-modal-overlay" @click.self="closeOffersEditor">
       <div class="offers-modal" role="dialog" aria-modal="true" aria-label="UniGuide">
+        <div v-if="toast.open" class="toast" :class="toast.type" role="status" aria-live="polite">
+          <div class="toast-inner">
+            <div class="toast-msg">{{ toast.message }}</div>
+            <button class="toast-close" type="button" @click="closeToast" aria-label="Dismiss">×</button>
+          </div>
+        </div>
         <div class="modal-header">
           <div class="modal-top">
             <div class="modal-brand">
@@ -1064,6 +1070,13 @@ const completePrefsAndSave = async () => {
   await saveUniGuideProfile()
   offersEditorTab.value = 'ai'
   uniguidePrefsOpen.value = false
+
+  // Immediately start the conversation so the preferences feel "used"
+  if ((uniguideChatMessages.value || []).length === 0) {
+    try {
+      await startUniGuideChat()
+    } catch (_) {}
+  }
 }
 
 const prefsInterests = [
@@ -1317,6 +1330,40 @@ const saveUniGuideProfile = async () => {
     showTemporaryMessage(e?.message || 'Failed to save UniGuide preferences', 'error')
   } finally {
     uniguideProfileSaving.value = false
+  }
+}
+
+const startUniGuideChat = async () => {
+  const apiUrl = window.ACADEMIC_PROFILE_V2_CONFIG?.apiUrl
+  if (!apiUrl) return
+  if (!uniguideStudentEmail.value) return
+
+  // Reset any previous session state
+  uniguideChatLoading.value = true
+  uniguideChatError.value = ''
+  try {
+    const resp = await uniguideChat({
+      studentEmail: uniguideStudentEmail.value,
+      academicYear: uniguideAcademicYear.value,
+      sessionId: null,
+      message: 'start',
+      datasetReleaseId: null,
+      startChat: true
+    }, apiUrl)
+    if (!resp || !resp.success) throw new Error(resp?.error || 'Chat failed')
+
+    uniguideSessionId.value = resp.session_id || null
+    if (resp.assistant_message) {
+      uniguideChatMessages.value = [{ role: 'assistant', content: resp.assistant_message }]
+    }
+    if (Array.isArray(resp.suggestions)) {
+      uniguideSuggestions.value = resp.suggestions.map(s => ({ ...(s || {}) }))
+    }
+  } catch (e) {
+    console.error('[UniGuide] start chat error:', e)
+    uniguideChatError.value = e?.message || 'Chat failed'
+  } finally {
+    uniguideChatLoading.value = false
   }
 }
 
@@ -1943,10 +1990,29 @@ const formatPercentage = (decimal) => {
   return `${Math.round(decimal * 100)}%`
 }
 
-// Show temporary message
-const showTemporaryMessage = (message, type) => {
-  // Simple alert for now - can be enhanced with a toast component
-  alert(message)
+// In-app toast (avoid native browser alerts)
+const toast = ref({ open: false, message: '', type: 'info' })
+let toastTimer = null
+
+const showTemporaryMessage = (message, type = 'info') => {
+  const msg = (message || '').toString().trim()
+  if (!msg) return
+  if (toastTimer) {
+    try { clearTimeout(toastTimer) } catch (_) {}
+    toastTimer = null
+  }
+  toast.value = { open: true, message: msg, type }
+  toastTimer = setTimeout(() => {
+    toast.value = { ...toast.value, open: false }
+  }, 2400)
+}
+
+const closeToast = () => {
+  if (toastTimer) {
+    try { clearTimeout(toastTimer) } catch (_) {}
+    toastTimer = null
+  }
+  toast.value = { ...toast.value, open: false }
 }
 </script>
 
@@ -2743,6 +2809,60 @@ const showTemporaryMessage = (message, type) => {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+}
+
+/* Toast */
+.toast{
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(720px, calc(100% - 28px));
+  border-radius: 12px;
+  border: 1px solid rgba(13,43,78,0.16);
+  box-shadow: 0 14px 40px rgba(13,43,78,0.22);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+}
+.toast.success{
+  border-color: rgba(27,122,74,0.20);
+  background: rgba(234,247,240,0.96);
+}
+.toast.error{
+  border-color: rgba(192,57,43,0.22);
+  background: rgba(255,240,236,0.96);
+}
+.toast.info{
+  border-color: rgba(27,79,138,0.18);
+  background: rgba(238,244,255,0.96);
+}
+.toast-inner{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+.toast-msg{
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(13,43,78,0.92);
+}
+.toast-close{
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(13,43,78,0.14);
+  background: white;
+  color: rgba(13,43,78,0.85);
+  cursor: pointer;
+  font-weight: 900;
+  line-height: 1;
+}
+.toast-close:hover{
+  background: rgba(238,244,255,0.9);
+  border-color: rgba(13,43,78,0.22);
 }
 
 .prefs-modal-overlay {
