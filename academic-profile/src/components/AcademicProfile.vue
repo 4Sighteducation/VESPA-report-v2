@@ -1339,6 +1339,9 @@ const startUniGuideChat = async () => {
   if (!uniguideStudentEmail.value) return
 
   // Reset any previous session state
+  uniguideSessionId.value = null
+  uniguideChatMessages.value = []
+  uniguideSuggestions.value = []
   uniguideChatLoading.value = true
   uniguideChatError.value = ''
   try {
@@ -1346,7 +1349,7 @@ const startUniGuideChat = async () => {
       studentEmail: uniguideStudentEmail.value,
       academicYear: uniguideAcademicYear.value,
       sessionId: null,
-      message: 'start',
+      message: '',
       datasetReleaseId: null,
       startChat: true
     }, apiUrl)
@@ -1793,7 +1796,13 @@ const openOffersEditor = () => {
   // hydrate intake on open
   try {
     loadUniGuideProfile().then(() => {
-      if (!uniguidePrefsCompleted.value && !String(uniguideProfileError.value || '').trim()) openUniGuidePrefs()
+      if (!uniguidePrefsCompleted.value && !String(uniguideProfileError.value || '').trim()) {
+        openUniGuidePrefs()
+        return
+      }
+      if ((uniguideChatMessages.value || []).length === 0) {
+        try { startUniGuideChat() } catch (_) {}
+      }
     })
   } catch (_) {}
 }
@@ -2822,8 +2831,7 @@ const closeToast = () => {
   border-radius: 12px;
   border: 1px solid rgba(13,43,78,0.16);
   box-shadow: 0 14px 40px rgba(13,43,78,0.22);
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.96);
 }
 .toast.success{
   border-color: rgba(27,122,74,0.20);
